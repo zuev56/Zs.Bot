@@ -1,0 +1,166 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Text;
+
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+
+namespace ChatAdminService
+{
+
+    public class ChatAdminEntities : DbContext
+    {
+        //public static string ConnectionString { get; set; }
+
+        /// <summary> Используется при вызове конструктора без параметров </summary>
+        private static DbContextOptions<ChatAdminEntities> _options;
+        private static ILogger _logger;
+                                                              
+        public virtual DbSet<Ban>                   Bans           { get; set; }
+        public virtual DbSet<Parameter>             Parameters     { get; set; }
+        public virtual DbSet<Accounting>            Accountings    { get; set; }
+        public virtual DbSet<Notification>          Notifications  { get; set; }
+        public virtual DbSet<vCmdGetDailyGroupStatistics> ChatStatistics { get; set; }
+
+
+        /// <summary> Предоставляет возможность работы с БД, 
+        /// используя статические опции, которые должны были быть ранее определены методом Initialize(...) </summary>
+        public ChatAdminEntities()
+            : base(_options)
+        {
+        }
+
+        /// <summary> Инициализация </summary>
+        /// <param name="options">Опции, которые будут использоваться при вызове конструктора без параметров</param>
+        public static void Initialize(DbContextOptions<ChatAdminEntities> options, ILogger logger)
+        {
+            _logger = logger;
+            _options = options;
+        }
+
+        //protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        //{
+        //    optionsBuilder.UseNpgsql(ConnectionString);
+        //}
+    }
+
+    [Table("Notification", Schema = "cas")]
+    public partial class Notification
+    {
+        [Key]
+        public int       NotificationId           { get; set; }
+        public bool      NotificationIsActive     { get; set; }
+        public string    NotificationMessage      { get; set; }
+        public int?      NotificationMonth        { get; set; } // if NULL 
+        public int       NotificationDay          { get; set; }
+        public int       NotificationHour         { get; set; }
+        public int       NotificationMinute       { get; set; }
+        public DateTime? NotificationLastExecDate { get; set; }
+        public DateTime  UpdateDate               { get; set; }
+    }
+
+
+    [Table("Parameter", Schema = "cas")]
+    public partial class Parameter
+    {
+        [Key]
+        public string Name         { get; set; }
+        public string Value        { get; set; }
+        public string Description  { get; set; }
+        public DateTime InsertDate { get; set; }
+    }
+
+    [Table("Ban", Schema = "cas")]
+    public partial class Ban
+    {
+        [Key]                                      
+        public int       BanId         { get; set; }
+        public int       UserId        { get; set; }
+        public long      ChatId        { get; set; }
+        public bool      IsWarned      { get; set; }
+        public bool      IsActive      { get; set; } // Активен с момента предупреждения
+        public DateTime? BanFinishDate { get; set; } // Определяет дату окончания бана и соответственно его наличие
+        public DateTime  InsertDate    { get; set; }
+        public DateTime  UpdateDate    { get; set; }
+
+        /// <summary> Конвертация </summary>
+        public static string PeriodToString(BanPeriod banPeriod, int variant = 0)
+        {
+            if (variant == 0)
+                switch (banPeriod)
+                {
+                    case BanPeriod.ForOneHour: return "на 1 час";
+                    case BanPeriod.ForThreeHours: return "на 3 часа";
+                    case BanPeriod.UntilNextDay: return "до начала следующего дня";
+                    default: throw new NotImplementedException();
+                }
+            else if (variant == 1)
+            {
+                switch (banPeriod)
+                {
+                    case BanPeriod.ForOneHour: return "в течение 1-го часа";
+                    case BanPeriod.ForThreeHours: return "в течение 3-х часов";
+                    case BanPeriod.UntilNextDay: return "до начала следующего дня";
+                    default: throw new NotImplementedException();
+                }
+
+            }
+            else return "";
+        }
+
+    }
+
+    [Table("Accounting", Schema = "cas")]
+    public partial class Accounting
+    {
+        [Key]
+        public int      AccountingId { get; set; }
+        public DateTime StartDate    { get; set; }
+        public DateTime UpdateDate   { get; set; }
+    }
+
+
+    [Table("vCmdGetDailyGroupStatistics", Schema = "cas")]
+    //[HasNoKey]
+    public partial class vCmdGetDailyGroupStatistics
+    {
+        [Key] // Чтоб не ругался
+        [Column("Name")]
+        public string UserName              { get; set; }
+
+        //Добавить в хранимке и вьюхе!!!
+        public long   ChatId                { get; set; }
+
+        [Column("Count")]
+        public long   AllMessageCount       { get; set; }
+        public long   AccountedMessageCount { get; set; }
+
+    }
+
+    #region Дополняем базовые классы модели данных
+    public partial class Chat
+    {
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<Ban> Bans { get; set; }
+
+        public Chat()
+        {
+            this.Bans = new HashSet<Ban>();
+        }
+    }
+
+    public partial class User
+    {
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<Ban> Bans { get; set; }
+
+        public User()
+        {
+            this.Bans = new HashSet<Ban>();
+        }
+    }
+
+    #endregion
+}

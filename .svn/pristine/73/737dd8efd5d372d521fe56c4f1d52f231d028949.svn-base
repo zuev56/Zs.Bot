@@ -1,0 +1,16 @@
+﻿using Zs.Bot.Model.Db;
+
+namespace Zs.Bot.Modules.Messaging
+{
+    public interface IToGenegalItemConverter
+    {
+        /// <summary> Conversion to general type </summary>
+        IMessage ToGeneralMessage(object specificMessage);
+
+        /// <summary> Conversion to general type </summary>
+        IChat ToGeneralChat(object specificChat);
+
+        /// <summary> Conversion to general type </summary>
+        IUser ToGeneralUser(object specificUser);
+    }
+}

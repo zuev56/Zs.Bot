@@ -1,0 +1,40 @@
+﻿using ChatAdminService;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using RemoteManager.DbModel;
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace UnitTest
+{
+    [TestClass]
+    public class TestBase
+    {
+        private static DbContextOptionsBuilder<RemoteManagerEntities> _rmOptionsBuilder;
+        private static DbContextOptionsBuilder<ChatAdminEntities> _caOptionsBuilder;
+
+        static TestBase() => Init(null);
+
+        [ClassInitialize()]
+        public static void Init(TestContext testContext)
+        {
+            Configuration.Initialize("AppSettings.json");
+
+            _rmOptionsBuilder = new DbContextOptionsBuilder<RemoteManagerEntities>();
+            _rmOptionsBuilder.UseNpgsql(Configuration.ConnectionString);
+            RemoteManagerEntities.Initialize(_rmOptionsBuilder.Options, null);
+
+            _caOptionsBuilder = new DbContextOptionsBuilder<ChatAdminEntities>();
+            _caOptionsBuilder.UseNpgsql(Configuration.ConnectionString);
+            ChatAdminEntities.Initialize(_caOptionsBuilder.Options, null);
+        }
+
+        [ClassCleanup]
+        public static void TestCleanup()
+        {
+        }
+
+
+    }
+}

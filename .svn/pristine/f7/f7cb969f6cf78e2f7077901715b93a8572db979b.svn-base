@@ -1,0 +1,266 @@
+﻿using System;
+using System.Linq;
+using System.Net;
+using System.Net.NetworkInformation;
+using System.Threading;
+using Zs.Common.Enums;
+using Zs.Common.Interfaces;
+
+namespace Zs.Common.Modules.Connectors
+{
+    /// <summary>
+    /// Объект, анализирующий подключение к сети
+    /// </summary>
+    public class ConnectionAnalyser : ModuleBase
+    {
+        private IZsLogger _logger;
+
+#if DEBUG
+        public long CycleCounter = 0;
+#endif
+
+        private Thread _connectionAnalyserThread;
+        private AutoResetEvent _connectionAnalyserAre;
+
+        // Интервал между проверками
+        private int _connectionCheckInterval = 30000;
+        
+        // Список хостов для проверки
+        private string[] _internetServers;
+
+        /// <summary> Анализируемый прокси-сервер </summary>
+        public WebProxy WebProxy { get; set; } = null;
+
+        /// <summary> Дата восстановления подключения к интернету </summary>
+        public DateTime? InternetRepairDate { get; set; } = null;
+
+        /// <summary> Событие на изменение состояния соединения с интернетом </summary>
+        public event Action<ConnectionStatus> ConnectionStatusChanged;
+
+
+        /// <summary>  Текущий статус соединения </summary>
+        public ConnectionStatus CurrentStatus = ConnectionStatus.Undefined;
+
+
+        public ConnectionAnalyser(IZsLogger logger = null, params string[] testHosts)
+        {
+            _logger = logger;
+
+            _internetServers = testHosts?.Length > 0 ? testHosts : new string[1];
+
+            _connectionAnalyserAre = new AutoResetEvent(true);
+            _connectionAnalyserThread = new Thread(ConnectionAnalyseLoop);
+            _connectionAnalyserThread.Name = "ConnectionAnalyser";
+        }
+        
+        /// <summary> Инициализация WebProxy </summary>
+        public void InitializeProxy(string socket, string userName = null, string password = null)
+        {
+            WebProxy = new WebProxy(socket, true);
+            if (!string.IsNullOrWhiteSpace(userName)
+                && !string.IsNullOrWhiteSpace(password))
+            {
+                ICredentials crd = new NetworkCredential(userName, password);
+                WebProxy.Credentials = crd;
+                _logger?.SaveToDb(LogType.Info, $"{nameof(ConnectionAnalyser)}", "Задействован прокси-сервер", default(string));
+            }
+        }
+
+
+        public override void Start(int delay = 0)
+        {
+            try
+            {
+                Thread.Sleep(delay);
+
+                _connectionAnalyserThread.IsBackground = true;
+                _connectionAnalyserThread.Start();
+
+                _logger?.SaveToDb(LogType.Info, nameof(ConnectionAnalyser), $"Поток {nameof(ConnectionAnalyser)} запущен");
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex);
+            }
+        }
+
+        public override void Stop(int delay = 0)
+        {
+            try
+            {
+                // Остановка 
+                _connectionAnalyserThread.Abort();
+
+                _logger?.SaveToDb(LogType.Info, nameof(ConnectionAnalyser), $"Поток {nameof(ConnectionAnalyser)} остановлен");
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex);
+            }
+        }
+
+
+        /// <summary> Циклично выполняет анализ</summary>
+        private void ConnectionAnalyseLoop()
+        {
+            try
+            {
+                while (true)
+                {
+                    try
+                    {
+#if DEBUG
+                        CycleCounter++;
+#endif
+                        var lastStatus = CurrentStatus;
+
+                        CurrentStatus = AnalyzeConnection();
+
+                        if (lastStatus != CurrentStatus)
+                            ConnectionStatusChanged?.Invoke(CurrentStatus);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.LogError(ex);
+                    }
+                    finally
+                    {
+                        _connectionAnalyserAre.WaitOne(_connectionCheckInterval);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex);
+            }
+        }
+
+        /// <summary> Проверка соединения с интернетом и прокси-сервером </summary>
+        private ConnectionStatus AnalyzeConnection()
+        {
+            if (_internetServers == null || _internetServers.Length == 0)
+                throw new ArgumentException("Должен быть задан адрес сервера для проверки соединения с интернетом!");
+
+            var iSrvList = _internetServers.ToList();
+            var proxyServer = WebProxy?.Address?.Host;
+
+            // Проверка доступности хотя бы одного интернет-сервера
+            ConnectionStatus result = ConnectionStatus.Undefined;
+            foreach (var s in iSrvList)
+            {
+                if (PingHost(s))
+                {
+                    result = ConnectionStatus.NoProxyConnection;
+                    break;
+                }
+                else result = ConnectionStatus.NoInternetConnection;
+            }
+
+            //Если ни один интернет-сервер не доступен, выходим
+            if (result != ConnectionStatus.NoProxyConnection)
+            {
+                InternetRepairDate = null;
+                return result;
+            }
+
+            // Проверка доступности проски-сервера
+            if (!string.IsNullOrWhiteSpace(proxyServer))
+            {
+                int i = 3;
+                while (i-- > 0)
+                {
+                    if (PingHost(proxyServer))
+                    {
+                        result = ConnectionStatus.Ok;
+                        break;
+                    }
+                }
+
+                if (result != ConnectionStatus.Ok)
+                {
+                    InternetRepairDate = null;
+                    return result;
+                }
+            }
+
+            // Переопределение времени восстановления связи
+            if (InternetRepairDate == null && result == ConnectionStatus.Ok)
+                InternetRepairDate = DateTime.Now;
+
+            return result;
+        }
+
+
+
+        /// <summary> Получение адреса хоста без протокола и порта </summary>
+        private static string GetClearHostAddress(string address)
+        {
+            if (address?.Length > 0)
+            {
+                address = address.Contains("://")
+                              ? address.Substring(address.IndexOf("://") + 3)
+                              : address;
+
+                address = address.Contains(":") && !address.Contains("://")
+                              ? address.Substring(0, address.IndexOf(":"))
+                              : address;
+
+                address = address.Trim('/');
+            }
+
+            return address;
+        }
+
+        /// <summary> Проверка доступности хоста </summary>
+        public bool PingHost(string nameOrAddress)
+        {
+            // Удаляем порт и протокол из адреса
+            nameOrAddress = GetClearHostAddress(nameOrAddress);
+
+            bool pingable = false;
+            Ping pinger = null;
+
+            try
+            {
+                pinger = new Ping();
+                PingReply reply = pinger.Send(nameOrAddress);
+                pingable = reply.Status == IPStatus.Success;
+            }
+            catch (PingException ex)
+            {
+                _logger?.LogError(ex);
+            }
+            finally
+            {
+                if (pinger != null)
+                    pinger.Dispose();
+            }
+
+            return pingable;
+        }
+        
+        /// <summary> Проверка правильности IP-адреса </summary>
+        public bool ValidateIPv4(string ipString)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(ipString))
+                    return false;
+
+                string[] splitValues = ipString.Split('.');
+                if (splitValues.Length != 4)
+                    return false;
+
+                byte tempForParsing;
+
+                return splitValues.All(r => byte.TryParse(r, out tempForParsing));
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex);
+                return false;
+            }
+        }
+
+    }
+}

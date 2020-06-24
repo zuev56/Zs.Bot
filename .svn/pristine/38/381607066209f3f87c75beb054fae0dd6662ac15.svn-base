@@ -1,0 +1,47 @@
+﻿<#@ template debug="false" hostspecific="true" language="C#" #>
+<#@ output extension="generated.cs" #>
+<#@ assembly name="System.Core" #>
+<#@ assembly name="$(SolutionDir)Zl.Common.T4\bin\Debug\Zs.Common.T4Generator.dll" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="Zs.Common.T4Generator" #>
+
+<#
+    //System.Diagnostics.Debugger.Launch();
+    try
+    {
+        var usings = new[] {
+           "using System;",
+           "using System.ComponentModel.DataAnnotations;",
+           "using System.ComponentModel.DataAnnotations.Schema;",
+           "using Microsoft.EntityFrameworkCore;"
+        };
+        
+        var filePath = Host.ResolveAssemblyReference(@"M:\Zs.Bot\Zs.Bot\DbModel\TableNameToClassNameMap.txt";
+        
+        var connectionString = "Host=localhost;Port=5632;Username=postgres;Password=postgres;Database=Robot;";//ModelGenerator.GetConfigurationValue(@"M:\Zs.Bot\Zs.Bot\AppSettings.json", "T4_ConnectionString");
+        //var connectionString = ModelGenerator.GetConfigurationValue(@"M:\Zs.Bot\Zs.Bot\Zs.Bot.json", "T4_ConnectionString");
+        
+        var tableToClassNameMap = ModelGenerator.GetTableNameToClassNameMap(filePath);
+        
+        var databaseInfo = DbReader.GetDbInfo(connectionString);
+        
+        ModelGenerator.GenerateClasses(
+            this,
+            databaseInfo,
+            usings,
+            "Zs.Bot.DbModel",
+            "public",
+            "Db",
+            true,
+            tableToClassNameMap
+        );
+    }
+    catch (Exception ex)
+    {
+        WriteLine($"{ex.Message}");
+        WriteLine("");
+        WriteLine($"{ex.StackTrace}");
+    }    
+#>

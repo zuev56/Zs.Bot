@@ -1,0 +1,35 @@
+<#@ template debug="true" hostspecific="true" language="C#" #>
+<#@ output extension="sql" #>
+<#@ import namespace="System.IO" #>
+<#@ import namespace="System.Text" #>
+
+<#
+    try
+    {
+        var projectDir = Host.ResolveAssemblyReference("$(ProjectDir)");
+    
+        var divider = Environment.NewLine + Environment.NewLine + Environment.NewLine;
+        
+        var sb =  new StringBuilder();
+        sb.Append(File.ReadAllText($@"{projectDir}\DbStructure\Base.sql"));
+        sb.Append(divider);
+        sb.Append(File.ReadAllText($@"{projectDir}\DbStructure\Tables_bot.sql"));
+        sb.Append(divider);
+        sb.Append(File.ReadAllText($@"{projectDir}\DbStructure\Tables_zl.sql"));
+        
+        Write(sb.ToString());        
+    }
+    catch (Exception ex)
+    {
+        if (ex.InnerException != null)
+        {
+            WriteLine($"{ex.InnerException.Message}");
+            WriteLine("");
+            WriteLine($"{ex.InnerException.StackTrace}");
+        }
+    
+        WriteLine($"{ex.Message}");
+        WriteLine("");
+        WriteLine($"{ex.StackTrace}");
+    }
+#>

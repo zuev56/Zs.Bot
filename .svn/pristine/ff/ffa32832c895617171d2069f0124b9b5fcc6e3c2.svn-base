@@ -1,0 +1,450 @@
+set timezone = 'Europe/Moscow';
+DROP DATABASE IF EXISTS "RemoteManagerDb";
+--DROP USER IF EXISTS zuev56;
+--DROP USER IF EXISTS robot;
+CREATE USER zuev56 WITH PASSWORD '105203656';
+CREATE USER robot WITH PASSWORD 'sqr105203656';
+CREATE DATABASE "RemoteManagerDb";
+\connect "RemoteManagerDb" postgres;
+DROP SCHEMA public;
+CREATE SCHEMA rmgr;
+CREATE SCHEMA cas;
+CREATE SCHEMA helper;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA helper;
+
+CREATE TABLE cas."Parameter" (
+    "Name"        varchar(50)   PRIMARY KEY,
+    "Value"       varchar(2000)     NULL,
+    "Group"       varchar(100)      NULL,
+    "Description" varchar(500)      NULL,
+    "UpdateDate"  timestamptz   NOT NULL DEFAULT now(),
+    "InsertDate"  timestamptz   NOT NULL DEFAULT now()
+);
+INSERT INTO cas."Parameter"("Name", "Value", "Description") VALUES('ChatUserMessageCountHiHi', '-1', 'Верхняя аварийная уставка');
+INSERT INTO cas."Parameter"("Name", "Value", "Description") VALUES('ChatUserMessageCountHi',   '-1', 'Верхняя предупредительная уставка');
+INSERT INTO cas."Parameter"("Name", "Value", "Description") VALUES('DefaultChatId',            '',   'Идентификатор чата, с которым бот работает по умолчанию');
+
+
+CREATE TABLE rmgr."Role" (
+    "RoleName"   varchar(50)  PRIMARY KEY,
+    "UpdateDate" timestamptz  NOT NULL DEFAULT now(),
+    "InsertDate" timestamptz  NOT NULL DEFAULT now()
+);
+INSERT INTO rmgr."Role"("RoleName") VALUES('Administrator');
+INSERT INTO rmgr."Role"("RoleName") VALUES('Moderator');
+INSERT INTO rmgr."Role"("RoleName") VALUES('User');
+
+CREATE TABLE rmgr."MessageType" (
+    "MessageTypeName" varchar(50)  PRIMARY KEY,
+    "InsertDate"      timestamptz  NOT NULL DEFAULT now(),	
+    "UpdateDate"      timestamptz  NOT NULL DEFAULT now()
+);
+INSERT INTO rmgr."MessageType"("MessageTypeName") VALUES('Unknown');
+INSERT INTO rmgr."MessageType"("MessageTypeName") VALUES('Text');
+INSERT INTO rmgr."MessageType"("MessageTypeName") VALUES('Photo');
+INSERT INTO rmgr."MessageType"("MessageTypeName") VALUES('Audio');
+INSERT INTO rmgr."MessageType"("MessageTypeName") VALUES('Video');
+INSERT INTO rmgr."MessageType"("MessageTypeName") VALUES('Voice');
+INSERT INTO rmgr."MessageType"("MessageTypeName") VALUES('Document');
+INSERT INTO rmgr."MessageType"("MessageTypeName") VALUES('Sticker');
+INSERT INTO rmgr."MessageType"("MessageTypeName") VALUES('Location');
+INSERT INTO rmgr."MessageType"("MessageTypeName") VALUES('Contact');
+INSERT INTO rmgr."MessageType"("MessageTypeName") VALUES('Venue');
+INSERT INTO rmgr."MessageType"("MessageTypeName") VALUES('Game');
+INSERT INTO rmgr."MessageType"("MessageTypeName") VALUES('VideoNote');
+INSERT INTO rmgr."MessageType"("MessageTypeName") VALUES('Invoice');
+INSERT INTO rmgr."MessageType"("MessageTypeName") VALUES('SuccessfulPayment');
+INSERT INTO rmgr."MessageType"("MessageTypeName") VALUES('WebsiteConnected');
+INSERT INTO rmgr."MessageType"("MessageTypeName") VALUES('ChatMembersAdded');
+INSERT INTO rmgr."MessageType"("MessageTypeName") VALUES('ChatMemberLeft');
+INSERT INTO rmgr."MessageType"("MessageTypeName") VALUES('ChatTitleChanged');
+INSERT INTO rmgr."MessageType"("MessageTypeName") VALUES('ChatPhotoChanged');
+INSERT INTO rmgr."MessageType"("MessageTypeName") VALUES('MessagePinned');
+INSERT INTO rmgr."MessageType"("MessageTypeName") VALUES('ChatPhotoDeleted');
+INSERT INTO rmgr."MessageType"("MessageTypeName") VALUES('GroupCreated');
+INSERT INTO rmgr."MessageType"("MessageTypeName") VALUES('SupergroupCreated');
+INSERT INTO rmgr."MessageType"("MessageTypeName") VALUES('ChannelCreated');
+INSERT INTO rmgr."MessageType"("MessageTypeName") VALUES('MigratedToSupergroup');
+INSERT INTO rmgr."MessageType"("MessageTypeName") VALUES('MigratedFromGroup');
+INSERT INTO rmgr."MessageType"("MessageTypeName") VALUES('Animation');
+
+
+
+CREATE TABLE rmgr."Chat" (
+    "ChatId"                          bigserial    PRIMARY KEY,
+    "ChatTitle"                       varchar(50)      NULL,
+    "ChatFirstName"                   varchar(50)      NULL,
+    "ChatLastName"                    varchar(50)      NULL,
+    "ChatDescription"                 varchar(100)     NULL,
+    "ChatType"                        varchar(50)      NULL,
+    "ChatInviteLink"                  varchar(10)      NULL,
+    "ChatUserName"                    varchar(50)      NULL,
+    "ChatAllMembersAreAdministrators" bool             NULL,
+    "ChatCanSetStickerSet"            bool             NULL,
+    "ChatStickerSetName"              varchar(50)      NULL,
+    "PinnedMessageId"                 int              NULL,
+
+    "IsSubscribed"                    bool         NOT NULL,
+    "InsertDate"                      timestamptz  NOT NULL DEFAULT now(),	
+    "UpdateDate"                      timestamptz  NOT NULL DEFAULT now()
+);
+
+CREATE TABLE rmgr."User" (
+    "UserId"         serial      PRIMARY KEY,
+    "UserName"       varchar(50)     NULL,
+    "UserManualName" varchar(50)     NULL,
+    "UserFirstName"  varchar(50)     NULL,
+    "UserLastName"   varchar(50)     NULL,
+    "RoleName"       varchar(50) NOT NULL REFERENCES rmgr."Role"("RoleName"),
+    "IsBot"          bool            NULL,
+    "UpdateDate"     timestamptz NOT NULL DEFAULT now(),
+    "InsertDate"     timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE rmgr."ReceivedMsg" (
+    "ReceivedMsgId"                     bigserial     PRIMARY KEY,
+    "ReceivedMsgMessageId"              int           NOT NULL,
+    "UserId"                            int           NOT NULL REFERENCES rmgr."User" ("UserId"),
+    "ChatId"				            bigint        NOT NULL REFERENCES rmgr."Chat" ("ChatId"),
+    "MessageTypeName"                   varchar(50)   NOT NULL REFERENCES rmgr."MessageType" ("MessageTypeName"),
+    "ReceivedMsgAuthorSignature"		varchar(500)      NULL,
+    "ReceivedMsgCaption"				varchar(500)      NULL,
+    "ReceivedMsgChannelChatCreated"     bool              NULL,
+    "ReceivedMsgConnectedWebsite"		varchar(500)      NULL,
+    "ReceivedMsgDate"					timestamptz       NULL,
+    "ReceivedMsgDeleteChatPhoto"		bool              NULL,
+    "ReceivedMsgEditDate"				timestamptz       NULL,
+    "ReceivedMsgForwardDate"			timestamptz       NULL,
+    "ReceivedMsgForwardFromId"          int               NULL,
+    "ReceivedMsgForwardFromChatId"      bigint            NULL,
+    "ReceivedMsgForwardFromMessageId"   int               NULL,
+    "ReceivedMsgForwardSignature"       varchar(500)      NULL,
+    "ReceivedMsgGroupChatCreated"       bool              NULL,
+    --"ReceivedMsgIsForwarded"            bool              NULL,
+    "ReceivedMsgLeftChatMemberId"       int               NULL,
+    "ReceivedMsgLocation"               varchar(500)      NULL,
+    "ReceivedMsgMediaGroupId"           varchar(500)      NULL,
+    "ReceivedMsgMigrateFromChatId"      bigint            NULL,
+    "ReceivedMsgMigrateToChatId"        bigint            NULL,
+    "ReceivedMsgNewChatTitle"           varchar(500)      NULL,
+    "ReceivedMsgPinnedMessageId"        int               NULL,
+    "ReceivedMsgReplyToMessageId"       int               NULL,
+    "ReceivedMsgSupergroupChatCreated"  bool              NULL,
+    "ReceivedMsgText"                   varchar(5000)     NULL,
+    "IsDeleted"                         bool          NOT NULL DEFAULT(false),
+    "InsertDate"                        timestamptz   NOT NULL DEFAULT now(),	
+    "UpdateDate"                        timestamptz   NOT NULL DEFAULT now()
+);
+
+CREATE TABLE rmgr."SentMsg" (
+    "SentMsgId"                     serial     PRIMARY KEY,
+    "ChatId"				        bigint        NOT NULL REFERENCES rmgr."Chat" ("ChatId"),
+    "SentMsgMessageId"				int               NULL,
+    "SentMsgText" 					varchar(5000)     NULL,
+    "MessageTypeName"               varchar(50)   NOT NULL REFERENCES rmgr."MessageType" ("MessageTypeName"),
+     
+    "SentMsgParseMode"              varchar(100)      NULL,
+    "SentMsgDisableWebPagePreview"  bool              NULL,
+    "SentMsgDisableNotification"    bool              NULL,
+    "SentMsgReplyToMessageId"       int               NULL,
+    "SentMsgCaption"                varchar(500)      NULL,
+    "SentMsgDuration"               int               NULL,
+    "SentMsgPerformer"              varchar(500)      NULL,
+    "SentMsgTitle"                  varchar(500)      NULL,
+    "SentMsgWidth"                  int               NULL,
+    "SentMsgHeight"                 int               NULL,
+    "SentMsgSupportsStreaming"      bool              NULL,
+    "SentMsgLength"                 int               NULL,
+    "SentMsgLatitude"               float             NULL,
+    "SentMsgLongitude"              float             NULL,
+    "SentMsgLivePeriod"             int               NULL,
+    "SentMsgAddress"                varchar(100)      NULL,
+    "SentMsgFoursquareId"           varchar(100)      NULL,
+    "SentMsgFoursquareType"         varchar(100)      NULL,
+    "SentMsgPhoneNumber"            varchar(100)      NULL,
+    "SentMsgFirstName"              varchar(100)      NULL,
+    "SentMsgLastName"               varchar(100)      NULL,
+    "SentMsgVCard"                  varchar(500)      NULL,
+    
+    "SentMsgTag"    	        	varchar(5000)     NULL,
+    "SentMsgKeyboardType"    		varchar(20)       NULL,
+    "SentMsgFailedSendings"  		int               NULL,
+    "SentMsgFailDescription" 		varchar(5000)     NULL,
+    "SentMsgReplyToMessageId"		int				  NULL,
+    "IsSentSuccessfully"            bool              NULL,	
+    "IsDeleted"                     bool          NOT NULL DEFAULT(false),
+    "InsertDate"             		timestamptz   NOT NULL DEFAULT now(),	
+    "UpdateDate"             		timestamptz   NOT NULL DEFAULT now()
+);
+
+CREATE TABLE rmgr."Session" (
+    "SessionId"          serial      PRIMARY KEY,
+    "ChatId"             bigint      NOT NULL REFERENCES rmgr."Chat" ("ChatId"),
+    "SessionIsLoggedIn"  bool        NOT NULL,
+    "SessionCurrentStep" varchar(50)     NULL,
+    "InsertDate"         timestamptz NOT NULL DEFAULT now(),	
+    "UpdateDate"         timestamptz NOT NULL DEFAULT now()
+);
+
+--INSERT INTO rmgr."SentMsg" ("ChatId", "InsertDate", "MessageTypeName", "SentMsgFailDescription", "SentMsgFailedSendings", "SentMsgKeyboardType", "SentMsgText", "UpdateDate")
+--VALUES (210281448, '16.10.2018 20:17:41', 'Text', '', 0, '', 'Test',  '16.10.2018 20:17:41');
+
+--CREATE OR REPLACE VIEW rmgr."vAdministrators"
+--AS
+--SELECT      rmgr."User"."UserId", 
+--            rmgr."User"."UserName",
+--            rmgr."User"."UserFirstName", 
+--            rmgr."User"."UserManualName", 
+--            rmgr."User"."UserLastName",
+--            rmgr."User"."RoleName",
+--            rmgr."User"."IsBot"
+--FROM        rmgr."User" 
+--WHERE       rmgr."User"."RoleName" IN ('Owner', 'Administrator');
+
+
+CREATE TABLE rmgr."Log" (
+    "LogId"      serial        PRIMARY KEY,
+    "LogType"    varchar(50)       NULL,
+    "LogGroup"   varchar(50)       NULL,
+    "LogMessage" varchar(5000)     NULL,
+    "LogData"    varchar(5000)     NULL,
+    "LogMethod"  varchar(100)      NULL,
+    "MessageId"  int               NULL,
+    "UpdateDate" timestamptz   NOT NULL DEFAULT now(),
+    "InsertDate" timestamptz   NOT NULL DEFAULT now()
+);
+
+CREATE TABLE rmgr."Job" (
+    "JobId"           serial        PRIMARY KEY,
+    "JobName"         varchar(100)  NOT NULL,
+    "JobDescription"  varchar(100)      NULL,	
+    "JobIsActive"     bool          NOT NULL DEFAULT FALSE,
+    "JobMethodName"   varchar(100)  NOT NULL,
+    "JobMonth"        int               NULL, -- месяц, если событие ежегодное; null, если событие ежемесячное
+    "JobDay"          int           NOT NULL, -- день месяца
+    "JobHour"         int           NOT NULL, -- время оповещения
+    "JobMinute"       int           NOT NULL, -- время оповещения
+    "JobLastExecDate" timestamptz       NULL,
+    "UpdateDate"      timestamptz   NOT NULL DEFAULT now(),
+    "InsertDate"      timestamptz   NOT NULL DEFAULT now()
+);					
+
+CREATE TABLE rmgr."Command" (
+    "CommandName"        varchar(30)   PRIMARY KEY,
+    "CommandScript"      varchar(5000) NOT NULL, -- SQL-скрипт с параметрами    
+    "CommandDefaultArgs" varchar(100)      NULL, -- Дефолтные аргументы, которые будут вызванны при вызове команды без аргументов. Записываются через точку с запятой
+    "CommandDesc"        varchar(100)      NULL,
+    "RoleList"           varchar(100)  NOT NULL,
+    "UpdateDate"         timestamptz   NOT NULL DEFAULT now(),
+    "InsertDate"         timestamptz   NOT NULL DEFAULT now()
+);
+INSERT INTO rmgr."Command"("CommandName", "CommandScript", "CommandDefaultArgs", "CommandDesc", "RoleList") 
+VALUES('/GetUserStatistics', 'SELECT rmgr."sfCmdGetStatistics"({0}, {1}, {2})', '15; now()::Date; now()', 'Получение статистики по активности участников чата за определённый период', 'Administrator');
+INSERT INTO rmgr."Command"("CommandName", "CommandScript", "CommandDefaultArgs", "CommandDesc", "RoleList") 
+VALUES('/Test', 'SELECT ''Test''', null, 'Тестовый запрос к боту', 'Administrator');
+INSERT INTO rmgr."Command"("CommandName", "CommandScript", "CommandDefaultArgs", "CommandDesc", "RoleList") 
+VALUES('/Help', 'SELECT rmgr."sfCmdGetHelp"({0})', '''User''', 'Получение справки по функциям, доступным для данной роли', 'User; Administrator');
+INSERT INTO rmgr."Command"("CommandName", "CommandScript", "CommandDefaultArgs", "CommandDesc", "RoleList") 
+VALUES('/SetMessageLimit', 'SELECT rmgr."sfCmdSetMessageLimit"({0}, {1})', '0; 0', 'Установка лимита сообщений для пользователей', 'Administrator');
+
+
+
+
+CREATE TABLE cas."Ban" (
+    "BanId"              serial      PRIMARY KEY,
+    "UserId"             int         NOT NULL REFERENCES rmgr."User" ("UserId"),
+    "ChatId"             bigint      NOT NULL REFERENCES rmgr."Chat" ("ChatId"),
+    "IsWarned"           bool            NULL,					-- Предупрежден перед баном
+    "BanFinishDate"      timestamptz     NULL,	                -- Дата окончания бана
+    "IsActive"			 bool        NOT NULL,                  -- Показывает, отработала запись своё или нет
+    "InsertDate"         timestamptz NOT NULL DEFAULT now(),	
+    "UpdateDate"         timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE cas."Accounting" (
+    "AccountingId"        serial      PRIMARY KEY,
+    "AccountingStartDate" timestamptz NOT NULL DEFAULT now(),	
+    "UpdateDate"          timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE cas."Notification" (
+    "NotificationId"           serial        PRIMARY KEY,
+    "NotificationIsActive"     bool          NOT NULL DEFAULT TRUE,
+    "NotificationMessage"      varchar(5000) NOT NULL,
+    "NotificationMonth"        int               NULL, -- месяц, если событие ежегодное; null, если событие ежемесячное
+    "NotificationDay"          int           NOT NULL, -- день месяца
+    "NotificationHour"         int           NOT NULL, -- время оповещения
+    "NotificationMinute"       int           NOT NULL, -- время оповещения
+    "NotificationLastExecDate" timestamptz       NULL,
+    "UpdateDate"               timestamptz   NOT NULL DEFAULT now(),
+    "InsertDate"               timestamptz   NOT NULL DEFAULT now()
+);
+
+CREATE TABLE cas."UnInterestedWords" (
+    "wd"           varchar(100)         PRIMARY KEY, -- word нельзя использовать в постгресе
+    "insert_date"    timestamptz   NOT NULL DEFAULT now()
+);
+
+
+
+GRANT ALL PRIVILEGES ON DATABASE "RemoteManagerDb"   TO zuev56;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA cas  TO zuev56;
+GRANT ALL PRIVILEGES ON DATABASE "RemoteManagerDb"   TO zuev56;
+GRANT ALL PRIVILEGES ON SCHEMA cas                   TO zuev56;
+GRANT ALL PRIVILEGES ON SCHEMA rmgr                  TO zuev56;
+GRANT ALL PRIVILEGES ON ALL TABLES    IN SCHEMA cas  TO zuev56;
+GRANT ALL PRIVILEGES ON ALL TABLES    IN SCHEMA rmgr TO zuev56;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA rmgr TO zuev56;
+
+
+GRANT CONNECT        ON DATABASE "RemoteManagerDb"   TO robot;
+GRANT ALL PRIVILEGES ON SCHEMA cas                   TO robot;
+GRANT ALL PRIVILEGES ON SCHEMA rmgr                  TO robot;
+GRANT ALL PRIVILEGES ON ALL TABLES    IN SCHEMA rmgr TO robot;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA rmgr TO robot;
+GRANT INSERT         ON ALL TABLES    IN SCHEMA rmgr TO robot;
+GRANT ALL PRIVILEGES ON ALL TABLES    IN SCHEMA cas  TO robot;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA cas  TO robot;
+
+--GRANT UPDATE ON ALL TABLES IN SCHEMA rmgr TO robot;
+--GRANT INSERT ON ALL TABLES IN SCHEMA cas  TO robot;
+--GRANT UPDATE ON ALL TABLES IN SCHEMA cas TO robot;
+
+-- Общая триггерная функция отбовления поля UpdateDate 
+CREATE OR REPLACE FUNCTION helper."UpdateDate_reset"()
+RETURNS TRIGGER AS $$
+BEGIN
+   NEW."UpdateDate" = now(); 
+   RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+-- Проверка и правка имени команды 
+
+CREATE OR REPLACE FUNCTION rmgr."Command_CommandName_correct"()
+RETURNS TRIGGER AS $$
+BEGIN
+    --raise notice 'Start';
+    --raise notice 'Value: %', NEW."CommandName";
+
+    -- Trim and lower
+    NEW."CommandName" = lower(trim(NEW."CommandName"));
+    
+    --raise notice 'Value: %', NEW."CommandName";
+
+    -- Add '/'	
+    NEW."CommandName" := REPLACE(NEW."CommandName", '/', '' );
+    NEW."CommandName" := '/' || NEW."CommandName";
+    
+    --raise notice 'Value: %', NEW."CommandName";
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+CREATE TRIGGER "Command_CommandName_correct" BEFORE INSERT
+ON rmgr."Command" FOR EACH ROW EXECUTE PROCEDURE rmgr."Command_CommandName_correct"();
+
+CREATE TRIGGER "Ban_UpdateDate_reset" BEFORE UPDATE
+ON rmgr."Command" FOR EACH ROW EXECUTE PROCEDURE helper."UpdateDate_reset"();
+
+
+CREATE TRIGGER "Ban_UpdateDate_reset" BEFORE UPDATE
+ON cas."Ban" FOR EACH ROW EXECUTE PROCEDURE helper."UpdateDate_reset"();
+
+CREATE TRIGGER "Parameter_UpdateDate_reset" BEFORE UPDATE
+ON cas."Parameter" FOR EACH ROW EXECUTE PROCEDURE helper."UpdateDate_reset"();
+
+CREATE TRIGGER "Accounting_UpdateDate_reset" BEFORE UPDATE
+ON cas."Accounting" FOR EACH ROW EXECUTE PROCEDURE helper."UpdateDate_reset"();
+
+CREATE TRIGGER "ApiLog_UpdateDate_reset" BEFORE UPDATE
+ON rmgr."ApiLog" FOR EACH ROW EXECUTE PROCEDURE helper."UpdateDate_reset"();
+
+CREATE TRIGGER "Chat_UpdateDate_reset" BEFORE UPDATE
+ON rmgr."Chat" FOR EACH ROW EXECUTE PROCEDURE helper."UpdateDate_reset"();
+
+CREATE TRIGGER "ErrorLog_UpdateDate_reset" BEFORE UPDATE
+ON rmgr."ErrorLog" FOR EACH ROW EXECUTE PROCEDURE helper."UpdateDate_reset"();
+
+CREATE TRIGGER "Log_UpdateDate_reset" BEFORE UPDATE
+ON rmgr."Log" FOR EACH ROW EXECUTE PROCEDURE helper."UpdateDate_reset"();
+
+CREATE TRIGGER "MessageType_UpdateDate_reset" BEFORE UPDATE
+ON rmgr."MessageType" FOR EACH ROW EXECUTE PROCEDURE helper."UpdateDate_reset"();
+
+CREATE TRIGGER "ReceivedMsg_UpdateDate_reset" BEFORE UPDATE
+ON rmgr."ReceivedMsg" FOR EACH ROW EXECUTE PROCEDURE helper."UpdateDate_reset"();
+
+CREATE TRIGGER "Role_UpdateDate_reset" BEFORE UPDATE
+ON rmgr."Role" FOR EACH ROW EXECUTE PROCEDURE helper."UpdateDate_reset"();
+
+CREATE TRIGGER "SentMsg_UpdateDate_reset" BEFORE UPDATE
+ON rmgr."SentMsg" FOR EACH ROW EXECUTE PROCEDURE helper."UpdateDate_reset"();
+
+CREATE TRIGGER "Session_UpdateDate_reset" BEFORE UPDATE
+ON rmgr."Session" FOR EACH ROW EXECUTE PROCEDURE helper."UpdateDate_reset"();
+
+CREATE TRIGGER "User_UpdateDate_reset" BEFORE UPDATE
+ON rmgr."User" FOR EACH ROW EXECUTE PROCEDURE helper."UpdateDate_reset"();
+
+-- Статистика по предупреждениям и банам
+
+CREATE OR REPLACE FUNCTION cas."sfGetWarningsAndBans"(
+    chat_id bigint,
+    from_date timestamp with time zone,
+    to_date timestamp with time zone = now()
+    )
+    RETURNS TABLE("UserName" text, "Warings" bigint, "Bans" bigint) 
+    LANGUAGE 'plpgsql'
+
+    COST 100
+    VOLATILE 
+    ROWS 1000
+AS $$
+BEGIN
+    RETURN QUERY(
+        WITH warns AS (
+        SELECT b."ChatId", u."UserId", COALESCE((u."UserFirstName" || COALESCE((' ' || u."UserLastName"), ' ')), u."UserName") "User", Count(*) "WarnCount"
+        FROM cas."Ban" b
+        LEFT JOIN rmgr."User" u on u."UserId" = b."UserId"
+        WHERE b."ChatId" = chat_id
+          AND b."InsertDate" >= from_date
+          AND b."InsertDate" <= to_date
+        GROUP BY b."ChatId", "User", u."UserId"
+        )
+        SELECT w."User" 
+              ,w."WarnCount" as "Warnings"
+              ,(select count(*) from cas."Ban" where "UserId"= w."UserId" and  "ChatId" = chat_id and "BanFinishDate" is not null) as "Bans"
+        FROM warns w
+        ORDER BY "Warnings" DESC
+    );
+
+END;
+$$;
+
+ALTER FUNCTION cas."sfGetWarningsAndBans"(bigint, timestamp with time zone, timestamp with time zone)
+    OWNER TO postgres;
+
+COMMENT ON FUNCTION cas."sfGetWarningsAndBans"(bigint, timestamp with time zone, timestamp with time zone)
+    IS 'Возвращает статистику по предупреждениям и банам пользователей за указанный период времени';
+
+
+
+    
+    
+
+SELECT u."UserFirstName", u."UserLastName", count(m.*) "MessageCount"
+FROM rmgr."ReceivedMsg" m
+JOIN rmgr."User" u ON u."UserId" = m."UserId"
+WHERE m."InsertDate" > '2018-11-02 00:00:15'
+  AND m."ChatId" = -1001364555739
+  --AND NOT u."RoleName" = 'Owner' 
+  --AND NOT u."RoleName" = 'Administrator' 
+GROUP BY m."UserId", u."UserFirstName", u."UserLastName"
+ORDER BY count(m.*) DESC
+
+
+
+
+
+

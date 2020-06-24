@@ -1,0 +1,833 @@
+﻿using System;
+using System.ComponentModel.DataAnnotations;
+using System.Threading.Tasks;
+using Zs.Common.Enums;
+
+namespace Zs.Bot.Model.Db
+{
+
+    public partial class DbLog
+    {
+        public static void SaveToDb(LogType logType, string message, string logGroup = null, string logData = null)
+        {
+            try
+            {
+                using var ctx = new RobotDbContext();
+                ctx.Logs.Add(new DbLog
+                {
+                    LogType    = logType.ToString(),
+                    LogMessage = message,
+                    LogGroup   = logGroup,
+                    LogData    = logData,
+                    InsertDate = DateTime.Now
+                });
+                Task.Factory.StartNew(() => ctx.SaveChanges());
+            }
+            catch
+            {
+                // Сохранение в файл
+            }
+        }
+
+        /// <summary> Сохранение ошибок в БД </summary>
+        /// <returns>Вернёт TRUE при удачном сохранении, иначе вернёт FALSE</returns>
+        //public static bool SaveToDb(string msg, Exception exception, int? messageId = null, string method = null)
+        //{
+        //    try
+        //    {
+        //        string data = formExceptionText(exception, "", 0);
+        //
+        //        string formExceptionText(Exception ex, string text, int level)
+        //        {
+        //            if (ex == null)
+        //                return "";
+        //
+        //            text += $"ExceptionLevel: {level}\nType: {ex.GetType()}\nStackTrace:\n{ex.StackTrace}";
+        //
+        //            if (ex.InnerException != null)
+        //                text += "\n\n\n" + formExceptionText(ex.InnerException, text, level + 1);
+        //
+        //            return text;
+        //        }
+        //
+        //
+        //        using var ctx = new RobotDbContext();
+        //        ctx.Log.Add(new DbLog()
+        //        {
+        //            LogType    = Zs.Common.Enums.LogType.Error.ToString(),
+        //            LogGroup   = exception.GetType().ToString(),
+        //            LogMessage = msg,
+        //            LogData    = data,
+        //            LogMethod  = method,
+        //            MessageId  = messageId ?? -1,
+        //            InsertDate = DateTime.Now
+        //        });
+        //        return Task.Run(() => ctx.SaveChanges()).Result == 1 ? true : false;
+        //    }
+        //    catch
+        //    {
+        //        throw;
+        //    }
+        //}
+
+    }
+
+
+    /// <summary> Cодержит результат SQL-запроса </summary>
+    public partial class DbSqlResult
+    {
+        [Key] // Чтоб не ругался
+        public string Result { get; set; }
+    }
+
+
+
+
+    //    public partial class DbReceivedMessage
+    //    {
+    //        /// <summary> Сохранение данных сообщения Telegram API в БД </summary>
+    //        /// <returns> Вернёт TRUE при удачном сохранении, иначе вернёт FALSE </returns>
+    //        public static bool SaveToDb(IDbReceivedMessage msg)
+    //        {
+    //            try
+    //            {
+    //                //using (var ctx = new RobotDbContext())
+    //                //{
+    //                //    // Сохранение данных чата и пользователя
+    //                //    DbChat.SaveToDb(msg.Chat, ctx);
+    //                //    DbUser.SaveToDb(msg.From, ctx);
+    //                //}
+
+    //                using (var ctx = new RobotDbContext())
+    //                {
+    //                    // Сохранение сообщения
+    //                    ctx.ReceivedMessages.Add(new DbReceivedMessage
+    //                    {
+    //                        ReceivedMessageId   = msg.ReceivedMessageId,
+    //                        MessengerCode       = msg.MessengerCode,
+    //                        MessageTypeCode     = msg.MessageTypeCode,
+    //                        UserId              = msg.UserId,
+    //                        ChatId              = msg.ChatId,
+    //                        ReceivedMessageText = msg.ReceivedMessageText,
+    //                        RawData             = msg.RawData,
+    //                        InsertDate          = DateTime.Now,
+    //                        UpdateDate          = DateTime.Now
+    //                    });
+
+    //                    return ctx.SaveChanges() > 0 ? true : false; // Если сохранилось > 0 записей, то true
+    //                }
+    //            }
+    //            catch (Exception ex)
+    //            {
+    //                return false;
+    //            }
+    //        }
+    //    }
+
+
+
+
+
+
+
+
+
+
+    //    public partial class DbChat
+    //    {
+    //        /// <summary> Получаем объект Telegram API из БД </summary>
+    //        //public Chat GetTelegramType()
+    //        //{
+    //        //    try
+    //        //    {
+    //        //        //Message pinnedMsg = null;
+    //        //        //using (var ctx = new ZsBotContext())
+    //        //        //{
+    //        //        //    var msg = ctx.ReceivedMessages.FirstOrDefault(m => m.ReceivedMsgMessageId == PinnedMessageId);
+    //        //        //    pinnedMsg = msg != null
+    //        //        //              ? msg.GetTelegramType()
+    //        //        //              : null;
+    //        //        //}
+    //        //
+    //        //        return new Chat()
+    //        //        {
+    //        //            //AllMembersAreAdministrators = ChatAllMembersAreAdministrators ?? false,
+    //        //            //CanSetStickerSet            = ChatCanSetStickerSet,
+    //        //            Description                 = ChatDescription,
+    //        //            //FirstName                   = ChatFirstName,
+    //        //            Id                          = ChatId,
+    //        //            //InviteLink                  = ChatInviteLink,
+    //        //            //LastName                    = ChatLastName,
+    //        //            Photo                       = null,
+    //        //            //PinnedMessage               = pinnedMsg,
+    //        //            //StickerSetName              = ChatStickerSetName,
+    //        //            Title                       = ChatTitle,
+    //        //            Type                        = Enum.Parse<ChatType>(ChatType, true),
+    //        //            //Username                    = ChatUserName
+    //        //        };
+    //        //
+    //        //    }
+    //        //    catch (Exception ex)
+    //        //    {
+    //        //        throw ex;
+    //        //    }
+    //        //}
+
+
+    //        /// <summary> Сохранение данных чата Telegram API в БД </summary>
+    //        /// <returns>Вернёт TRUE при удачном сохранении, иначе вернёт FALSE</returns>
+    //        //public static bool SaveToDb(Chat chat, RobotDbContext ctx = null)
+    //        //{
+    //        //    bool IsLocalDbContext = false;
+    //        //    try
+    //        //    {
+    //        //        if (ctx == null)
+    //        //        {
+    //        //            ctx = new RobotDbContext();
+    //        //            IsLocalDbContext = true;
+    //        //        }
+    //        //
+    //        //        // Сохранение данных чата, если их нет в базе
+    //        //        if (!ctx.Chats.Any(c => c.ChatId == chat.Id))
+    //        //        {
+    //        //            ctx.Chats.Add(new DbChat
+    //        //            {
+    //        //                //ChatId                          = chat.Id,
+    //        //                ChatTitle                       = chat.Title,
+    //        //                //ChatFirstName                   = chat.FirstName,
+    //        //                //ChatLastName                    = chat.LastName,
+    //        //                ChatDescription                 = chat.Description,
+    //        //                ChatType                        = $"{chat?.Type}",
+    //        //                //ChatInviteLink                  = chat.InviteLink,
+    //        //                //ChatUserName                    = chat.Username,
+    //        //                //ChatAllMembersAreAdministrators = chat.AllMembersAreAdministrators,
+    //        //                //ChatCanSetStickerSet            = chat.CanSetStickerSet,
+    //        //                //ChatStickerSetName              = chat.StickerSetName,
+    //        //                //PinnedMessageId                 = chat.PinnedMessage?.MessageId,
+    //        //
+    //        //                //IsSubscribed                    = false,
+    //        //                InsertDate                      = DateTime.Now,
+    //        //                UpdateDate                      = DateTime.Now
+    //        //            });
+    //        //
+    //        //            return ctx.SaveChanges() > 0 ? true : false;
+    //        //        }
+    //        //        return false;
+    //        //    }
+    //        //    catch (Exception ex)
+    //        //    {
+    //        //        return false;
+    //        //    }
+    //        //    finally
+    //        //    {
+    //        //        // Освобождаем ресурсы, если создавали контекст локально
+    //        //        if (IsLocalDbContext)
+    //        //            ctx?.Dispose();
+    //        //    }
+    //        //}
+
+
+    //        /// <summary> Сохранение данных чата Telegram API в БД </summary>
+    //        /// <returns>Вернёт TRUE при удачном сохранении, иначе вернёт FALSE</returns>
+    //        //public static async Task<bool> SaveToDbAsync(Chat chat, RobotDbContext ctx = null)
+    //        //{
+    //        //    bool IsLocalDbContext = false;
+    //        //    try
+    //        //    {
+    //        //        return await Task<bool>.Factory.StartNew(() =>
+    //        //        {
+    //        //            if (ctx == null)
+    //        //            {
+    //        //                ctx = new RobotDbContext();
+    //        //                IsLocalDbContext = true;
+    //        //            }
+    //        //
+    //        //            // Сохранение данных чата, если их нет в базе
+    //        //            if (!ctx.Chats.AnyAsync(c => c.ChatId == chat.Id).Result)
+    //        //            {
+    //        //                ctx.Chats.Add(new DbChat
+    //        //                {
+    //        //                    //ChatId = chat.Id,
+    //        //                    ChatTitle = chat.Title,
+    //        //                    //ChatFirstName = chat.FirstName,
+    //        //                    //ChatLastName = chat.LastName,
+    //        //                    ChatDescription = chat.Description,
+    //        //                    ChatType = $"{chat?.Type}",
+    //        //                    //ChatInviteLink = chat.InviteLink,
+    //        //                    //ChatUserName = chat.Username,
+    //        //                    //ChatAllMembersAreAdministrators = chat.AllMembersAreAdministrators,
+    //        //                    //ChatCanSetStickerSet = chat.CanSetStickerSet,
+    //        //                    //ChatStickerSetName = chat.StickerSetName,
+    //        //                    //PinnedMessageId = chat.PinnedMessage?.MessageId,
+    //        //                    //
+    //        //                    //IsSubscribed = false,
+    //        //                    InsertDate = DateTime.Now,
+    //        //                    UpdateDate = DateTime.Now
+    //        //                });
+    //        //
+    //        //                return ctx.SaveChanges() > 0 ? true : false;
+    //        //            }
+    //        //            return false;
+    //        //        });
+    //        //    }
+    //        //    catch (Exception ex)
+    //        //    {
+    //        //        return false;
+    //        //    }
+    //        //    finally
+    //        //    {
+    //        //        // Освобождаем ресурсы в случае, если создавали контекст локально
+    //        //        if (IsLocalDbContext)
+    //        //            ctx?.Dispose();
+    //        //    }
+    //        //}
+
+    //        //public static Chat GetChatById(long chatId)
+    //        //{
+    //        //    using (var ctx = new RobotDbContext())
+    //        //    {
+    //        //        var dbChat = ctx.Chats.FirstOrDefault(c => c.ChatId == chatId);
+    //        //        return dbChat.GetTelegramType();
+    //        //    }
+    //        //}
+    //    }
+
+    //    public partial class DbReceivedMsg
+    //    {
+    //        [Key]
+    //        public long      ReceivedMsgId                    { get; set; }
+    //        public int       ReceivedMsgMessageId             { get; set; }
+    //        public int       UserId                           { get; set; }
+    //        public long      ChatId                           { get; set; }
+    //        //[ForeignKey("MessageTypeName")]
+    //        //[Column("MessageTypeName")]
+    //        public string    MessageTypeName                  { get; set; } // Type
+    //        public string    ReceivedMsgAuthorSignature       { get; set; }
+    //        public string    ReceivedMsgCaption               { get; set; }
+    //        public bool?     ReceivedMsgChannelChatCreated    { get; set; }
+    //        public string    ReceivedMsgConnectedWebsite      { get; set; }
+    //        public DateTime? ReceivedMsgDate                  { get; set; }
+    //        public bool?     ReceivedMsgDeleteChatPhoto       { get; set; }
+    //        public DateTime? ReceivedMsgEditDate              { get; set; }
+    //        public DateTime? ReceivedMsgForwardDate           { get; set; }
+    //        public int?      ReceivedMsgForwardFromId         { get; set; }
+    //        public long?     ReceivedMsgForwardFromChatId     { get; set; }
+    //        public int?      ReceivedMsgForwardFromMessageId  { get; set; }
+    //        public string    ReceivedMsgForwardSignature      { get; set; }
+    //        public bool?     ReceivedMsgGroupChatCreated      { get; set; }
+    //        public long?     ReceivedMsgLeftChatMemberId      { get; set; }
+    //        public string    ReceivedMsgLocation              { get; set; }
+    //        public string    ReceivedMsgMediaGroupId          { get; set; }
+    //        public long?     ReceivedMsgMigrateFromChatId     { get; set; }
+    //        public long?     ReceivedMsgMigrateToChatId       { get; set; }
+    //        public string    ReceivedMsgNewChatTitle          { get; set; }
+    //        public int?      ReceivedMsgPinnedMessageId       { get; set; }
+    //        public int?      ReceivedMsgReplyToMessageId      { get; set; }
+    //        public bool?     ReceivedMsgSupergroupChatCreated { get; set; }
+    //        public string    ReceivedMsgText                  { get; set; } // Text
+    //        public bool?     IsDeleted                        { get; set; }
+    //        public DateTime  InsertDate                       { get; set; }
+    //        public DateTime  UpdateDate                       { get; set; }
+
+
+    //        //public virtual DbChat Chat { get; set; }
+    //        //[ForeignKey("MessageTypeName")]
+    //        //public virtual DbMessageType MessageType { get; set; }
+    //        //public virtual DbUser User { get; set; }
+
+
+    //        //public Message GetTelegramType()
+    //        //{
+    //        //    Chat    chat            = null;
+    //        //    User    forwardFrom     = null;
+    //        //    Chat    forwardFromChat = null;
+    //        //    User    from            = null;
+    //        //    User    leftChatMember  = null;
+    //        //    Message pinnedMessage   = null;
+    //        //    Message replyToMessage  = null;
+    //        //
+    //        //    using (var ctx = new RobotDbContext())
+    //        //    {
+    //        //        var dbChat = ctx.Chats.FirstOrDefault(c => c.ChatId == ChatId);
+    //        //        chat = dbChat != null ? dbChat.GetTelegramType() : null;
+    //        //
+    //        //        var dbForwardFrom = ctx.Users.FirstOrDefault(u => u.UserId == ReceivedMsgForwardFromId);
+    //        //        forwardFrom = dbForwardFrom?.GetTelegramType();
+    //        //
+    //        //        var dbForwardFromChat = ctx.Chats.FirstOrDefault(c => c.ChatId == ReceivedMsgForwardFromChatId);
+    //        //        forwardFromChat = dbForwardFromChat != null ? dbChat.GetTelegramType() : null;
+    //        //
+    //        //        var dbFrom = ctx.Users.FirstOrDefault(u => u.UserId == UserId);
+    //        //        from = dbForwardFrom?.GetTelegramType();
+    //        //
+    //        //        var dbLeftChatMember = ctx.Users.FirstOrDefault(u => u.UserId == ReceivedMsgLeftChatMemberId);
+    //        //        from = dbLeftChatMember?.GetTelegramType();
+    //        //
+    //        //        var dbPinnedMessage = ctx.ReceivedMessages.FirstOrDefault(m => m.ReceivedMsgPinnedMessageId == ReceivedMsgPinnedMessageId);
+    //        //        pinnedMessage = dbPinnedMessage != null ? dbPinnedMessage.GetTelegramType() : null;
+    //        //
+    //        //        var dbReplyToMessage = ctx.ReceivedMessages.FirstOrDefault(m => m.ReceivedMsgReplyToMessageId == ReceivedMsgReplyToMessageId);
+    //        //        replyToMessage = dbReplyToMessage != null ? dbReplyToMessage.GetTelegramType() : null;
+    //        //    }
+    //        //
+    //        //    return new Message()
+    //        //    {
+    //        //        Animation             = null,
+    //        //        Audio                 = null,
+    //        //        AuthorSignature       = ReceivedMsgAuthorSignature,
+    //        //        Caption               = ReceivedMsgCaption,
+    //        //        CaptionEntities       = null,
+    //        //        ChannelChatCreated    = ReceivedMsgChannelChatCreated ?? false,
+    //        //        Chat                  = chat,
+    //        //        ConnectedWebsite      = ReceivedMsgConnectedWebsite,
+    //        //        Contact               = null,
+    //        //        Date                  = ReceivedMsgDate ?? DateTime.Now.Date,
+    //        //        DeleteChatPhoto       = ReceivedMsgDeleteChatPhoto ?? false,
+    //        //        Document              = null,
+    //        //        EditDate              = ReceivedMsgEditDate,
+    //        //        Entities              = null,
+    //        //        ForwardDate           = ReceivedMsgForwardDate,
+    //        //        ForwardFrom           = forwardFrom,
+    //        //        ForwardFromChat       = forwardFromChat,
+    //        //        ForwardFromMessageId  = ReceivedMsgForwardFromMessageId ?? -1,
+    //        //        ForwardSignature      = ReceivedMsgForwardSignature,
+    //        //        From                  = from,
+    //        //        Game                  = null,
+    //        //        GroupChatCreated      = ReceivedMsgGroupChatCreated ?? false,
+    //        //        Location              = null,
+    //        //        Invoice               = null,
+    //        //        LeftChatMember        = leftChatMember,
+    //        //        MediaGroupId          = ReceivedMsgMediaGroupId,
+    //        //        MessageId             = ReceivedMsgMessageId,
+    //        //        MigrateFromChatId     = ReceivedMsgMigrateFromChatId ?? -1,
+    //        //        MigrateToChatId       = ReceivedMsgMigrateToChatId ?? -1,
+    //        //        NewChatMembers        = null,
+    //        //        NewChatPhoto          = null,
+    //        //        NewChatTitle          = ReceivedMsgNewChatTitle,
+    //        //        Photo                 = null,
+    //        //        PinnedMessage         = pinnedMessage,
+    //        //        ReplyToMessage        = replyToMessage,
+    //        //        Sticker               = null,
+    //        //        SuccessfulPayment     = null,
+    //        //        SupergroupChatCreated = ReceivedMsgSupergroupChatCreated ?? false,
+    //        //        Text                  = ReceivedMsgText,
+    //        //        Venue                 = null,
+    //        //        Video                 = null,
+    //        //        VideoNote             = null,
+    //        //        Voice                 = null
+    //        //    };
+    //        //}
+
+    //        /// <summary> Сохранение данных сообщения Telegram API в БД </summary>
+    //        /// <returns> Вернёт TRUE при удачном сохранении, иначе вернёт FALSE </returns>
+    //        //public static bool SaveToDb(InMessage msg)
+    //        //{
+    //        //    try
+    //        //    {
+    //        //        using (var ctx = new RobotDbContext())
+    //        //        {
+    //        //            // Сохранение данных чата и пользователя
+    //        //            DbChat.SaveToDb(msg.Chat, ctx);
+    //        //            DbUser.SaveToDb(msg.From, ctx);
+    //        //        }
+    //        //
+    //        //        using (var ctx = new RobotDbContext())
+    //        //        {
+    //        //            // Сохранение сообщения
+    //        //            ctx.ReceivedMessages.Add(new DbReceivedMsg
+    //        //            {
+    //        //                //ReceivedMsgId                    = tgMessage.
+    //        //                ReceivedMsgMessageId = msg.MessageId,
+    //        //                UserId = msg.From.Id,
+    //        //                ChatId = msg.Chat.Id,
+    //        //                MessageTypeName = msg.Type.ToString(),
+    //        //                ReceivedMsgAuthorSignature = msg.AuthorSignature,
+    //        //                ReceivedMsgCaption = msg.Caption,
+    //        //                ReceivedMsgChannelChatCreated = msg.ChannelChatCreated,
+    //        //                ReceivedMsgConnectedWebsite = msg.ConnectedWebsite,
+    //        //                ReceivedMsgDate = msg.Date,
+    //        //                ReceivedMsgDeleteChatPhoto = msg.DeleteChatPhoto,
+    //        //                ReceivedMsgEditDate = msg.EditDate,
+    //        //                ReceivedMsgForwardDate = msg.ForwardDate,
+    //        //                ReceivedMsgForwardFromId = msg.ForwardFrom?.Id,
+    //        //                ReceivedMsgForwardFromChatId = msg.ForwardFromChat?.Id,
+    //        //                ReceivedMsgForwardFromMessageId = msg.ForwardFromMessageId,
+    //        //                ReceivedMsgForwardSignature = msg.ForwardSignature,
+    //        //                ReceivedMsgGroupChatCreated = msg.GroupChatCreated,
+    //        //                ReceivedMsgLeftChatMemberId = msg.LeftChatMember?.Id,
+    //        //                ReceivedMsgLocation = $"{msg.Location?.Latitude}; {msg.Location?.Longitude}",
+    //        //                ReceivedMsgMediaGroupId = msg.MediaGroupId,
+    //        //                ReceivedMsgMigrateFromChatId = msg.MigrateFromChatId,
+    //        //                ReceivedMsgMigrateToChatId = msg.MigrateToChatId,
+    //        //                ReceivedMsgNewChatTitle = msg.NewChatTitle,
+    //        //                ReceivedMsgPinnedMessageId = msg.PinnedMessage?.MessageId,
+    //        //                ReceivedMsgReplyToMessageId = msg.ReplyToMessage?.MessageId,
+    //        //                ReceivedMsgSupergroupChatCreated = msg.SupergroupChatCreated,
+    //        //                ReceivedMsgText = msg.Text,
+    //        //                IsDeleted = false,
+    //        //                InsertDate = DateTime.Now,
+    //        //                UpdateDate = DateTime.Now
+    //        //            });
+    //        //
+    //        //            return ctx.SaveChanges() > 0 ? true : false; // Если сохранилось > 0 записей, то true
+    //        //        }
+    //        //    }
+    //        //    catch (Exception ex)
+    //        //    {
+    //        //        return false;
+    //        //    }
+    //        //}
+
+    //        /// <summary> Сохранение данных сообщения Telegram API в БД </summary>
+    //        /// <returns> Вернёт TRUE при удачном сохранении, иначе вернёт FALSE </returns>
+    //        //public static async Task<bool> SaveToDbAsync(InMessage msg)
+    //        //{
+    //        //    try
+    //        //    {
+    //        //        using (var ctx = new RobotDbContext())
+    //        //        {
+    //        //            // Сохранение данных чата и пользователя
+    //        //            await DbChat.SaveToDbAsync(msg.Chat, ctx);
+    //        //            await DbUser.SaveToDbAsync(msg.From, ctx);
+    //        //        }
+    //        //
+    //        //        return await Task<bool>.Factory.StartNew(() =>
+    //        //        {
+    //        //            using (var ctx = new RobotDbContext())
+    //        //            {
+    //        //                // Сохранение сообщения
+    //        //                ctx.ReceivedMessages.Add(new DbReceivedMsg
+    //        //                {
+    //        //                    //ReceivedMsgId                    = tgMessage.
+    //        //                    ReceivedMsgMessageId = msg.MessageId,
+    //        //                    UserId = msg.From.Id,
+    //        //                    ChatId = msg.Chat.Id,
+    //        //                    MessageTypeName = msg.Type.ToString(),
+    //        //                    ReceivedMsgAuthorSignature = msg.AuthorSignature,
+    //        //                    ReceivedMsgCaption = msg.Caption,
+    //        //                    ReceivedMsgChannelChatCreated = msg.ChannelChatCreated,
+    //        //                    ReceivedMsgConnectedWebsite = msg.ConnectedWebsite,
+    //        //                    ReceivedMsgDate = msg.Date,
+    //        //                    ReceivedMsgDeleteChatPhoto = msg.DeleteChatPhoto,
+    //        //                    ReceivedMsgEditDate = msg.EditDate,
+    //        //                    ReceivedMsgForwardDate = msg.ForwardDate,
+    //        //                    ReceivedMsgForwardFromId = msg.ForwardFrom?.Id,
+    //        //                    ReceivedMsgForwardFromChatId = msg.ForwardFromChat?.Id,
+    //        //                    ReceivedMsgForwardFromMessageId = msg.ForwardFromMessageId,
+    //        //                    ReceivedMsgForwardSignature = msg.ForwardSignature,
+    //        //                    ReceivedMsgGroupChatCreated = msg.GroupChatCreated,
+    //        //                    ReceivedMsgLeftChatMemberId = msg.LeftChatMember?.Id,
+    //        //                    ReceivedMsgLocation = $"{msg.Location?.Latitude}; {msg.Location?.Longitude}",
+    //        //                    ReceivedMsgMediaGroupId = msg.MediaGroupId,
+    //        //                    ReceivedMsgMigrateFromChatId = msg.MigrateFromChatId,
+    //        //                    ReceivedMsgMigrateToChatId = msg.MigrateToChatId,
+    //        //                    ReceivedMsgNewChatTitle = msg.NewChatTitle,
+    //        //                    ReceivedMsgPinnedMessageId = msg.PinnedMessage?.MessageId,
+    //        //                    ReceivedMsgReplyToMessageId = msg.ReplyToMessage?.MessageId,
+    //        //                    ReceivedMsgSupergroupChatCreated = msg.SupergroupChatCreated,
+    //        //                    ReceivedMsgText = msg.Text,
+    //        //                    InsertDate = DateTime.Now,
+    //        //                    UpdateDate = DateTime.Now
+    //        //                });
+    //        //
+    //        //                return ctx.SaveChanges() > 0 ? true : false; // Если сохранилось > 0 записей, то true
+    //        //            }
+    //        //        });
+    //        //    }
+    //        //    catch (Exception ex)
+    //        //    {
+    //        //        return false;
+    //        //    }
+    //        //}
+
+
+
+    //    }
+
+    //    public partial class DbSentMsg
+    //    {
+    //        [Key]
+    //        public int    SentMsgId                    { get; set; }
+    //        public long   ChatId                       { get; set; }
+    //        public int    SentMsgMessageId             { get; set; }
+    //        public string SentMsgText                  { get; set; }
+
+    //       // [ForeignKey("MessageTypeName")]            
+    //        //[Column("MessageTypeName")]                
+    //        public string MessageTypeName              { get; set; }
+
+    //        public string SentMsgParseMode             { get; set; }
+    //        public bool?  SentMsgDisableWebPagePreview { get; set; }
+    //        public bool?  SentMsgDisableNotification   { get; set; }
+    //        public int?   SentMsgReplyToMessageId      { get; set; }
+    //        public string SentMsgCaption               { get; set; }
+    //        public int?   SentMsgDuration              { get; set; }
+    //        public string SentMsgPerformer             { get; set; }
+    //        public string SentMsgTitle                 { get; set; }
+    //        public int?   SentMsgWidth                 { get; set; }
+    //        public int?   SentMsgHeight                { get; set; }
+    //        public bool?  SentMsgSupportsStreaming     { get; set; }
+    //        public int?   SentMsgLength                { get; set; }
+    //        public float? SentMsgLatitude              { get; set; }
+    //        public float? SentMsgLongitude             { get; set; }
+    //        public int?   SentMsgLivePeriod            { get; set; }
+    //        public string SentMsgAddress               { get; set; }
+    //        public string SentMsgFoursquareId          { get; set; }
+    //        public string SentMsgFoursquareType        { get; set; }
+    //        public string SentMsgPhoneNumber           { get; set; }
+    //        public string SentMsgFirstName             { get; set; }
+    //        public string SentMsgLastName              { get; set; }
+    //        public string SentMsgVCard                 { get; set; }
+
+
+
+
+
+    //        public string   SentMsgKeyboardType        { get; set; }
+    //        public int?     SentMsgFailedSendings      { get; set; }
+    //        public string   SentMsgFailDescription     { get; set; }
+    //        public bool     IsSentSuccessfully         { get; set; }
+    //        public string   SentMsgTag                 { get; set; }
+    //        public bool     IsDeleted                  { get; set; }
+    //        public DateTime InsertDate                 { get; set; }
+    //        public DateTime UpdateDate                 { get; set; }
+
+
+    //        //public virtual DbChat Chat { get; set; }
+    //        //[ForeignKey("MessageTypeName")]
+    //        //public virtual DbMessageType MessageType { get; set; }
+
+
+    //        //public IReplyMarkup         replyMarkup           { get; set; }
+    //        //public InputOnlineFile      photo     { get; set; } // Photo
+    //        //public InputOnlineFile      audio     { get; set; } // Audio
+    //        //public InputMedia           thumb     { get; set; } // Audio
+    //        //public InputOnlineFile      document  { get; set; } // Document   
+    //        //public InputOnlineFile      sticker   { get; set; } //Sticker
+    //        //public InputOnlineFile      video     { get; set; } //Video 
+    //        //public InputOnlineFile      animation { get; set; } // Animation
+    //        //public InputOnlineFile      voice     { get; set; } // Voice
+    //        //public InputTelegramFile    videoNote { get; set; } //VideoNote
+    //        //IEnumerable<InputMediaBase> media     { get; set; } //MediaGroup
+
+    //        /// <summary> Сохранение данных сообщения в БД </summary>
+    //        /// <returns> Вернёт TRUE при удачном сохранении, иначе вернёт FALSE </returns>
+    //        //public static async Task<bool> SaveToDbAsync(OutMessage msg) //(long chatId, string text /*, SentMsgKeyboardType*/ )
+    //        //{
+    //        //    bool savedSuccessfully = false;
+    //        //    try
+    //        //    {
+    //        //        await Task.Factory.StartNew((Action)(() =>
+    //        //        {
+    //        //            using (var ctx = new RobotDbContext())
+    //        //            {
+    //        //                // Сохранение сообщения
+    //        //                ctx.SentMessages.Add(new DbSentMsg
+    //        //                {
+    //        //                    ChatId = msg.Chat.Id,
+    //        //                    SentMsgMessageId = msg.MessageId,
+    //        //                    SentMsgText = msg.Text,
+    //        //                    MessageTypeName = $"{msg.Type}",// $"{Enums.MessageType.Text}",
+    //        //
+    //        //                    //SentMsgParseMode
+    //        //                    //SentMsgDisableWebPagePreview
+    //        //                    //SentMsgDisableNotification
+    //        //                    SentMsgReplyToMessageId = msg.ReplyToMessageId,
+    //        //                    //SentMsgCaption
+    //        //                    //SentMsgDuration
+    //        //                    //SentMsgPerformer
+    //        //                    //SentMsgTitle
+    //        //                    //SentMsgWidth
+    //        //                    //SentMsgHeight
+    //        //                    //SentMsgsupportsStreaming
+    //        //                    //SentMsgLength
+    //        //                    //SentMsgLatitude
+    //        //                    //SentMsgLongitude
+    //        //                    //SentMsgLivePeriod
+    //        //                    //SentMsgAddress
+    //        //                    //SentMsgFoursquareId
+    //        //                    //SentMsgFoursquareType
+    //        //                    //SentMsgPhoneNumber
+    //        //                    //SentMsgFirstName
+    //        //                    //SentMsgLastName
+    //        //                    //SentMsgVCard        
+    //        //
+    //        //                    //SentMsgKeyboardType = msg.
+    //        //                    SentMsgTag = msg.Tag,
+    //        //                    SentMsgFailedSendings = msg.FailedSendings,
+    //        //                    SentMsgFailDescription = msg.FailDescription,
+    //        //                    IsSentSuccessfully = msg.IsSentSuccessfully,
+    //        //                    IsDeleted = false,
+    //        //                    InsertDate = DateTime.Now,
+    //        //                    UpdateDate = DateTime.Now
+    //        //                });
+    //        //
+    //        //                savedSuccessfully = ctx.SaveChanges() > 0 ? true : false; // Если сохранилось > 0 записей, то true
+    //        //            }
+    //        //        }));
+    //        //        return savedSuccessfully;
+    //        //    }
+    //        //    catch (Exception ex)
+    //        //    {
+    //        //        return savedSuccessfully;
+    //        //    }
+    //        //}
+
+    //    }
+
+    //    public partial class DbSession
+    //    {
+    //        /// <summary> Сохранение сессии в БД </summary>
+    //        /// <returns>Вернёт TRUE при удачном сохранении, иначе вернёт FALSE</returns>
+    //        //public static async Task<bool> SaveToDb(int chatId, bool? isLoggedIn = null, string currentStep = null)
+    //        //{
+    //        //    try
+    //        //    {
+    //        //        return await Task<bool>.Factory.StartNew(() =>
+    //        //        {
+    //        //            using (var ctx = new RobotDbContext())
+    //        //            {
+    //        //                ctx.Sessions.Add(new DbSession()
+    //        //                {
+    //        //                    ChatId = chatId,
+    //        //                    SessionIsLoggedIn = isLoggedIn ?? false,
+    //        //                    SessionCurrentState = currentStep,
+    //        //                    InsertDate = DateTime.Now
+    //        //                });
+    //        //                return ctx.SaveChanges() > 0 ? true : false;
+    //        //            }
+    //        //        });
+    //        //    }
+    //        //    catch (Exception ex)
+    //        //    {
+    //        //        return false;
+    //        //    }
+    //        //}
+
+    //    }
+
+    //    public partial class DbUser
+    //    {
+
+    //        //internal User GetTelegramType()
+    //        //{
+    //        //    return new User()
+    //        //    {
+    //        //        Id           = UserId,
+    //        //        //IsBot        = IsBot ?? false,
+    //        //        LanguageCode = null,
+    //        //        //FirstName    = UserFirstName,
+    //        //        //LastName     = UserLastName,
+    //        //        Username     = UserName
+    //        //    };
+    //        //}
+
+    //        /// <summary> Сохранение данных пользователя Telegram API в БД </summary>
+    //        /// <returns>Вернёт TRUE при удачном сохранении, иначе вернёт FALSE</returns>
+    //        //public static bool SaveToDb(User user, RobotDbContext ctx = null)
+    //        //{
+    //        //    bool IsLocalDbContext = false;
+    //        //    try
+    //        //    {
+    //        //        if (ctx == null)
+    //        //        {
+    //        //            ctx = new RobotDbContext();
+    //        //            IsLocalDbContext = true;
+    //        //        }
+    //        //
+    //        //        // Сохранение данных пользователя, если их нет в базе
+    //        //        if (!ctx.Users.AnyAsync(u => u.UserId == user.Id).Result)
+    //        //        {
+    //        //            ctx.Users.Add(new DbUser
+    //        //            {
+    //        //                UserId = user.Id,
+    //        //                UserName = user.Username,
+    //        //                UserFullName = user.Username,
+    //        //                UserIsBot = user.IsBot,
+    //        //                UserRoleCode = "",
+    //        //                RawData = "",
+    //        //                InsertDate = DateTime.Now,
+    //        //                UpdateDate = DateTime.Now
+    //        //            });
+    //        //            return ctx.SaveChanges() > 0 ? true : false;
+    //        //        }
+    //        //        return false;
+    //        //    }
+    //        //    catch (Exception ex)
+    //        //    {
+    //        //        return false;
+    //        //    }
+    //        //    finally
+    //        //    {
+    //        //        // Освобождаем ресурсы, если создавали контекст локально
+    //        //        if (IsLocalDbContext)
+    //        //            ctx?.Dispose();
+    //        //    }
+    //        //}
+
+    //        /// <summary> Сохранение данных пользователя Telegram API в БД </summary>
+    //        /// <returns>Вернёт TRUE при удачном сохранении, иначе вернёт FALSE</returns>
+    //        //public static async Task<bool> SaveToDbAsync(User user, RobotDbContext ctx = null)
+    //        //{
+    //        //    bool IsLocalDbContext = false;
+    //        //    try
+    //        //    {
+    //        //        return await Task<bool>.Factory.StartNew(() =>
+    //        //        {
+    //        //            if (ctx == null)
+    //        //            {
+    //        //                ctx = new RobotDbContext();
+    //        //                IsLocalDbContext = true;
+    //        //            }
+    //        //
+    //        //            // Сохранение данных пользователя, если их нет в базе
+    //        //            if (!ctx.Users.AnyAsync(u => u.UserId == user.Id).Result)
+    //        //            {
+    //        //                ctx.Users.Add(new DbUser
+    //        //                {
+    //        //                    UserId = user.Id,
+    //        //                    UserName = user.Username,
+    //        //                    UserFullName = user.Username,
+    //        //                    UserIsBot = user.IsBot,
+    //        //                    UserRoleCode = "",
+    //        //                    RawData = "",
+    //        //                    InsertDate = DateTime.Now,
+    //        //                    UpdateDate = DateTime.Now
+    //        //                });
+    //        //                return ctx.SaveChanges() > 0 ? true : false;
+    //        //            }
+    //        //            return false;
+    //        //        });
+    //        //    }
+    //        //    catch (Exception ex)
+    //        //    {
+    //        //        return false;
+    //        //    }
+    //        //    finally
+    //        //    {
+    //        //        //if (Monitor.IsEntered(_lockObject_Common))
+    //        //        //    Monitor.Exit(_lockObject_Common);
+    //        //
+    //        //        // Освобождаем ресурсы, если создавали контекст локально
+    //        //        if (IsLocalDbContext)
+    //        //            ctx?.Dispose();
+    //        //    }
+    //        //}
+
+    //        ///// <summary> Полечение роли пользователя по идентификатору </summary>
+    //        //public static UserRole GetUserRole(int userId)
+    //        //{
+    //        //    using (var ctx = new ZsBotContext())
+    //        //    {
+    //        //        var user = ctx.Users.FirstOrDefault(u => u.UserId == userId);
+
+
+    //        //        return (user?.UserRoleCode as string).SafeParse<UserRole>();
+    //        //         //return user?.RoleName != null && Enum.TryParse(typeof(UserRole), user.RoleName, out object r)
+    //        //         //   ? (UserRole)r
+    //        //         //   : UserRole.Undefined;
+    //        //    }
+    //        //}
+    //    }
+
+}

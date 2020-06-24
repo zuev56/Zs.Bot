@@ -1,0 +1,236 @@
+﻿using System;
+using System.Data;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using Zs.Bot.DbModel;
+using Zs.Bot.Helpers;
+using Zs.Common.Enums;
+using Zs.Common.Interfaces;
+using Zs.Common.Modules;
+
+namespace Zs.Bot.Modules.Command
+{
+    /// <summary>
+    /// Управляет списком команд, запускает команды на выполнение
+    /// </summary>
+    public class CommandManager : ModuleBase//<CommandManager>
+    {
+        private static CommandManager _instance;
+
+        private IZsLogger _logger = Logger.GetInstance();
+
+
+        private Thread _commandProcessorThread;
+        private Buffer<BotCommand> _commandBuffer;
+        private ManualResetEvent _commandProcessorMre;
+        private int _commandProcessInterval = 1000;
+        
+        public delegate void CommandCompleted(CommandResult result);
+
+        /// <summary> Событие, вызываемое при добавлении в очередь результата выполнения команды </summary>
+        public event CommandCompleted OnCommandCompleted;
+
+        private CommandManager()
+        {
+            _commandBuffer = new Buffer<BotCommand>();
+            _commandBuffer.OnEnqueue += CommandBuffer_OnEnqueue;
+
+            _commandProcessorMre = new ManualResetEvent(true);
+            _commandProcessorThread = new Thread(ProcessCommandQueue);
+            _commandProcessorThread.Name = "CommandProcessor";
+        }
+
+
+        private void CommandBuffer_OnEnqueue(object sender, BotCommand item)
+        {
+            _commandProcessorMre.Set();
+        }
+
+        public static CommandManager GetInstance()
+        {
+            if (_instance == null)
+                _instance = new CommandManager();
+
+            return _instance;
+        }
+
+        /// <summary> Запуск потока </summary>
+        public override void Start(int delay = 0)
+        {
+            try
+            {
+                Task.Delay(delay);
+                _logger.SaveToDb(LogType.Info, nameof(CommandManager), "Запуск обработчика команд");
+
+                _commandProcessorThread.IsBackground = true;
+                _commandProcessorThread.Start();
+
+                _logger.SaveToDb(LogType.Info, nameof(CommandManager), $"Поток {nameof(CommandManager)} запущен");
+            }
+            catch (Exception ex)
+            {
+                _logger.SaveException(ex);
+            }
+        }
+
+        /// <summary> Остановка потока </summary>
+        public override void Stop(int delay = 0)
+        {
+            try
+            {
+                _logger.SaveToDb(LogType.Info, nameof(CommandManager), "Остановка обработчика команд");
+
+                // Очистка очереди
+                _commandBuffer = new Buffer<BotCommand>();
+
+                // Остановка 
+                _commandProcessorThread.Abort();
+
+                _logger.SaveToDb(LogType.Info, nameof(CommandManager), $"Поток {nameof(CommandManager)} остановлен");
+            }
+            catch (Exception ex)
+            {
+                _logger.SaveException(ex);
+            }
+        }
+
+        /// <summary> Добавление команды в очередь на выполнение </summary>
+        public bool EnqueueCommand(BotCommand command)
+        {
+            try
+            {
+                _logger.SaveToDb(LogType.Info, nameof(CommandManager), "Добавление команды в очередь на выполнение");
+                _commandBuffer.Enqueue(command);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.SaveException(ex);
+                //_logger.SaveToDb("Ошибка добавления команды в очередь на выполнение", ex);
+                return false;
+            }
+        }
+
+        /// <summary> Выполнение команды в БД. Возвращает результат </summary>
+        private string RunCommand(BotCommand botCommand)
+        {
+            string cmdExecResult = null;
+            try
+            {
+                using (var ctx = new ZsBotContext())
+                {
+                    // Команда из таблицы Command 
+                    var dbCommand = ctx.Commands.FirstOrDefault(c => c.CommandName == botCommand.Name);
+
+                    if (dbCommand != null)
+                    {
+                        // (i) SQL-запросы могут быть любые, не только функции. Д
+                        // (i) Должны содержать параметры типа object, иначе будут проблемы при форматировании строки {0}
+
+
+                        // ПРОВЕРКА СООТВЕТСТВИЯ РОЛИ!!!
+                        //if (dbCommand.RoleList.Contains("", StringComparison.OrdinalIgnoreCase)) ;
+
+                        // Т.о. исключаются проблемы с форматированием строки
+                        var sqlCommandStr = $"{dbCommand.CommandScript} as \"Result\"";
+                        var parameters = botCommand.Parametres.Cast<object>().ToArray();
+                        var queryWithParams = string.Format(sqlCommandStr, parameters);
+
+                        var fromSql = ctx.SqlResults.FromSqlRaw($"{queryWithParams}").AsEnumerable();
+
+                        // Иначе выдаст ошибку
+                        try { cmdExecResult = fromSql.ToList()[0]?.Result; }
+                        catch { cmdExecResult = "NULL или ошибка обработки запроса!"; }
+                    }
+                    else
+                        throw new ArgumentException($"Не найдено команды {botCommand.Name}");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.SaveException(ex);
+                //_logger.SaveToDb("Ошибка выполнения команды", ex);
+                return $"Command '{botCommand.Name}' running failed!";
+            }
+
+            return cmdExecResult?.Trim();
+        }
+
+        /// <summary> Обработчик очереди команд. Работает в отдельном потоке </summary>
+        private void ProcessCommandQueue()
+        {
+            try
+            {
+                // Экземпляр для логирования
+                string logCmdName = null;
+
+                while (true)
+                {
+                    try
+                    {
+                        // Если буфер пустой, приостанавливаем поток
+                        if (_commandBuffer.IsEmpty)
+                            _commandProcessorMre.Reset();
+
+                        _commandProcessorMre.WaitOne(Timeout.Infinite);
+
+                        // Обрабатываем команды, пока буфер не опустошится 
+                        while (_commandBuffer.TryDequeue(out BotCommand command))
+                        {
+                            logCmdName = command.Name;
+                            var result = RunCommand(command);
+
+                            // Сообщаем о выполнении команды
+                            OnCommandCompleted.Invoke(new CommandResult(command.ReturnAddress, result));
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.SaveException(ex);
+                        //_logger.SaveToDb($"Ошибка при обработке очереди команд (команда '{logCmdName}')", ex);
+                    }
+                    finally
+                    {
+                        logCmdName = null;
+                        _commandProcessorMre.WaitOne(_commandProcessInterval);
+                    }
+                }
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        ///// <summary> Получение списка команд для заданной роли </summary>
+        //public List<string> GetCommands(UserRole role)
+        //{
+        //    // Получение данных из БД
+        //    var commands = new List<string>();
+        //
+        //    using (var ctx = new ZsBotEntities())
+        //    {
+        //        commands = ctx.Commands.Where(c => c.RoleList == role.ToString())
+        //                               .Select(c => $"{c.CommandName} {c.CommandDesc}")
+        //                               .ToList();
+        //    }
+        //
+        //    return commands;
+        //}
+
+
+        #region TEST
+
+        /// <summary> Для вызова из тестов </summary>
+        public string TEST_RunCommand(BotCommand botCommand)
+        {
+            return RunCommand(botCommand);
+        }
+
+        #endregion
+    }
+
+}

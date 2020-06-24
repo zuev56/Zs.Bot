@@ -1,0 +1,6 @@
+﻿namespace Zs.Common.T4Generator
+{
+    public interface IClassGenerator
+    {
+    }
+}

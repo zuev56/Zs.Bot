@@ -1,0 +1,110 @@
+﻿using System;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Zs.Bot.Modules.Command;
+
+namespace Zs.UnitTest.Bot
+{
+    [TestClass]
+    public class CommandManagerTests : TestBase
+    {
+        private readonly CommandManager _commandManager = CommandManager.GetInstance();
+
+        public CommandManagerTests()
+        {
+            
+        }
+
+        /// <summary> Создание команды, помещение её в очередь и вызов из очереди на обработку
+        /// НЕ тестируется обработка команды!</summary>
+        [TestMethod]
+        public async Task CommandQueue_Test()
+        {
+            try
+            {
+                string messageFromUser = @"/test p1 p2, p3;  p4";
+
+                var botCommand = await BotCommand.ParseMessageAsync("returnAddress", messageFromUser);
+
+                var cmdMgr = CommandManager.GetInstance();
+                cmdMgr.Start();
+                var enqueueResult = cmdMgr.EnqueueCommand(botCommand);
+                cmdMgr.Stop();
+
+                // На этом этапе сообщение передаётся в другой поток на обработку и тест считаем выполненным
+                Assert.IsTrue(enqueueResult);
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+        /// <summary> Создание и обработка команды без аргументов </summary>
+        [TestMethod]
+        public async Task CommandProcessNoArgs_Test()
+        {
+            try
+            {
+                string messageFromUser = "/Test";
+
+                var botCommand = await BotCommand.ParseMessageAsync("returnAddress", messageFromUser);
+
+                var cmdMgr = CommandManager.GetInstance();
+
+                var result = cmdMgr.RunCommand(botCommand);
+
+                Assert.AreNotEqual(result, $"Command '{botCommand.Name}' running failed!");
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+        /// <summary> Создание и обработка команды c аргументами пользователя </summary>
+        [TestMethod]
+        public async Task CommandProcessUserArgs_Test()
+        {
+            try
+            {
+                string messageFromUser = "/GetUserStatistics 20 \"'2019-10-29 00:00:00.0+03'\", \"'2019-10-30 00:00:00.0+03'\"; ";
+
+                var botCommand = await BotCommand.ParseMessageAsync("returnAddress", messageFromUser);
+
+                var cmdMgr = CommandManager.GetInstance();
+
+                var result = cmdMgr.RunCommand(botCommand);
+
+                Assert.AreNotEqual(result, $"Command '{botCommand.Name}' running failed!");
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+        /// <summary> Создание и обработка команды c аргументами по умолчанию </summary>
+        [TestMethod]
+        public async Task CommandProcessDefaultArgs_Test()
+        {
+            try
+            {
+                string messageFromUser = "/GetUserStatistics";
+
+                var botCommand = await BotCommand.ParseMessageAsync("returnAddress", messageFromUser);
+
+                var cmdMgr = CommandManager.GetInstance();
+
+                var result = cmdMgr.RunCommand(botCommand);
+
+                Assert.AreNotEqual(result, $"Command '{botCommand.Name}' running failed!");
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+    }
+}

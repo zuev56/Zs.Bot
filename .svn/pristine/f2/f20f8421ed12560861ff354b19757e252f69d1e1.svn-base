@@ -1,0 +1,1797 @@
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Telegram.Bot.Types.Enums;
+using Zs.Bot;
+using Zs.Bot.DbModel;
+using Zs.Bot.Enums;
+using Zs.Bot.Helpers;
+using Zs.Bot.Modules.Agent;
+using Zs.Bot.Modules.Connection;
+using Zs.Bot.Modules.Messaging;
+
+namespace ChatAdminService
+{
+    public enum BanPeriod
+    {
+        Undefined = -1,
+        UntilNextDay,
+        ForThreeHours,
+        ForOneHour
+    }
+
+    // Todo: Не учитывать стикеры
+    // Todo: Разработать механизм оповещения пользователей по графику (добавить столбец с датой последнего оповещения)
+    // Todo: Выводить время последних подключений к интернету
+    // Todo: Разбить Хелп на группы и выводить только заголовки групп
+    // Todo: ПРОВЕРКА СВЯЗИ С БД ПРИ ЗАПУСКЕ БОТА
+    // Todo: 
+    // Todo: 
+    // Todo: 
+    // Todo: 
+    // Todo: 
+
+
+
+    public class ChatAdmin : IHostedService, IDisposable
+    {
+        private static DbContextOptionsBuilder<ZsBotEntities> _zsBotOptionsBuilder = new DbContextOptionsBuilder<ZsBotEntities>();
+        private static DbContextOptionsBuilder<ChatAdminEntities> _caOptionsBuilder = new DbContextOptionsBuilder<ChatAdminEntities>();
+
+        // TODO: Заменить на интерфейс
+        private readonly Logger _logger;
+
+        private int _messageLimitHi = -1;                          // Верхняя предупредительная уставка
+        private int _messageLimitHiHi = -1;                        // Верхняя аварийная уставка
+        private int _messageLimitAfterBan = 5;                     // Количество сообщений, доступное пользователю после бана до конца дня
+        private long _defaultChatId = -1;                          // Ботможет быть во многих чатах, но работать должен только с одним
+        private long _msgsBeforeRestriction = -1;                  // Общее количество сообщений в чате, после которого включается ограничитель
+        private bool _doNotBanAdmins = true;                       // Банить или не банить админов
+        private BanPeriod _banPeriod = BanPeriod.UntilNextDay;
+        private DateTime _accountingStartDate = DateTime.MinValue; // Время начала учёта сообщений и включения ограничений
+        private readonly DateTime _botStartDate = DateTime.Now;      // Время запуска бота
+        private DateTime _newDay = DateTime.Today;    // Для определения, начался ли уже новый день
+        private bool _chatStatisticsWasSent = false;             // Показывает, была ли сегодня отправлена дневная статистика чата
+        private bool _limitsAreDefined = false;             // Нужен для понимания, были ли уже переопределены лимиты после восстановления интернета
+
+        /// <summary> Бот </summary>
+        private ZsBot _bot;
+
+        /// <summary> Выход в интернет </summary>
+        private WebConnector _connector = new WebConnector();
+
+        private Agent _agent = new Agent();
+
+
+        #region ServiceBase
+
+        public ChatAdmin(ILogger<ChatAdmin> logger)
+        {
+            // TODO: Разобраться, где вызывается конструктор и что передаётся ему в качестве параметра
+            _logger = Logger.GetInstance();
+
+            // Загрузка базовой конфигурации из файла
+            Configuration.Initialize("AppSettings.json");
+
+            // Контексты данных
+            _zsBotOptionsBuilder.UseNpgsql(Configuration.ConnectionString);
+            _caOptionsBuilder.UseNpgsql(Configuration.ConnectionString);
+            ZsBotEntities.Initialize(_zsBotOptionsBuilder.Options, logger);
+            ChatAdminEntities.Initialize(_caOptionsBuilder.Options, logger);
+
+            Thread.Sleep(1000);
+        }
+
+
+        public Task StartAsync(CancellationToken cancellationToken)
+        {
+            //_logger.LogInformation($"Starting {nameof(ChatAdminService)}");
+            OnStart(null);
+            return Task.CompletedTask;
+        }
+
+        public Task StopAsync(CancellationToken cancellationToken)
+        {
+            //_logger.LogInformation($"Stopping {nameof(ChatAdminService)}");
+            OnStop();
+            return Task.CompletedTask;
+        }
+
+        public void OnStart(string[] args)
+        {
+            string botToken = null;
+            string botSessionPassword = null;
+            string botProxySocket = null;
+            string botProxyUserName = null;
+            string botProxyPassword = null;
+
+            // Получение конфигурации из БД
+            using (var ctx = new ZsBotEntities())
+            using (var casCtx = new ChatAdminEntities())
+            {
+                _defaultChatId = long.Parse(casCtx.Parameters.FirstOrDefault(p => p.Name == "DefaultChatId").Value);
+                botToken = casCtx.Parameters.FirstOrDefault(p => p.Name == "BotToken").Value;
+                botSessionPassword = casCtx.Parameters.FirstOrDefault(p => p.Name == "BotSessionPassword").Value;
+                botProxyUserName = casCtx.Parameters.FirstOrDefault(p => p.Name == "ProxyUserName").Value;
+                botProxyPassword = casCtx.Parameters.FirstOrDefault(p => p.Name == "ProxyPassword").Value;
+                botProxySocket = casCtx.Parameters.FirstOrDefault(p => p.Name == "Proxy").Value;
+            }
+
+            _connector.InitializeProxy(botProxySocket, botProxyUserName, botProxyPassword);
+
+            _bot = ZsBot.CreateNew(botToken, botSessionPassword, _connector.WebProxy);
+
+            //string logData = $"DefaultChatId = {_defaultChatId}"
+            //               + $"\nToken       = {botToken}"
+            //               + $"\nPassword    = {botSessionPassword}"
+            //               + $"\nProxy       = {botProxySocket}"
+            //               + $"\nBaseDir     = {AppDomain.CurrentDomain.BaseDirectory}";
+
+            //_logger.SaveToDb(LogType.Info, "Запуск службы", "Создан бот", logData);
+
+            _agent.JobStep = Bot_JobStepAsync;
+            _agent.JobCycleInterval = 60000;
+            _agent.Start(1000);
+
+            _bot.Start(1000);
+
+            //_logger.SaveToDb(LogType.Info, "Запуск службы", "Конец запуска службы", logData);
+
+            // Оповещение владельцев и администраторов о включении бота
+            SendMessageToAdmins($"Бот запущен");
+
+        }
+
+        public void OnStop()
+        {
+            _bot.Stop();
+        }
+        #endregion
+
+        #region Zs.Bot
+
+        ///// <summary> Обработчик команд, полученных через Телеграм </summary>
+        //private void Bot_ApplyRemoteCommand(OLD_InputCommandInfo userCmd)
+        //{
+        //    try
+        //    {
+        //        // Выполняем действие для заданной команды
+        //        _remoteManager.OLD__CommandManager.Execute(userCmd);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        try
+        //        {
+        //            _logger.SaveException(ex);
+        //            _logger.SaveToDb("ОШИБКА! Выполнение команды пользователя", ex, userCmd.MessageId);
+        //        }
+        //        catch { }
+        //
+        //        try { _remoteManager.Messenger.AddMessageToOutbox(userCmd.Chat, $"Сообщите разработчику:\n{ex.GetType()}\n{ex.Message}"); }
+        //        catch { }
+        //    }
+        //}
+
+        /// <summary> Относится к сессиям (взаимодействию с ботом в несколько сообщений) </summary>
+        private void Bot_HandleRequestedData(InMessage tgMessage)
+        {
+            try
+            {
+                //using (var ctxRm = new RemoteManagerEntities())
+                //using (var ctxScs = new ChatAdminEntities())
+                //{
+                //    var session = ctxRm.Sessions.FirstOrDefault(s => s.UserId == tgMessage.From.Id);
+                //
+                //    
+                //   
+                //    session.SessionCurrentStep = "";
+                //    ctxRm.SaveChanges();
+                //}
+            }
+            catch (Exception ex)
+            {
+                try
+                {
+                    _logger.SaveException(ex);
+                    //_logger.SaveToDb("ОШИБКА! Обработка запрошенных от пользователя данных", ex, tgMessage.MessageId);
+                }
+                catch { }
+
+                try { _bot.Messenger.AddMessageToOutbox(tgMessage.Chat, $"Сообщите разработчику:\n{ex.GetType()}\n{ex.Message}"); }
+                catch { }
+            }
+        }
+
+        /// <summary> Обработка сообщений из группы </summary>
+        private void Bot_GroupChatMessageHandler(InMessage tgMessage)
+        {
+            string logData = $"MessageId        = {tgMessage.MessageId}"
+                           + $"\nMessageText    = {tgMessage.Text ?? ""}"
+                           + $"\nChatId         = {tgMessage.Chat.Id}"
+                           + $"\nMessageDateMsk = {tgMessage.Date + TimeSpan.FromHours(3)}"
+                           + $"\nAccountingFrom = {_accountingStartDate}"
+                           + $"\nUserId         = {tgMessage.From.Id}";
+
+            _logger.SaveToDb(LogType.Info, "Групповое сообщение", "Начало обработки сообщения", logData, tgMessage.MessageId);
+
+            #region Условия прекращения анализа сообщения
+
+            // Если не дефолтный чат - выходим
+            if (tgMessage.Chat.Id != _defaultChatId)
+            {
+                _logger.SaveToDb(LogType.Info, "Групповое сообщение", "Прекращение обработки сообщения: сообщение не из чата по умолчанию", logData, tgMessage.MessageId);
+                return;
+            }
+
+            // Если не задана предупредительная уставка, то нет смысла дёргать БД
+            if (_messageLimitHi <= 0)
+            {
+                _logger.SaveToDb(LogType.Info, "Групповое сообщение", "Прекращение обработки сообщения: не задан даже предупредительный лимит, нет смысла идти дальше", logData, tgMessage.MessageId);
+                return;
+            }
+
+            // Если интернет появился менее минуты назад, то не обрабатываем сообщения
+            if ((DateTime.Now - _connector.InternetRepairDate.Value).Minutes <= 1)
+            {
+                _logger.SaveToDb(LogType.Info, "Групповое сообщение", "Прекращение обработки сообщения: интернет появился менее минуты назад", logData, tgMessage.MessageId);
+                return;
+            }
+
+            // Проверяем, начался ли уже учёт
+            if (!AccountingHasBegan(tgMessage.Date + TimeSpan.FromHours(3)))
+            {
+                _logger.SaveToDb(LogType.Info, "Групповое сообщение", "Прекращение обработки сообщения: учёт сообщений ещё не начался, нет смысла идти дальше", logData, tgMessage.MessageId);
+                return;
+            }
+            #endregion
+
+            // Временно. Для исключения такого условия
+            if (_accountingStartDate < DateTime.Now.Date - TimeSpan.FromDays(1))
+                throw new Exception($"_accountingStartDate = {_accountingStartDate}");
+
+            try
+            {
+                // Проверка наличия пользователя в списке предупреждённых/забаненных сегодня
+                Ban ban = GetActiveBanForUser(tgMessage);
+
+                using (var ctx = new ZsBotEntities())
+                {
+                    bool SendAsAnswer = false; // Определяет, писать пользователю по UserName или как ответ на сообщение
+
+                    // Определяем пользователя
+                    var user = ctx.Users.FirstOrDefault(u => u.UserId == tgMessage.From.Id);
+
+                    // Одменов не трогаем! (настраивается в БД)
+                    if (_doNotBanAdmins && (UserRole)Enum.Parse(typeof(UserRole), user.RoleName) >= UserRole.Administrator)
+                    {
+                        _logger.SaveToDb(LogType.Info, "Групповое сообщение", "Прекращение обработки сообщения: сообщение от одмена, а их не трогаем", logData, tgMessage.MessageId);
+                        return;
+                    }
+
+                    // Определение имени, по  которому будем обращаться к участнику чата
+                    string userName = $"@{user.UserName}";
+                    if (user.UserName == null)
+                    {
+                        userName = (user.UserFirstName ?? "") + " " + (user.UserLastName ?? "").Trim();
+                        SendAsAnswer = true;
+                    }
+                    logData += $"\nUserName       = {userName}";
+
+                    // 0. Подсчёт сообщений пользователя в этой группе с даты начала учёта
+                    var shiftedAccountingDate = _accountingStartDate - TimeSpan.FromHours(3);
+                    int userMsgCount = ctx.ReceivedMessages
+                        .Count(m => m.ChatId == _defaultChatId
+                                 && m.UserId == tgMessage.From.Id
+                                 && m.ReceivedMsgDate >= shiftedAccountingDate
+                                 && m.IsDeleted == false); // Считаем только неудалённые
+
+                    logData += $"\nUserMsgCount   = {userMsgCount}";
+
+                    _logger.SaveToDb(LogType.Info, "Групповое сообщение", "Начинаются проверки", logData, tgMessage.MessageId);
+
+
+                    // 1. Если достигнут предупредительный лимит
+                    //    и СЕГОДНЯ предупреждений не было
+                    if (userMsgCount >= _messageLimitHi && ban == null)
+                    {
+                        using (var casCtx = new ChatAdminEntities())
+                        {
+                            bool IsWarned = ban?.IsWarned ?? false;
+
+                            // Если ранее не предупреждали
+                            if (!IsWarned)
+                            {
+                                // Добавляем запись о предупреждении (заготовку для бана)
+                                casCtx.Bans.Add(new Ban()
+                                {
+                                    UserId = tgMessage.From.Id,
+                                    ChatId = tgMessage.Chat.Id,
+                                    IsWarned = true,
+                                    IsActive = true,
+                                    InsertDate = DateTime.Now,
+                                    UpdateDate = DateTime.Now
+                                });
+                                casCtx.SaveChanges();
+
+                                // Считываем её, чтобы взять ID
+                                ban = GetActiveBanForUser(tgMessage);
+
+                                // Делаем предупреждение (либо указанием пользователя, либо ответом на сообщение)
+                                _bot.Messenger.AddMessageToOutbox(
+                                    tgMessage.Chat,
+                                    $"{userName}, количеcтво сообщений, отправленных Вами с начала учёта: {userMsgCount}\n"
+                                    + $"Лимит сообщений до конца дня: {_messageLimitHiHi} (у Вас осталось {_messageLimitHiHi - userMsgCount}).\nПри достижении лимита будут введены ограничения",
+                                    tag: $"{ban?.BanId ?? -1}@{ban?.UserId ?? -1}", // Пометка, чтобы удалять предыдущие сообщения от бота для заданного пользователя
+                                    replyToMessageId: (SendAsAnswer ? tgMessage.MessageId : -1));
+
+                                _logger.SaveToDb(LogType.Info, "Групповое сообщение", "Прекращение проверки: сделано предупреждение пользователю о том, что он приближается к лимиту", logData, tgMessage.MessageId);
+
+                                // После предупреждения выходим
+                                return;
+                            }
+                        }
+                    }
+
+                    // 2. Если достигнут аварийный лимит или бот перезагрузился, переопределил лимиты, но пользователь был забанен ранее
+                    if (userMsgCount >= _messageLimitHiHi || (ban != null && ban.BanFinishDate > DateTime.Now))
+                    {
+                        // Проверяем, был ли пользователь забанен ранее
+                        // Если был и бан активен - удаляем сообщение
+                        // Если был и бан закончился -> Если userMsgCount < (_messageLimitHiHi + _messageLimitAfterBan)
+                        //                                   позволяем оставить сообщение
+                        //                              Иначе удаляем сообщение
+
+                        // 2.1 Если пользователь не был забанен ранее - баним
+                        if (ban.BanFinishDate == null)
+                        {
+                            // Сообщаем пользователю, что он ограничен до окончания периода
+                            string msg = "";
+                            if (_banPeriod == BanPeriod.ForOneHour || _banPeriod == BanPeriod.ForThreeHours)
+                                msg = $"{userName}, Вы превысили лимит сообщений до конца дня ({_messageLimitHiHi}). Все последующие сообщения {Ban.PeriodToString(_banPeriod, 1)} будут удаляться.\n"
+                                    + $"Потом до конца дня у Вас будет {_messageLimitAfterBan} сообщений";
+                            else if (_banPeriod == BanPeriod.UntilNextDay)
+                                msg = $"{userName}, Вы превысили лимит сообщений до конца дня ({_messageLimitHiHi}). Все последующие сообщения до конца дня будут удаляться";
+                            else
+                                throw new NotImplementedException();
+
+                            _bot.Messenger.AddMessageToOutbox(tgMessage.Chat,
+                                                                 msg,
+                                                                 tag: $"{ban.BanId}@{ban.UserId}", // Пометка, чтобы удалять предыдущие сообщения от бота для заданного пользователя
+                                                                 replyToMessageId: (SendAsAnswer ? tgMessage.MessageId : -1));
+
+                            // Удаляем из чата предыдущее предупреждение для пользователя от бота, чтоб не захламлять 
+                            DeleteLastWarningMessageForUser(ban);
+
+                            // Правим запись в таблице банов - задаём время окончания бана 
+                            using (var casCtx = new ChatAdminEntities())
+                            {
+                                var curBan = casCtx.Bans.First(b => b.BanId == ban.BanId)
+                                                        .BanFinishDate = GetBanFinishTime();
+                                casCtx.SaveChanges();
+                            }
+
+                            _logger.SaveToDb(LogType.Info, "Групповое сообщение", "Пользователь получил первый бан за день", logData, tgMessage.MessageId);
+
+                        }
+
+                        // 2.2 Если бан закончился к этому моменту
+                        if (ban.BanFinishDate < DateTime.Now)
+                        {
+                            // Если израсходовано резервное количество сообщений (_messageLimitAfterBan)
+                            if (userMsgCount >= _messageLimitHiHi + _messageLimitAfterBan)
+                                using (var casCtx = new ChatAdminEntities())
+                                {
+                                    // Делаем бан до конца дня
+                                    casCtx.Bans.First(b => b.BanId == ban.BanId).BanFinishDate = DateTime.Today + TimeSpan.FromDays(1);
+                                    casCtx.SaveChanges();
+
+                                    _bot.Messenger.AddMessageToOutbox(tgMessage.Chat,
+                                                                         $"{userName}, на сегодня Вы полностью исчерпали свой лимит сообщений ({_messageLimitHiHi} + {_messageLimitAfterBan}).",
+                                                                         replyToMessageId: (SendAsAnswer ? tgMessage.MessageId : -1));
+
+                                    // Удаляем предыдущее предупреждение для пользователя от бота
+                                    DeleteLastWarningMessageForUser(ban);
+
+                                    _logger.SaveToDb(LogType.Info, "Групповое сообщение", "Пользователь получил второй бан - до конца дня", logData, tgMessage.MessageId);
+                                }
+                        }
+
+                        // 2.3 Если пользователь забанен в данный момент
+                        if (ban.BanFinishDate > DateTime.Now)
+                        {
+                            // Доп. проверка 1
+                            if (tgMessage.Date + TimeSpan.FromHours(3) > _accountingStartDate)
+                            {
+                                // Доп. проверка 2 - если сообщение было отправлено не более чем минуту назад
+                                if ((DateTime.Now - tgMessage.Date + TimeSpan.FromHours(3)) > TimeSpan.FromMinutes(1))
+                                {
+                                    // Удаляем сообщение из чата
+                                    if (_bot.Messenger.DeleteMessage(tgMessage.Chat.Id, tgMessage.MessageId))
+                                        _logger.SaveToDb(LogType.Info, "Групповое сообщение", "Сообщение забаненного пользователя удалено", logData, tgMessage.MessageId);
+                                    else
+                                        _logger.SaveToDb(LogType.Warning, "Групповое сообщение", "Не удалось удалить ообщение забаненного пользователя!", logData, tgMessage.MessageId);
+                                }
+                                else
+                                    _logger.SaveToDb(LogType.Warning, "Групповое сообщение", "Сообщение забаненного пользователя НЕ удалено, т.к. оно существует больше минуты!", logData, tgMessage.MessageId);
+                            }
+                            else
+                            {
+                                logData += $"\ntgMessage.Date = {tgMessage.Date}";
+                                _logger.SaveToDb(LogType.Warning, "Групповое сообщение", "Сообщение забаненного пользователя НЕ удалено, т.к. его дата создания раньше даты начала учёта!", logData, tgMessage.MessageId);
+                            }
+                        }
+                    }
+                }
+
+                logData += $"\nMessageLimitHiHi = {_messageLimitHiHi}";
+                _logger.SaveToDb(LogType.Info, "Групповое сообщение", "Обработка завершена", logData, tgMessage.MessageId);
+            }
+            catch (Exception ex)
+            {
+                try
+                {
+                    _logger.SaveException(ex);
+                    //_logger.SaveToDb("ОШИБКА! Обработка сообщения из группы", ex, tgMessage.MessageId);
+                }
+                catch { }
+            }
+        }
+
+        /// <summary> Алгоритм автоматической работы (цикл) </summary>
+        private void Bot_JobStepAsync()
+        {
+            try
+            {
+                DateTime now = DateTime.Now;
+
+                // При запуске бота пропускаем работу джоба
+                if ((now - _botStartDate) < TimeSpan.FromMinutes(1))
+                {
+                    _logger.SaveToDb(LogType.Info, "Джоб", "При старте бота не выполняем шаги джоба", default(string), null);
+                    return;
+                }
+
+                // Задачи на начало дня
+                if (now.Date > _newDay.Date)
+                {
+                    _newDay = now.Date;
+
+                    // 1. Сбрасываем все активные баны
+                    using (var casCtx = new ChatAdminEntities())
+                    {
+                        foreach (var b in casCtx.Bans.Where(b => b.IsActive))
+                        {
+                            b.IsActive = false;
+                            if (b.BanFinishDate?.Date == DateTime.Today)
+                                b.BanFinishDate = now.Date - TimeSpan.FromSeconds(1); // Вероятно, лишнее
+                        }
+                        casCtx.SaveChanges();
+                    }
+
+                    // 2. Сбрасываем дату учёта сообщений
+                    _accountingStartDate = DateTime.MinValue;
+
+                    // 3. Задаём значения для ограничений из БД (важно, когда заданные админом значения были сдвинуты, чтобы не перетереть данные)
+                    LoadLimitsFromDb();
+
+                    // 4. Сбрасываем флаг отправки статистики за день
+                    _chatStatisticsWasSent = false;
+
+                    _logger.SaveToDb(LogType.Info, "Джоб", "Выполнены задачи на начало дня", default(string));
+                }
+
+                // Проверка наличия интернета и переопределение лимитов, если интернет был восстановлен после обрыва
+                var connectionStatus = _connector.AnalyzeConnection("https://vk.com/", "https://yandex.ru/", "https://www.google.ru/");
+                if (connectionStatus == ConnectionStatus.Ok)
+                {
+                    if (!_limitsAreDefined && (now - _connector.InternetRepairDate.Value).Minutes >= 1) // и с момента его появления прошла минута
+                    {
+                        // Определение лимитов
+                        LoadLimitsFromDb();
+                        _limitsAreDefined = true; // Не стоит помещать в LoadLimitsFromDb, т.к. когда лимиты сняты админом, этот флаг должен быть всё ещё поднят
+                        SendMessageToAdmins("Лимиты переопределены после восстановления соединения с сервером Telegram");
+                    }
+                    else if (!_limitsAreDefined)
+                        _logger.SaveToDb(LogType.Info, "Джоб", "Соединение восстановленно! Ожидается минута до переопределения лимитов", default(string));
+                }
+                else if (_limitsAreDefined)       // Убираем все лимиты до восстановления подключения и их нового определения
+                {
+                    _limitsAreDefined = false;
+                    _messageLimitHi = -1;
+                }
+
+                // Запись в ЛОГ, если имеютя проблемы с доступом к серверу Telegram
+                if (connectionStatus == ConnectionStatus.NoInternetConnection)
+                    _logger.SaveToDb(LogType.Warning, "Джоб", "Нет доступа к интернету. Лимиты отключены.", default);
+                else if (connectionStatus == ConnectionStatus.NoProxyConnection)
+                    _logger.SaveToDb(LogType.Warning, "Джоб", "Нет доступа к прокси-серверу. Лимиты отключены.", default);
+
+
+                // После 23:55 высылаем статистику
+                if (!_chatStatisticsWasSent && now.Hour == 23 && now.Minute > 55)
+                {
+                    using (var ctx = new ZsBotEntities())
+                    {
+                        string message = "";
+                        string topTenTitle = "\n---\nСамые активные:";
+
+                        // Формирование сообщения
+                        foreach (var chat in ctx.Chats)
+                        {
+                            var dmuc = GetDailyMessageAndUserCount_OneChat(chat, ctx);
+                            message += (message.Length > 0 && dmuc.Length > 0 ? "\n\n================\n\n" : "");
+                            message += dmuc;
+                            message += GetDailyTopTen_OneChat(chat, ctx, topTenTitle);
+                        }
+
+                        // Рассылка админам
+                        foreach (var admin in _bot.GetUsersByRole(UserRole.Owner, UserRole.Administrator))
+                        {
+                            var chat = ctx.Chats.FirstOrDefault(c => c.ChatId == admin.UserId)
+                                     ?.GetTelegramType()
+                                     ?.Result;
+
+                            if (chat != null) // Чат не будет найден, если админ ни разу не писал боту
+                                _bot.Messenger.AddMessageToOutbox(chat, message);
+                        }
+                    }
+                    _chatStatisticsWasSent = true;
+                    _logger.SaveToDb(LogType.Info, "Джоб", $"Отправлена статистика чата за день", default(string));
+                }
+
+
+                // Оповещение о сбоях
+                if (now.Minute == 59)
+                {
+                    DateTime dateBeg = DateTime.MaxValue;
+
+                    // Если с 11:00 до 23:00, то собираем ошибки за час
+                    if (now.Hour > 9) // == 10:59
+                        dateBeg = now - TimeSpan.FromHours(1);
+
+                    // Если 10:00, то собираем ошибки за прошлые 11 часов
+                    if (now.Hour == 9) // == 09:59
+                        dateBeg = now - TimeSpan.FromHours(11);
+
+                    var logErrors = _logger.GetLog(LogType.Error, dateBeg, now);
+                    var logWarnings = _logger.GetLog(LogType.Warning, dateBeg, now);
+
+                    // Формирование сообщения
+                    if (logErrors?.Count > 0 || logWarnings?.Count > 0)
+                    {
+                        string message = $"*Всего сбоев: {logErrors.Count}*";
+                        logErrors.ForEach(e => message += $"\n\n{e}");
+
+                        message += $"\n\n\n*Всего предупреждений: {logWarnings.Count}*";
+                        logWarnings.ForEach(w => message += $"\n\n{w}");
+
+                        // Обрезаем сообщение, если оно очень большое
+                        if (message.Length > 1200)
+                            message = message.Substring(0, 1197) + "...";
+
+                        SendMessageToAdmins(message.Trim());
+                    }
+                }
+
+
+                // Оповещение о событиях
+                using (var casCtx = new ChatAdminEntities())
+                {
+                    var notifications = casCtx.Notifications
+                         .Where(n => n.NotificationIsActive
+                                  && (n.NotificationMonth == null || n.NotificationMonth == DateTime.Now.Month)
+                                  && n.NotificationDay == DateTime.Today.Day
+                                  && n.NotificationHour == DateTime.Now.Hour
+                                  && (n.NotificationMinute == DateTime.Now.Minute // та же минута или в промежутке от этой минуты до +2 минут
+                                      || (n.NotificationMinute > DateTime.Now.Minute && n.NotificationMinute < (DateTime.Now + TimeSpan.FromMinutes(2)).Minute))
+                                  && (n.NotificationLastExecDate == null
+                                      || n.NotificationLastExecDate.Value.Date != DateTime.Today)).ToList();
+
+                    foreach (var n in notifications)
+                    {
+                        var chat = Zs.Bot.DbModel.DbChat.GetChatById(_defaultChatId);
+                        _bot.Messenger.AddMessageToOutbox(chat, n.NotificationMessage);
+
+                        n.NotificationLastExecDate = DateTime.Now;
+                    }
+
+                    if (notifications.Count() > 0)
+                        casCtx.SaveChanges();
+                }
+            }
+            catch (Exception ex)
+            {
+                //_remoteManager.SaveException(ex);
+                _logger.SaveToDb("ОШИБКА! Выполнение джоба", ex);
+            }
+            finally
+            {
+                //_logger.SaveToDb(LogType.Info, "Джоб", "Выполнение джоба закончилось", default(string), null);
+            }
+        }
+
+        #endregion
+
+        #region ChatAdminService
+
+        /// <summary> Формирование списка команд </summary>
+        private void FillRemoteManagerWithCommands()
+        {
+            // // Статистика
+            // var cmdGroup1 = new List<OLD_ICommandListItem>()
+            // {
+            //     new OLD_BotCommand("/GetChatStatistics", "cтатистика чата", UserRole.User, CmdSendChatStatistics),
+            //     new OLD_BotCommand("/GetMyStatistics", "личная cтатистика", UserRole.User, CmdSendMyStatistics),
+            //     new OLD_BotCommand("/GetBotConfiguration", "текущая конфигурация бота", UserRole.User, CmdSendBotConfiguration),
+            //     new OLD_BotCommand("/SendMessageToChat", "Посылка сообщения в чат от бота", UserRole.Owner, CmdSendMessageFromBotToChat)
+            // };
+            // _remoteManager.OLD__CommandManager.Add(new OLD_BotCommandGroup("Информация", cmdGroup1, UserRole.User, 2));
+            //
+            // // Условие включения ограничений
+            // var cmdGroup2 = new List<OLD_ICommandListItem>()
+            // {
+            //     new OLD_BotCommand("/SetActiveAfter\\_50\\_Msg", "активация после 50 сообщений за день", UserRole.Administrator, CmdSetLimiterActivatorCondition),
+            //     new OLD_BotCommand("/SetActiveAfter\\_100\\_Msg", "активация после 100 сообщений за день", UserRole.Administrator, CmdSetLimiterActivatorCondition),
+            //     new OLD_BotCommand("/SetActiveAlways", "ограничение работает всегда", UserRole.Administrator, CmdSetLimiterActivatorCondition),
+            // };
+            //
+            // // Суточный лимит сообщений
+            // var cmdGroup3 = new List<OLD_ICommandListItem>()
+            // {
+            //     new OLD_BotCommand("/SetMsgLimitManually", "задать лимит сообщений вручную", UserRole.Administrator, CmdSetMessageLimit),
+            //     new OLD_BotCommand("/RemoveLimit", "убрать лимит сообщений", UserRole.Administrator, CmdSetMessageLimit)
+            // };
+            //
+            // // Продолжительность бана
+            // var cmdGroup4 = new List<OLD_ICommandListItem>()
+            // {
+            //     new OLD_BotCommand("/SetBanForOneHour", "банить на 1 час", UserRole.Administrator, CmdSetBanTimeForChatUser),
+            //     new OLD_BotCommand("/SetBanForThreeHours", "банить на 3 часа", UserRole.Administrator, CmdSetBanTimeForChatUser),
+            //     new OLD_BotCommand("/SetBanUntilNextDay", "банить до начала следующего дня", UserRole.Administrator, CmdSetBanTimeForChatUser),
+            //     new OLD_BotCommandListDivider('-', UserRole.Owner),
+            //     new OLD_BotCommand("/ResetBan", "сбросить сегодняшние баны", UserRole.Owner, CmdResetBan),
+            // };
+            //
+            // // Группировка групп
+            // var cmdGroup5 = new List<OLD_ICommandListItem>()
+            // {
+            //     new OLD_BotCommandGroup("Условие включения ограничений", cmdGroup2, UserRole.Administrator, 1, 0),
+            //     new OLD_BotCommandGroup("Суточный лимит сообщений", cmdGroup3, UserRole.Administrator, 1, 0),
+            //     new OLD_BotCommandGroup("Продолжительность бана", cmdGroup4, UserRole.Administrator, 1, 0)
+            // };
+            //
+            // _remoteManager.OLD__CommandManager.Add(new OLD_BotCommandGroup("Настройка ограничений", cmdGroup5, UserRole.Administrator, 2));
+            //
+            // _logger.SaveToDb(LogType.Info, "Запуск службы", "Сформирован список команд бота", default(string));
+        }
+
+        ///// <summary> Определение общего количества сообщений для включения режима ограничения </summary>
+        //private void CmdSetLimiterActivatorCondition(OLD_InputCommandInfo userCmd)
+        //{
+        //    int msgCountBeforeRestrictMode = -1;
+        //    _accountingStartDate = DateTime.MinValue;
+        //    try
+        //    {
+        //        using (var ctx = new RemoteManagerEntities())
+        //        {
+        //            // Для админа
+        //            if (ctx.vAdministrators.Any(u => u.UserId == userCmd.From.Id))
+        //            {
+        //                if (userCmd.Command == "SetActiveAfter\\_50\\_Msg".ToLower())
+        //                    msgCountBeforeRestrictMode = 50;
+        //                else if (userCmd.Command == "SetActiveAfter\\_100\\_Msg".ToLower())
+        //                    msgCountBeforeRestrictMode = 100;
+        //                else if (userCmd.Command == "SetActiveAlways".ToLower())
+        //                    msgCountBeforeRestrictMode = -1;
+        //                else
+        //                    throw new InvalidDataException();
+
+        //                // Сначала требуем ввести ограничения, иначе нет смысла во всём этом
+        //                if (_messageLimitHiHi <= 0 && msgCountBeforeRestrictMode > 0)
+        //                {
+        //                    _remoteManager.Messenger.AddMessageToOutbox(userCmd.Chat, $"Сначала задайте ограничение количества сообщений!");
+        //                    return;
+        //                }
+
+        //                var mostActiveUsers = GetDailyTopTen_OneChat(_defaultChatId, ctx);
+
+        //                // Если условие включения меньше имеющегося максимального количества сообщений
+        //                // от самого активного участника чата, сдвигаем условие
+        //                if (msgCountBeforeRestrictMode > 0 && mostActiveUsers.Count > 0
+        //                    && mostActiveUsers.First().Value > msgCountBeforeRestrictMode)
+        //                {
+        //                    _msgsBeforeRestriction = mostActiveUsers.First().Value + 1;
+        //                    _remoteManager.Messenger.AddMessageToOutbox(userCmd.Chat, $"Самый активный пользователь чата уже оставил сообщений: {mostActiveUsers.First().Value}.\n"
+        //                                                                      + "Поэтому условие включения режима ограничения количества сообщений будет сдвинуто.\n"
+        //                                                                      + "Завтра будет установленно заданное значение.");
+        //                }
+        //                else
+        //                    _msgsBeforeRestriction = msgCountBeforeRestrictMode;
+
+
+        //                if (_msgsBeforeRestriction > 0)
+        //                    _remoteManager.Messenger.AddMessageToOutbox(userCmd.Chat, $"Режим ограничения количества сообщений будет активирован после *{_msgsBeforeRestriction}-го* сообщения в чате за день.");
+        //                else
+        //                    _remoteManager.Messenger.AddMessageToOutbox(userCmd.Chat, $"Режим ограничения количества сообщений включен");
+        //            }
+        //        }
+
+        //        // Сохранение новых уставок в БД
+        //        using (var caCtx = new ChatAdminEntities())
+        //        {
+        //            caCtx.Parameters.FirstOrDefault(p => p.Name == "ActivateLimiterAfterMsgCount").Value = msgCountBeforeRestrictMode.ToString();
+        //            caCtx.SaveChanges();
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        //_remoteManager.SaveException(ex);
+        //        _logger.SaveToDb("ОШИБКА! Определение условия начала учёта сообщений", ex, userCmd.MessageId);
+        //    }
+        //}
+
+        ///// <summary> Бан пользователя на время </summary>
+        //private void CmdSetBanTimeForChatUser(OLD_InputCommandInfo userCmd)
+        //{
+        //    string choice = userCmd.Command.Replace("setban", "");
+        //    if (Enum.TryParse(typeof(BanPeriod), choice, true, out object result))
+        //    {
+        //        _banPeriod = (BanPeriod)result;
+        //        string strPeriod = null;
+        //        switch (_banPeriod)
+        //        {
+        //            case BanPeriod.ForOneHour: strPeriod = "*на 1 час*"; break;
+        //            case BanPeriod.ForThreeHours: strPeriod = "*на 3 часа*"; break;
+        //            case BanPeriod.UntilNextDay: strPeriod = "*до начала следующего дня*"; break;
+        //        }
+        //        _remoteManager.Messenger.AddMessageToOutbox(userCmd.Chat, $"Установлено время ограничения забаненного пользователя: {strPeriod}");
+        //    }
+        //    else
+        //    {
+        //        _banPeriod = BanPeriod.Undefined;
+        //        _remoteManager.Messenger.AddMessageToOutbox(userCmd.Chat, "Не удалось задать время ограничения пользователя.\nСообщите о разработчику");
+        //    }
+
+        //    using (var casCtx = new ChatAdminEntities())
+        //    {
+        //        var parameter = casCtx.Parameters.FirstOrDefault(p => p.Name == "BanPeriod");
+        //        if (parameter != null)
+        //            parameter.Value = _banPeriod.ToString();
+
+        //        casCtx.SaveChanges();
+        //    }
+        //}
+
+        ///// <summary> Определение лимита сообщений пользователей </summary>
+        //private void CmdSetMessageLimit(OLD_InputCommandInfo userCmd)
+        //{
+        //    // ВАЖНО!
+        //    // Предупредительная уставка может быть задана одна,
+        //    // а аварийная только вместе с предупредительной
+        //    try
+        //    {
+        //        int hi = 0, hihi = 0;
+        //        using (var ctx = new RemoteManagerEntities())
+        //        {
+        //            // Для админа
+        //            if (ctx.vAdministrators.Any(u => u.UserId == userCmd.From.Id))
+        //            {
+        //                if (userCmd.Command == "SetMsgLimitManually".ToLower())
+        //                {
+        //                    // Проверка наличия двух аргументов
+        //                    if (userCmd.Args.Length != 2)
+        //                    {
+        //                        _remoteManager.Messenger.AddMessageToOutbox(userCmd.Chat,
+        //                              "К названию команды нужно дописать два аргумента, определяющих количество:\n"
+        //                            + "1. Кол-во сообщений до предупреждения\n"
+        //                            + "2. Кол-во сообщений до удаления всех последующих\n"
+        //                            + $"Например: /SetMsgLimitManually 20, 30");
+        //                        return;
+        //                    }
+
+        //                    // Проверка корректности аргументов 1
+        //                    if (!int.TryParse(userCmd.Args[0], out hi) || !int.TryParse(userCmd.Args[1], out hihi))
+        //                    {
+        //                        _remoteManager.Messenger.AddMessageToOutbox(userCmd.Chat,
+        //                              "Аргументы комманды должны быть целочисленными значениями\n"
+        //                            + $"Например: /{userCmd.Command} 20, 30");
+        //                        return;
+        //                    }
+
+        //                    hi = hi > 0 ? hi : -1;
+        //                    hihi = hihi > 0 ? hihi : -1;
+
+        //                    // Если задана аварийная уставка и она меньше или равна предупредительной
+        //                    if (hihi != -1 && hi >= hihi)
+        //                    {
+        //                        _remoteManager.Messenger.AddMessageToOutbox(userCmd.Chat,
+        //                              "Первый аргумент не может быть больше второго!\n"
+        //                            + $"Например: /{userCmd.Command} 20, 30");
+        //                        return;
+        //                    }
+        //                }
+        //                else if (userCmd.Command == "SetMsgLimit\\_25\\_30".ToLower())
+        //                {
+        //                    hi = 25;
+        //                    hihi = 30;
+        //                }
+        //                else if (userCmd.Command == "SetMsgLimit\\_45\\_50".ToLower())
+        //                {
+        //                    hi = 45;
+        //                    hihi = 50;
+        //                }
+        //                else if (userCmd.Command == "RemoveLimit".ToLower())
+        //                {
+        //                    hi = 0;
+        //                    hihi = 0;
+        //                }
+        //                else
+        //                    throw new InvalidDataException();
+
+        //                // Берём статистику с начала учёта
+        //                var mostActiveUsers = GetTopTenForAccounting_OneChat(_defaultChatId, ctx);
+
+        //                // Если нельзя банить админов, то вычитаем их из списка Top 10
+        //                if (_doNotBanAdmins)
+        //                {
+        //                    var adminIds = ctx.vAdministrators.Where(u => (UserRole)Enum.Parse(typeof(UserRole), u.RoleName) >= UserRole.Administrator)
+        //                                                      .Select(u => u.UserId);
+        //                    foreach (var i in adminIds)
+        //                        if (mostActiveUsers.ContainsKey(i))
+        //                            mostActiveUsers.Remove(i);
+        //                    // mostActiveUsers = mostActiveUsers.Remove(u => !adminIds.Contains(u.Value));
+        //                }
+
+        //                // Если предупредительная уставка задана (больше нуля) и меньше имеющегося количества сообщений 
+        //                // от самого активного участника чата, сдвигаем лимит, чтобы не стереть сообщения
+        //                if (hi > 0 && mostActiveUsers.Count > 0 && mostActiveUsers.First().Value > hi)
+        //                {
+        //                    _messageLimitHi = mostActiveUsers.First().Value + 1;
+        //                    _messageLimitHiHi = _messageLimitHi + 5;
+        //                    _remoteManager.Messenger.AddMessageToOutbox(userCmd.Chat, $"Самый активный пользователь чата уже оставил сообщений: {mostActiveUsers.First().Value}. "
+        //                                                                + $"Чтобы избежать потери данных, сегодня ограничения будут сдвинуты."
+        //                                                                //+ "Заданные Вами ограничения начнут действовать с завтрашнего дня."
+        //                                                                + "Заданные ограничения будут действовать с начала завтрашнего дня.");
+        //                    //+ "Скорректированы лимиты сообщений на текущие сутки:\n"
+        //                    //+ $" - предупреждать после *{_messageLimitHi}* сообщений\n"
+        //                    //+ $" - удалять все сообщения после *{_messageLimitHiHi}* сообщений");
+        //                }
+        //                else
+        //                {
+        //                    _messageLimitHi = hi;
+        //                    _messageLimitHiHi = hihi;
+        //                }
+
+
+        //                if (hi > 0)
+        //                {
+        //                    _remoteManager.Messenger.AddMessageToOutbox(userCmd.Chat, $"Заданы новые лимиты сообщений на сутки:\n"
+        //                                                                     + $" - предупреждать после *{_messageLimitHi}* сообщений\n"
+        //                                                                     + (hihi > 0
+        //                                                                       ? $" - удалять все сообщения после *{_messageLimitHiHi}* сообщений"
+        //                                                                       : " - удаление сообщений отключено"));
+        //                }
+        //                else
+        //                    _remoteManager.Messenger.AddMessageToOutbox(userCmd.Chat, $"Ограничение количества сообщений *не установлено*");
+        //            }
+        //        }
+
+        //        // Сохранение Заданных пользователем уставок в БД
+        //        using (var caCtx = new ChatAdminEntities())
+        //        {
+        //            caCtx.Parameters.FirstOrDefault(p => p.Name == "ChatUserMessageCountHiHi").Value = hihi.ToString();// _messageLimitHiHi.ToString();
+        //            caCtx.Parameters.FirstOrDefault(p => p.Name == "ChatUserMessageCountHi").Value = hi.ToString(); // _messageLimitHi.ToString();
+        //            caCtx.SaveChanges();
+        //        }
+
+        //        // Корректируем при необходимости условие включения оганичения
+        //        _msgsBeforeRestriction = _messageLimitHiHi > 0 ? _msgsBeforeRestriction : -1;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _messageLimitHi = -1;
+        //        _messageLimitHiHi = -1;
+        //        _msgsBeforeRestriction = -1;
+
+        //        //_remoteManager.SaveException(ex);
+        //        _logger.SaveToDb("ОШИБКА! Определение лимитов сообщений", ex, userCmd.MessageId);
+        //    }
+        //}
+
+        ///// <summary> Сбрасывает все сегодняшние баны </summary>
+        //private void CmdResetBan(OLD_InputCommandInfo userCmd)
+        //{
+        //    try
+        //    {
+        //        // Требуем наличие аргумента, подтверждающего намерение
+        //        if (userCmd.Args.Count() != 1 || userCmd.Args[0] != "Yes")
+        //        {
+        //            _remoteManager.Messenger.AddMessageToOutbox(userCmd.Chat, "Для сброса всех банов требуется выполнить команду с аргументом \"Yes\"."
+        //                                                             + "Это действие необратимо!");
+        //            return;
+        //        }
+
+        //        // TODO: Сделать вторым аргументом считывание имени\идентификатора пользователя
+
+        //        using (var casCtx = new ChatAdminEntities())
+        //        {
+        //            // Сбрасываем баны
+        //            foreach (var ban in casCtx.Bans)
+        //            {
+        //                if (ban.IsActive == true)
+        //                {
+        //                    ban.IsActive = false;
+        //                    ban.BanFinishDate = DateTime.Now;
+        //                }
+
+        //            }
+        //            casCtx.SaveChanges();
+        //        }
+
+        //        _remoteManager.Messenger.AddMessageToOutbox(userCmd.Chat, "Все баны сброшены!");
+
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _remoteManager.Messenger.AddMessageToOutbox(userCmd.Chat, "Что-то пошло не так");
+        //        //_remoteManager.SaveException(ex);
+        //        _logger.SaveToDb("ОШИБКА! Сброс банов пользователей", ex, userCmd.MessageId);
+        //    }
+        //}
+
+        ///// <summary> Отправка сообщения пользователей бота (при личном взаимодействии) </summary>
+        //private void CmdSendMessageFromBotToChat(OLD_InputCommandInfo userCmd)
+        //{
+        //    try
+        //    {
+        //        // (i)  Много аршументов без кавычек отправлять не вариант! 
+        //        //      Т.к. все знаки пунктуации будут удаляться.
+
+        //        if (userCmd.Args.Length != 1)
+        //        {
+        //            _remoteManager.Messenger.AddMessageToOutbox(userCmd.Chat, "Неверное количество аргументов!");
+        //            return;
+        //        }
+
+        //        var chat = Zs.Bot.DbModel.DbChat.GetChatById(_defaultChatId);
+
+        //        if (chat == null)
+        //            return;
+
+        //        _remoteManager.Messenger.AddMessageToOutbox(chat, userCmd.Args[0]);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        //_remoteManager.SaveException(ex);
+        //        _logger.SaveToDb("ОШИБКА! Посылка сообщения от бота в групповой чат", ex, userCmd.MessageId);
+        //    }
+        //}
+
+        ///// <summary> Отправка данных о конфигурации чата (обёртка) </summary>
+        //private void CmdSendBotConfiguration(OLD_InputCommandInfo userCmd)
+        //{
+        //    SendBotConfiguration(userCmd.Chat);
+        //}
+
+        ///// <summary> Отправка статистики о десяти самых активных пользователях чатов </summary>
+        //private void CmdSendChatStatistics(OLD_InputCommandInfo userCmd)
+        //{
+        //    try
+        //    {
+
+        //        // НОВЫЙ ВАРИАНТ -НАЧАЛО--
+        //        //using (var rmCtx = new RemoteManagerEntities())
+        //        //{
+        //        //    // Для владельца выводим со всех чатов
+        //        //    if (rmCtx.Users.FirstOrDefault(u => u.UserId == userCmd.From.Id).RoleName == UserRole.Owner.ToString())
+        //        //    {
+        //        //        foreach (var chat in rmCtx.Chats)
+        //        //        {
+        //        //            var dmuc = GetDailyMessageAndUserCount_OneChat(chat, rmCtx);
+        //        //            message += (message.Length > 0 && dmuc.Length > 0 ? "\n\n================\n\n" : "");
+        //        //            message += dmuc;
+        //        //            message += GetDailyTopTen_OneChat(chat, rmCtx, topTenTitle);
+        //        //        }
+        //        //    }
+        //        //    // Для остальных пользователей - только чат по умолчанию
+        //        //    else
+        //        //    {
+        //        //        var chat = rmCtx.Chats.FirstOrDefault(c => c.ChatId == _defaultChatId);
+        //        //        if (chat != null)
+        //        //        {
+        //        //            var dmuc = GetDailyMessageAndUserCount_OneChat(chat, rmCtx);
+        //        //            message += (message.Length > 0 && dmuc.Length > 0 ? "\n\n================\n\n" : "");
+        //        //            message += dmuc;
+        //        //            message += GetDailyTopTen_OneChat(chat, rmCtx, topTenTitle);
+        //        //        }
+        //        //    }
+        //        //}
+        //        // НОВЫЙ ВАРИАНТ -КОНЕЦ--
+
+
+        //        //// Todo: Добавить кол-во удалённых сообщений
+        //        //
+        //        //string message = "";
+        //        //string topTenTitle = "\n---\nСамые активные:";
+        //        //using (var ctx = new RemoteManagerEntities())
+        //        //{
+        //        //    // Если названия чатов переданы в качестве аргументов
+        //        //    if (userCmd.Args?.Length > 0)
+        //        //    {
+        //        //        // Берем имена чатов из аргументов
+        //        //        foreach (var chatName in userCmd.Args)
+        //        //        {
+        //        //            var chat = ctx.Chats.FirstOrDefault(c => c.ChatUserName == chatName || c.ChatTitle == chatName);
+        //        //            if (chat == null)
+        //        //                continue;
+        //        //
+        //        //            var dmuc = GetDailyMessageAndUserCount_OneChat(chat, ctx);
+        //        //            message += (message.Length > 0 && dmuc.Length > 0 ? "\n\n================\n\n" : "");
+        //        //            message += dmuc;
+        //        //            message += GetDailyTopTen_OneChat(chat, ctx, topTenTitle);
+        //        //        }
+        //        //    }
+        //        //    // Если команда без аргументов
+        //        //    else
+        //        //    {
+        //        //        // Для владельца выводим со всех чатов
+        //        //        if (ctx.Users.FirstOrDefault(u => u.UserId == userCmd.From.Id).RoleName == UserRole.Owner.ToString())
+        //        //        {
+        //        //            foreach (var chat in ctx.Chats)
+        //        //            {
+        //        //                var dmuc = GetDailyMessageAndUserCount_OneChat(chat, ctx);
+        //        //                message += (message.Length > 0 && dmuc.Length > 0 ? "\n\n================\n\n" : "");
+        //        //                message += dmuc;
+        //        //                message += GetDailyTopTen_OneChat(chat, ctx, topTenTitle);
+        //        //            }
+        //        //        }
+        //        //        // Для остальных пользователей - только чат по умолчанию
+        //        //        else
+        //        //        {
+        //        //            var chat = ctx.Chats.FirstOrDefault(c => c.ChatId == _defaultChatId);
+        //        //            if (chat != null)
+        //        //            {
+        //        //                var dmuc = GetDailyMessageAndUserCount_OneChat(chat, ctx);
+        //        //                message += (message.Length > 0 && dmuc.Length > 0 ? "\n\n================\n\n" : "");
+        //        //                message += dmuc;
+        //        //                message += GetDailyTopTen_OneChat(chat, ctx, topTenTitle);
+        //        //            }
+        //        //        }
+        //        //    }
+        //        //
+        //        //    if (message.Length > 0)
+        //        //        message = $"Статистика за {DateTime.Today.ToShortDateString()}\n================\n\n{message}";
+        //        //}
+        //        //
+        //        //_remoteManager.Messenger.AddMessageToOutbox(userCmd.Chat, message);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        //_remoteManager.SaveException(ex);
+        //        //_remoteManager.SendTextMessageToChat(userCmd.Chat, $"Сообщите разработчику:\n{ex.GetType()}\n{ex.Message}");
+        //        _logger.SaveToDb("ОШИБКА! Отправка статистики чата", ex, userCmd.MessageId);
+        //    }
+        //}
+
+        ///// <summary> Отправка статистики по сообщениямо заданном пользователе </summary>
+        //private async void CmdSendMyStatistics(OLD_InputCommandInfo userCmd)
+        //{
+        //    try
+        //    {
+        //        string message = "";
+        //        using (var ctx = new RemoteManagerEntities())
+        //        {
+        //            var dbUser = await ctx.Users.FirstOrDefaultAsync(u => u.UserId == userCmd.From.Id);
+
+        //            // Если названия чатов переданы в качестве аргументов
+        //            if (userCmd.Args?.Length > 0)
+        //            {
+        //                // Берем имена чатов из аргументов
+        //                foreach (var chatName in userCmd.Args)
+        //                {
+        //                    var dbChat = await ctx.Chats.FirstOrDefaultAsync(c => c.ChatUserName == chatName || c.ChatTitle == chatName);
+        //                    if (dbChat == null)
+        //                        continue;
+
+        //                    string chatStatistics = await GetUserMessageStatistics_OneChat(dbChat, dbUser, ctx);
+        //                    if (chatStatistics?.Length > 0)
+        //                    {
+        //                        message += (message.Length > 0 ? "\n\n================\n\n" : "");
+        //                        message += chatStatistics;
+        //                    }
+        //                }
+        //            }
+        //            // Если команда без аргументов
+        //            else
+        //            {
+        //                // Для владельца выводим статистику со всех чатов
+        //                if ((await ctx.Users.FirstOrDefaultAsync(u => u.UserId == userCmd.From.Id)).RoleName == UserRole.Owner.ToString())
+        //                {
+        //                    foreach (var dbChat in await ctx.Chats.ToListAsync())
+        //                    {
+        //                        if (dbChat.ChatType == ChatType.Private.ToString())
+        //                            continue;
+
+        //                        string chatStatistics = await GetUserMessageStatistics_OneChat(dbChat, dbUser, ctx);
+        //                        if (chatStatistics?.Length > 0)
+        //                        {
+        //                            message += (message.Length > 0 ? "\n\n================\n\n" : "");
+        //                            message += chatStatistics;
+        //                        }
+        //                    }
+        //                }
+        //                // Для остальных пользователей - только чат по умолчанию
+        //                else
+        //                {
+        //                    var dbChat = await ctx.Chats.FirstOrDefaultAsync(c => c.ChatId == _defaultChatId);
+        //                    if (dbChat != null)
+        //                    {
+        //                        string chatStatistics = await GetUserMessageStatistics_OneChat(dbChat, dbUser, ctx);
+        //                        if (chatStatistics?.Length > 0)
+        //                        {
+        //                            message += (message.Length > 0 ? "\n\n================\n\n" : "");
+        //                            message += chatStatistics;
+        //                        }
+        //                    }
+        //                }
+        //            }
+
+        //            if (message.Length > 0)
+        //                message = $"Количество сообщений, оставленных Вами\n\n{message}";
+        //        }
+
+        //        _remoteManager.Messenger.AddMessageToOutbox(userCmd.Chat, message?.Length > 0 ? message : "Не вижу Вашей активности в чате :(");
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        //_remoteManager.SaveException(ex);
+        //        //_remoteManager.SendTextMessageToChat(userCmd.Chat, $"Сообщите разработчику:\n{ex.GetType()}\n{ex.Message}");
+        //        _logger.SaveToDb("ОШИБКА! Отправка личной статистики", ex, userCmd.MessageId);
+        //    }
+        //}
+
+        ///// <summary> Отправка общего количества сообщений в чатах  </summary>
+        //private void CmdSendDailyMessageAndUserCount(OLD_InputCommandInfo userCmd)
+        //{
+        //    try
+        //    {
+        //        string message = "";
+
+        //        using (var ctx = new RemoteManagerEntities())
+        //        {
+        //            // Если названия чатов переданы в качестве аргументов
+        //            if (userCmd.Args?.Length > 0)
+        //            {
+        //                foreach (var chatName in userCmd.Args)
+        //                {
+        //                    var chat = ctx.Chats.FirstOrDefault(c => c.ChatUserName == chatName || c.ChatTitle == chatName);
+
+        //                    if (chat == null)
+        //                        continue;
+
+        //                    message += (message.Length > 0 ? "\n\n================\n\n" : "");
+        //                    message += GetDailyMessageAndUserCount_OneChat(chat, ctx);
+        //                }
+        //            }   
+        //            // Если команда без аргументов
+        //            else
+        //            {
+        //                // Для админа выводим со всех чатов
+        //                if (ctx.vAdministrators.Any(u => u.UserId == userCmd.From.Id))
+        //                {
+        //                    foreach (var chat in ctx.Chats)
+        //                    {
+        //                        message += (message.Length > 0 ? "\n\n================\n\n" : "");
+        //                        message += GetDailyMessageAndUserCount_OneChat(chat, ctx);
+        //                    }
+        //                }
+        //                // Для остальных пользователей - только чат по умолчанию
+        //                else
+        //                {
+        //                    var chat = ctx.Chats.FirstOrDefault(c => c.ChatId == _defaultChatId);
+        //                    message += GetDailyMessageAndUserCount_OneChat(chat, ctx);
+        //                }
+        //            }
+
+        //            if (message.Length > 0)
+        //                message = $"Количество сообщений с {DateTime.Today}\n\n{message}";
+        //        }
+
+        //        _remoteManager.Messenger.AddMessageToOutbox(userCmd.Chat, message);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        //_remoteManager.SaveException(ex);
+        //        //_remoteManager.SendTextMessageToChat(userCmd.Chat, $"Сообщите разработчику:\n{ex.GetType()}\n{ex.Message}");
+        //        _logger.SaveToDb("ОШИБКА! Отправка количества сообщений и активных пользователей за день", ex, userCmd.MessageId);
+        //    }
+        //}
+
+        ///// <summary> Отправка статистики о десяти самых активных пользователях чатов </summary>
+        //private void CmdSendDailyTopTen(OLD_InputCommandInfo userCmd)
+        //{
+        //    try
+        //    {
+        //        string message = "";
+        //        using (var ctx = new RemoteManagerEntities())
+        //        {
+        //            // Если названия чатов переданы в качестве аргументов
+        //            if (userCmd.Args?.Length > 0)
+        //            {
+        //                // Берем имена чатов из аргументов
+        //                foreach (var chatName in userCmd.Args)
+        //                {
+        //                    var chat = ctx.Chats.FirstOrDefault(c => c.ChatUserName == chatName || c.ChatTitle == chatName);
+        //                    if (chat == null)
+        //                        continue;
+
+        //                    message += (message.Length > 0 ? "\n\n================\n\n" : "");
+        //                    message += GetDailyTopTen_OneChat(chat, ctx);
+        //                }
+        //            }
+        //            // Если команда без аргументов
+        //            else
+        //            {
+        //                // Для админа выводим со всех чатов
+        //                if (ctx.vAdministrators.Any(u => u.UserId == userCmd.From.Id))
+        //                {
+        //                    foreach (var chat in ctx.Chats)
+        //                    {
+        //                        message += (message.Length > 0 ? "\n\n================\n\n" : "");
+        //                        message += GetDailyTopTen_OneChat(chat, ctx);
+        //                    }
+        //                }
+        //                // Для остальных пользователей - только чат по умолчанию
+        //                else
+        //                {
+        //                    var chat = ctx.Chats.FirstOrDefault(c => c.ChatId == _defaultChatId);
+        //                    if (chat != null)
+        //                    {
+        //                        message += (message.Length > 0 ? "\n\n================\n\n" : "");
+        //                        message += GetDailyTopTen_OneChat(chat, ctx);
+        //                    }
+        //                }
+        //            }
+
+        //            if (message.Length > 0)
+        //                message = $"Топ 10 активных участников с {DateTime.Today}\n\n{message}";
+        //        }
+
+        //        _remoteManager.Messenger.AddMessageToOutbox(userCmd.Chat, message);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        //_remoteManager.SaveException(ex);
+        //        //_remoteManager.SendTextMessageToChat(userCmd.Chat, $"Сообщите разработчику:\n{ex.GetType()}\n{ex.Message}");
+        //        _logger.SaveToDb("ОШИБКА! Отправка статистики по 10-ти самым активным пользователям", ex, userCmd.MessageId);
+        //    }
+        //}
+        #endregion
+
+        #region Additional
+
+        /// <summary> Проверяем, начался ли уже учёт и надо ли его начать </summary>
+        private bool AccountingHasBegan(DateTime messageDateMsk)
+        {
+            using (var ctx = new ZsBotEntities())
+            {
+                // 1. Если порог общего кол-ва сообщений задан, ограничение будет включено при достижении этого порога
+                if (_msgsBeforeRestriction > 0)
+                {
+                    // Подсчёт всех сообщений в этой группе за день
+                    int chatMsgCount = ctx.ReceivedMessages
+                        .Count(m => m.ChatId == _defaultChatId
+                                 && m.ReceivedMsgDate > DateTime.Today - TimeSpan.FromHours(3));
+
+                    // Если ещё не активирован режим ограничения - активируем
+                    // это условие будто не всегда выполняется
+                    if (chatMsgCount == _msgsBeforeRestriction
+                        || (chatMsgCount > _msgsBeforeRestriction && _accountingStartDate == DateTime.MinValue)) // Когда каким-то образом пропустили момент с равенством
+                    {
+                        // Посылаем предупреждение в чат
+                        var chat = ctx.Chats.FirstOrDefault(c => c.ChatId == _defaultChatId);
+                        _bot.Messenger.AddMessageToOutbox(chat.GetTelegramType().Result, $"В чате уже {chatMsgCount} сообщений. Начинаю персональный учёт.");
+                        _accountingStartDate = messageDateMsk + TimeSpan.FromSeconds(1);
+
+                        // Запись в БД
+                        using (var casCtx = new ChatAdminEntities())
+                        {
+                            casCtx.Accountings.Add(new Accounting() { StartDate = _accountingStartDate, UpdateDate = DateTime.Now });
+                            casCtx.SaveChanges();
+                        }
+                    }
+
+                    // Преодолён порог общего количества сообщений?
+                    if (chatMsgCount > _msgsBeforeRestriction)
+                        return true;
+                    else
+                        return false;
+                }
+                // 2. Если порог общего кол-ва сообщений НЕ был задан, ограничение будет работать постоянно
+                else
+                {
+                    _accountingStartDate = DateTime.Now.Date; // С начала дня
+
+                    // Запись в БД
+                    using (var casCtx = new ChatAdminEntities())
+                    {
+                        casCtx.Accountings.Add(new Accounting() { StartDate = _accountingStartDate, UpdateDate = DateTime.Now });
+                        casCtx.SaveChanges();
+                    }
+
+                    return true;
+                }
+            }
+        }
+
+        /// <summary> Получение лимитов из БД </summary>
+        private void LoadLimitsFromDb()
+        {
+            string logData = $"_messageLimitHiHi        = {_messageLimitHiHi}"
+                           + $"\n_messageLimitHi        = {_messageLimitHi}"
+                           + $"\n_doNotBanAdmins        = {_doNotBanAdmins}"
+                           + $"\n_msgsBeforeRestriction = {_msgsBeforeRestriction}"
+                           + $"\n_accountingStartDate   = {_accountingStartDate}"
+                           + $"\n_banPeriod             = {_banPeriod}";
+
+            _logger.SaveToDb(LogType.Info, "Установка лимитов", "Начало определения лимитов", logData);
+
+
+            using (var ctx = new ZsBotEntities())
+            using (var casCtx = new ChatAdminEntities())
+            {
+                _messageLimitHiHi = int.Parse(casCtx.Parameters.FirstOrDefault(p => p.Name == "ChatUserMessageCountHiHi").Value);
+                _messageLimitHi = int.Parse(casCtx.Parameters.FirstOrDefault(p => p.Name == "ChatUserMessageCountHi").Value);
+                _doNotBanAdmins = bool.Parse(casCtx.Parameters.FirstOrDefault(p => p.Name == "DoNotBanAdmins").Value);
+                _msgsBeforeRestriction = int.Parse(casCtx.Parameters.FirstOrDefault(p => p.Name == "ActivateLimiterAfterMsgCount").Value ?? "-1");
+                _accountingStartDate = casCtx.Accountings.FirstOrDefault(a => a.StartDate.Date == DateTime.Now.Date)?.StartDate ?? DateTime.MinValue;
+
+                // Находим максимальное количество УЧТЁННЫХ сообщений за сутки от одного пользователя
+                var mostActiveUsersAccounted = GetTopTenForAccounting_OneChat(_defaultChatId, ctx);
+
+                // Если админов нельзя банить, то не учитываем их сообщения
+                if (_doNotBanAdmins)
+                {
+                    var adminIds = _bot.GetUsersByRole(UserRole.Owner, UserRole.Administrator).Select(u => u.UserId);
+                    foreach (var i in adminIds)
+                        if (mostActiveUsersAccounted.ContainsKey(i))
+                            mostActiveUsersAccounted.Remove(i);
+                }
+
+                int userMaxMsgCountAccounted = mostActiveUsersAccounted.Count() > 0
+                                    ? mostActiveUsersAccounted.Max(i => i.Value)
+                                    : 0;
+
+                // Если максимальное количество уже имеющихся сообщений больше уставок из базы - корректируем уставки
+                if (_messageLimitHi < userMaxMsgCountAccounted || _messageLimitHiHi < userMaxMsgCountAccounted)
+                {
+                    _messageLimitHi = _messageLimitHi > 0 ? userMaxMsgCountAccounted + 1 : 0;    // Только если ограничение было задано
+                    _messageLimitHiHi = _messageLimitHi > 0 ? _messageLimitHi + 5 : 0;    // Только если ограничение было задано
+                }
+
+                _banPeriod = (BanPeriod)Enum.Parse(typeof(BanPeriod), casCtx.Parameters.FirstOrDefault(p => p.Name == "BanPeriod").Value);
+
+                // Test begin
+                //var t1 = ctx.ReceivedMessages.Where(m => m.ChatId == _defaultChatId
+                //                                      && m.IsDeleted == false);
+                //var t11 = DateTime.Today - TimeSpan.FromHours(3);
+                //var t2 = ctx.ReceivedMessages.Where(m => m.ReceivedMsgDate >= t11);
+                //var t3 = t2.Count();
+                //var t4 = ctx.ReceivedMessages.Where(m => m.ReceivedMsgDate >= t11)
+                //                                      && m.ChatId == _defaultChatId
+                //                                      && m.IsDeleted == false);
+                //var t5 = t4.Count();
+                // Test end
+
+
+                var dayBeginDateTime = DateTime.Today - TimeSpan.FromHours(3); // Без этого ругается :(
+                int dailyMsgCount = ctx.ReceivedMessages
+                                .Where(m => m.ReceivedMsgDate >= dayBeginDateTime
+                                         && m.ChatId == _defaultChatId
+                                         && m.IsDeleted == false).Count();
+                _msgsBeforeRestriction = dailyMsgCount > _msgsBeforeRestriction
+                                       ? dailyMsgCount + 2
+                                       : _msgsBeforeRestriction;
+
+                logData = $"userMaxMsgCount          = {userMaxMsgCountAccounted}"
+                        + $"\n_messageLimitHiHi      = {_messageLimitHiHi}"
+                        + $"\n_messageLimitHi        = {_messageLimitHi}"
+                        + $"\n_doNotBanAdmins        = {_doNotBanAdmins}"
+                        + $"\n_msgsBeforeRestriction = {_msgsBeforeRestriction}"
+                        + $"\n_accountingStartDate   = {_accountingStartDate}"
+                        + $"\n_banPeriod             = {_banPeriod}";
+            }
+
+            // Оповещение владельцев и администраторов о переопределении лимитов
+            using (var ctxRm = new ZsBotEntities())
+            {
+                foreach (var admin in _bot.GetUsersByRole(UserRole.Owner, UserRole.Administrator))
+                {
+                    var chat = ctxRm.Chats.FirstOrDefault(c => c.ChatId == admin.UserId)
+                             ?.GetTelegramType()
+                             ?.Result;
+
+                    if (chat != null)
+                        SendBotConfiguration(chat);
+                    //else
+                    //    _remoteManager.SaveException(new Exception($"Для администратора с ID = {admin.UserId} нет соответствующего чата в БД!"));
+                }
+            }
+
+            _logger.SaveToDb(LogType.Info, "Установка лимитов", "Конец определения лимитов", logData);
+        }
+
+        /// <summary> Отправка данных о конфигурации чата </summary>
+        private void SendBotConfiguration(Telegram.Bot.Types.Chat chat)
+        {
+            // TODO: Автоматический анализ флада
+
+            string banPeriod = "";
+            switch (_banPeriod)
+            {
+                case BanPeriod.ForOneHour: banPeriod = "в течение 1-го часа"; break;
+                case BanPeriod.ForThreeHours: banPeriod = "в течение 3-х часов"; break;
+                case BanPeriod.UntilNextDay: banPeriod = "до начала следующего дня"; break;
+                case BanPeriod.Undefined: throw new NotImplementedException("Период бана не может быть неопределённым!");
+            }
+
+            string msg = "";
+            if (_messageLimitHi <= 0)
+                msg = "Ограничение количества сообщений *не установлено*";
+            //+ "\n\nРежим ограничения количества сообщений отключен";
+            else if (_messageLimitHi > 0 && _messageLimitHiHi <= 0)
+                msg = $"Пользователи будут получать только предупреждение после *{_messageLimitHi}-го* сообщения"
+                    + "\n\nРежим ограничения количества сообщений отключен";
+            else if (_messageLimitHi > 0 && _messageLimitHiHi > 0)
+            {
+                msg = $"Пользователи будут получать предупреждение после *{_messageLimitHi}-го* сообщения.\n"
+                    + $"Все сообщения после *{_messageLimitHiHi}-го* будут удаляться {banPeriod}."
+                    + (_msgsBeforeRestriction > 0
+                      ? $"\n\nУчёт начнётся после *{_msgsBeforeRestriction}-го* сообщения в чате за день"
+                      : "\n\nУчёт сообщений ведётся с начала дня");
+            }
+            else
+                throw new NotImplementedException("SendBotStatus: такого исхода не ожидалось");
+
+            if ((_banPeriod == BanPeriod.ForOneHour || _banPeriod == BanPeriod.ForThreeHours)
+                && (_messageLimitHi > 0 && _messageLimitHiHi > 0))
+                msg += $"\n\nПо окончании периода бана пользователю будет выделено *{_messageLimitAfterBan} сообщений* до конца дня";
+
+            // Отправляем сообщение
+            _bot.Messenger.AddMessageToOutbox(chat, msg);
+        }
+
+        /// <summary> Получение общего количества сообщений в чатах  </summary>
+        private string GetDailyMessageAndUserCount_OneChat(Zs.Bot.DbModel.DbChat chat, ZsBotEntities ctx, string title = null)
+        {
+            // Шапка сообщения: 
+            //     Всего сообщений Х
+            //     Активных пользователей Х
+
+            try
+            {
+                string message = "";
+                DateTime today = DateTime.Today - TimeSpan.FromHours(3);
+
+                int msgCounter = ctx.ReceivedMessages
+                                    .Where(m => m.ReceivedMsgDate >= today
+                                           && m.ChatId == chat.ChatId
+                                           && m.IsDeleted == false)
+                                    .Count();
+
+#warning Надо учитывать удалённые и неудалённые сообщения
+
+                if (msgCounter == 0)
+                    return "";
+
+                // Подсчёт сообщений тет-а-тет чатов с ботом
+                if (chat.ChatType == ChatType.Private.ToString())
+                {
+                    message += (message.Length > 0 ? "\n" : "")
+                            + (title == null ? $"*{chat.ChatTitle ?? chat.ChatUserName ?? chat.ChatFirstName}*:\n" : $"{title}")
+                            + $"Всего сообщений {msgCounter}";
+                }
+                // Подсчёт сообщений в групповых чатах, где присутствует бот
+                else
+                {
+                    int userCounter = ctx.ReceivedMessages
+                                         .Where(m => m.ReceivedMsgDate >= today
+                                                && m.ChatId == chat.ChatId)
+                                         .GroupBy(m => m.UserId).Count();
+
+                    message += (message.Length > 0 ? "\n" : "")
+                            + (title == null ? $"*{chat.ChatTitle ?? chat.ChatUserName ?? chat.ChatFirstName}*:\n" : $"{title}")
+                            + $"Всего сообщений {msgCounter}\nАктивных пользователей {userCounter}";
+                }
+                return message;
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+        /// <summary> Получение данных о десяти самых активных пользователях заданного чата</summary>
+        private string GetDailyTopTen_OneChat(Zs.Bot.DbModel.DbChat chat, ZsBotEntities ctx, string title = null)
+        {
+            //Telegram.Bot.Types.Chat tChat = chat.GetTelegramType().RunSynch
+            string message = "";
+            DateTime today = DateTime.Today - TimeSpan.FromHours(3);
+
+            var dailyChatMessages = ctx.ReceivedMessages
+                                       .Where(m => m.ReceivedMsgDate >= today
+                                       && m.ChatId == chat.ChatId
+                                       && m.IsDeleted == false);
+
+            if (dailyChatMessages.Count() == 0)
+                return "";
+
+            if (chat.ChatType == ChatType.Private.ToString())
+            {
+                //message += $"\n*{chat.ChatTitle ?? chat.ChatUserName ?? chat.ChatFirstName}*:\n"
+                //    + $" {dailyChatMessages.Count()}";
+            }
+            else
+            {
+                var userName_msgCount_Pair = from m in dailyChatMessages.GroupBy(msg => msg.UserId)
+                                           .OrderByDescending(msg => msg.Count())
+                                             join u in ctx.Users on m.Key equals u.UserId
+                                             select new
+                                             {
+                                                 UserName = $"{u.UserFirstName} {u.UserLastName}",
+                                                 MessageCount = m.Count()
+                                             };
+                userName_msgCount_Pair = userName_msgCount_Pair.Take(10);
+
+                message += (message.Length > 0 ? "\n\n================\n\n" : "")
+                        + (title == null ? $"*{chat.ChatTitle ?? chat.ChatUserName ?? chat.ChatFirstName}*:\n" : $"{title}");
+
+                foreach (var item in userName_msgCount_Pair)
+                    message += item.MessageCount > 0
+                             ? $"\n{item.UserName} {item.MessageCount}"
+                             : "";
+            }
+            return message;
+        }
+
+        private Dictionary<int, int> GetDailyTopTen_OneChat(long chatId, ZsBotEntities ctx)
+        {
+            var dict = new Dictionary<int, int>();
+            var today = DateTime.Today - TimeSpan.FromHours(3);
+
+            var chat = ctx.Chats.FirstOrDefault(c => c.ChatId == chatId);
+            var dailyChatMessages = ctx.ReceivedMessages
+                                       .Where(m => m.ReceivedMsgDate >= today
+                                                && m.ChatId == chat.ChatId
+                                                && m.IsDeleted == false);
+
+            if (dailyChatMessages.Count() == 0)
+                return dict;
+
+            if (chat.ChatType == ChatType.Private.ToString())
+            {
+                //message += $"\n*{chat.ChatTitle ?? chat.ChatUserName ?? chat.ChatFirstName}*:\n"
+                //    + $" {dailyChatMessages.Count()}";
+            }
+            else
+            {
+                var userId_msgCount_Pair = from m in dailyChatMessages.GroupBy(msg => msg.UserId)
+                                           .OrderByDescending(msg => msg.Where(ms => ms.IsDeleted == false).Count())
+                                           join u in ctx.Users on m.Key equals u.UserId
+                                           select new
+                                           {
+                                               u.UserId,
+                                               MessageCount = m.Where(msg => msg.IsDeleted == false).Count()
+                                           };
+                userId_msgCount_Pair = userId_msgCount_Pair.Take(10);
+
+                foreach (var item in userId_msgCount_Pair)
+                    dict.Add(item.UserId, item.MessageCount);
+
+            }
+            return dict;
+        }
+
+        /// <summary> Выбор самых активны с начала учёта </summary>
+        private Dictionary<int, int> GetTopTenForAccounting_OneChat(long chatId, ZsBotEntities ctx)
+        {
+            var dict = new Dictionary<int, int>();
+
+            // Если время учёта ещё не началось (порог свободного количества сообщений (100) не преодолён
+            if (_accountingStartDate == DateTime.MinValue)
+                return dict;
+
+            var chat = ctx.Chats.FirstOrDefault(c => c.ChatId == chatId);
+
+            // Если дата не была задана, берём отчет от начала дня
+            var shiftedAccountingDate = _accountingStartDate == DateTime.MinValue
+                                      ? DateTime.Now.Date - TimeSpan.FromHours(3)
+                                      : _accountingStartDate - TimeSpan.FromHours(3);
+
+            var accountedChatMessages = ctx.ReceivedMessages
+                                       .Where(m => m.ReceivedMsgDate >= shiftedAccountingDate
+                                                && m.ChatId == chat.ChatId
+                                                && m.IsDeleted == false);
+
+            if (accountedChatMessages.Count() == 0)
+                return dict;
+
+            if (chat.ChatType != ChatType.Private.ToString())
+            {
+                var userId_msgCount_Pair = from m in accountedChatMessages.GroupBy(msg => msg.UserId)
+                                           .OrderByDescending(msg => msg.Where(ms => ms.IsDeleted == false).Count())
+                                           join u in ctx.Users on m.Key equals u.UserId
+                                           select new
+                                           {
+                                               u.UserId,
+                                               MessageCount = m.Where(msg => msg.IsDeleted == false).Count()
+                                           };
+                userId_msgCount_Pair = userId_msgCount_Pair.Take(10);
+
+                foreach (var item in userId_msgCount_Pair)
+                    dict.Add(item.UserId, item.MessageCount);
+            }
+            return dict;
+        }
+
+        /// <summary> Получение статистики по сообщениям для одного пользователя </summary>
+        private async Task<string> GetUserMessageStatistics_OneChat(
+            Zs.Bot.DbModel.DbChat chat,
+            Zs.Bot.DbModel.DbUser user,
+            ZsBotEntities ctx,
+            string title = null)
+        {
+            string message = "";
+            DateTime startDate = DateTime.Today - TimeSpan.FromHours(3);
+
+            // Test begin
+
+
+            // Test end
+
+            //var query = ctx.ReceivedMessages.Where(m => m.ReceivedMsgDate >= startDate
+            //                                         && m.ChatId == chat.ChatId
+            //                                         && m.User.UserId == user.UserId
+            //                                         && m.IsDeleted == false);
+
+            int daylyMsgCounter = await ctx.ReceivedMessages
+                                .Where(m => m.ReceivedMsgDate >= startDate
+                                         && m.ChatId == chat.ChatId
+                                         && m.User.UserId == user.UserId
+                                         && m.IsDeleted == false)
+                                .CountAsync().ConfigureAwait(true);
+
+            startDate = _accountingStartDate == DateTime.MinValue
+                      ? DateTime.Today - TimeSpan.FromHours(3)
+                      : _accountingStartDate - TimeSpan.FromHours(3);
+            int daylyMsgAccounted = _accountingStartDate != DateTime.MinValue
+                                  ? await ctx.ReceivedMessages
+                                       .Where(m => m.ReceivedMsgDate >= startDate
+                                         && m.ChatId == chat.ChatId
+                                         && m.User.UserId == user.UserId
+                                         && m.IsDeleted == false).CountAsync().ConfigureAwait(false)
+                                  : 0;
+
+            startDate = DateTime.Today - TimeSpan.FromHours(3) - TimeSpan.FromDays(7);
+            int weeklyMsgCounter = await ctx.ReceivedMessages
+                                      .Where(m => m.ReceivedMsgDate >= startDate
+                                               && m.ChatId == chat.ChatId
+                                               && m.User.UserId == user.UserId
+                                               && m.IsDeleted == false).CountAsync().ConfigureAwait(false);
+
+            startDate = DateTime.Today - TimeSpan.FromHours(3) - TimeSpan.FromDays(30);
+            int monthlyMsgCounter = await ctx.ReceivedMessages
+                                      .Where(m => m.ReceivedMsgDate >= startDate
+                                               && m.ChatId == chat.ChatId
+                                               && m.User.UserId == user.UserId
+                                               && m.IsDeleted == false).CountAsync().ConfigureAwait(false);
+
+            if (daylyMsgCounter == 0 && weeklyMsgCounter == 0 && monthlyMsgCounter == 0)
+                return "";
+
+            string chatName = (title == null ? $"*{chat.ChatTitle ?? chat.ChatUserName ?? chat.ChatFirstName}*" : $"{title}")
+                            + (chat.ChatType == ChatType.Private.ToString() ? " + бот" : "")
+                            + $" ({chat.ChatType})";
+            message += (message.Length > 0 ? "\n" : "")
+                        + $"{chatName}:\n"
+                        + $"за день: {daylyMsgCounter}"
+                        + (chat.ChatType == ChatType.Private.ToString() ? "\n" : $"  (учтено:\\* {daylyMsgAccounted})\n")
+                        + $"за неделю: {weeklyMsgCounter}\n"
+                        + $"за месяц: {monthlyMsgCounter}\n"
+                        + $"\n\\*Я начинаю учёт сообщений каждого пользователя после того, как в чате наберётся {(_msgsBeforeRestriction > 0 ? _msgsBeforeRestriction : 0)} сообщений";
+
+            return message;
+        }
+
+        /// <summary> Удаление старого предупреждения от бота, чтобы не захламлять чат </summary>
+        private void DeleteLastWarningMessageForUser(Ban ban)
+        {
+            try
+            {
+                using (var ctx = new ZsBotEntities())
+                {
+                    var msg = ctx.SentMessages.FirstOrDefault(m => m.SentMsgTag == $"{ban.BanId}@{ban.UserId}"
+                                                                   && m.InsertDate >= DateTime.Today
+                                                                   && m.IsDeleted == false);
+                    var msgId = msg?.SentMsgMessageId;
+
+                    if (msgId != null && msgId != 0)
+                        _bot.Messenger.DeleteMessage(ban.ChatId, (int)msgId);
+                }
+
+            }
+            catch (Exception ex)
+            {
+                //_remoteManager.SaveException(ex);
+                _logger.SaveToDb("ОШИБКА! Удаление из чата последнего предупреждения для пользователя", ex);
+            }
+        }
+
+        /// <summary> Возвращает активный бан для пользователя, написавшего сообщение или null, если бана нет </summary>
+        private static Ban GetActiveBanForUser(InMessage tgMessage)
+        {
+            try
+            {
+                Ban ban = null;
+                using (var casCtx = new ChatAdminEntities())
+                    ban = casCtx.Bans.OrderByDescending(b => b.InsertDate)
+                                     .FirstOrDefault(b => b.UserId == tgMessage.From.Id
+                                                       && b.ChatId == tgMessage.Chat.Id
+                                                       && b.IsActive
+                                                       && b.InsertDate > DateTime.Today);
+                return ban;
+
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
+        }
+
+        /// <summary> В зависимости от настроек бота рассчитывает время, когда пользователь будет разлочен </summary>
+        private DateTime GetBanFinishTime()
+        {
+            switch (_banPeriod)
+            {
+                case BanPeriod.ForOneHour: return DateTime.Now + TimeSpan.FromHours(1);
+                case BanPeriod.ForThreeHours: return DateTime.Now + TimeSpan.FromHours(3);
+                case BanPeriod.UntilNextDay: return DateTime.Now.Date + TimeSpan.FromDays(1);
+                default: return DateTime.Now; // Бан как бы заканчивается прямо щас
+            }
+        }
+
+
+
+        private void SendMessageToAdmins(string message)
+        {
+            using (var ctxRm = new ZsBotEntities())
+            {
+                foreach (var admin in _bot.GetUsersByRole(UserRole.Owner, UserRole.Administrator))
+                {
+                    var chat = ctxRm.Chats.FirstOrDefault(c => c.ChatId == admin.UserId)
+                             ?.GetTelegramType()
+                             ?.Result;
+
+                    if (chat != null)
+                        _bot.Messenger.AddMessageToOutbox(chat, message);
+                    //else
+                    //    _remoteManager.SaveException(new Exception($"Для администратора с ID = {admin.UserId} нет соответствующего чата в БД!"));
+                }
+            }
+        }
+
+
+        public void Dispose()
+        {
+            Console.WriteLine("Disposing...");
+        }
+        #endregion
+
+    }
+}

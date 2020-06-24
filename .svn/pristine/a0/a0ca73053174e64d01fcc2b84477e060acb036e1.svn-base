@@ -1,0 +1,541 @@
+﻿
+using System;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace Zs.Bot.DbModelTEST
+{
+
+    [Table("bots", Schema = "bot")]
+    internal partial class DbBot
+    {
+        [Key]
+        [Column("bot_id")]
+        public Int32 BotId { get; set; }
+
+        [Column("bot_name")]
+        public String BotName { get; set; }
+
+        [Column("bot_token")]
+        public String BotToken { get; set; }
+
+        [Column("bot_description")]
+        public String BotDescription { get; set; }
+
+        [Column("update_date")]
+        public DateTime UpdateDate { get; set; }
+
+        [Column("insert_date")]
+        public DateTime InsertDate { get; set; }
+
+        public DbBot()
+        {
+        }
+    }
+
+
+
+    [Table("chat_types", Schema = "bot")]
+    internal partial class DbChatType
+    {
+        [Key]
+        [Column("chat_type_code")]
+        public String ChatTypeCode { get; set; }
+
+        [Column("chat_type_name")]
+        public String ChatTypeName { get; set; }
+
+        [Column("update_date")]
+        public DateTime UpdateDate { get; set; }
+
+        [Column("insert_date")]
+        public DateTime InsertDate { get; set; }
+
+        public DbChatType()
+        {
+        }
+    }
+
+
+
+    [Table("chats", Schema = "bot")]
+    internal partial class DbChat
+    {
+        [Key]
+        [Column("chat_id")]
+        public Int32 ChatId { get; set; }
+
+        [Column("chat_title")]
+        public String ChatTitle { get; set; }
+
+        [Column("chat_description")]
+        public String ChatDescription { get; set; }
+
+        [Column("chat_type")]
+        public String ChatType { get; set; }
+
+        [Column("raw_data")]
+        public String RawData { get; set; }
+
+        [Column("update_date")]
+        public DateTime UpdateDate { get; set; }
+
+        [Column("insert_date")]
+        public DateTime InsertDate { get; set; }
+
+        public DbChat()
+        {
+        }
+    }
+
+
+
+    [Table("commands", Schema = "bot")]
+    internal partial class DbCommand
+    {
+        [Key]
+        [Column("command_name")]
+        public String CommandName { get; set; }
+
+        [Column("command_script")]
+        public String CommandScript { get; set; }
+
+        [Column("command_default_args")]
+        public String CommandDefaultArgs { get; set; }
+
+        [Column("command_desc")]
+        public String CommandDesc { get; set; }
+
+        [Column("command_group")]
+        public String CommandGroup { get; set; }
+
+        [Column("update_date")]
+        public DateTime UpdateDate { get; set; }
+
+        [Column("insert_date")]
+        public DateTime InsertDate { get; set; }
+
+        public DbCommand()
+        {
+        }
+    }
+
+
+
+    [Table("logs", Schema = "bot")]
+    internal partial class DbLog
+    {
+        [Key]
+        [Column("log_id")]
+        public Int64 LogId { get; set; }
+
+        [Column("log_type")]
+        public String LogType { get; set; }
+
+        [Column("log_group")]
+        public String LogGroup { get; set; }
+
+        [Column("log_message")]
+        public String LogMessage { get; set; }
+
+        [Column("log_data")]
+        public String LogData { get; set; }
+
+        [Column("log_method")]
+        public String LogMethod { get; set; }
+
+        [Column("message_id")]
+        public Int32 MessageId { get; set; }
+
+        [Column("insert_date")]
+        public DateTime InsertDate { get; set; }
+
+        public DbLog()
+        {
+        }
+    }
+
+
+
+    [Table("message_types", Schema = "bot")]
+    internal partial class DbMessageType
+    {
+        [Key]
+        [Column("message_type_code")]
+        public String MessageTypeCode { get; set; }
+
+        [Column("message_type_name")]
+        public String MessageTypeName { get; set; }
+
+        [Column("update_date")]
+        public DateTime UpdateDate { get; set; }
+
+        [Column("insert_date")]
+        public DateTime InsertDate { get; set; }
+
+        public DbMessageType()
+        {
+        }
+    }
+
+
+
+    [Table("messengers", Schema = "bot")]
+    internal partial class DbMessenger
+    {
+        [Key]
+        [Column("messenger_code")]
+        public String MessengerCode { get; set; }
+
+        [Column("messenger_name")]
+        public String MessengerName { get; set; }
+
+        [Column("update_date")]
+        public DateTime UpdateDate { get; set; }
+
+        [Column("insert_date")]
+        public DateTime InsertDate { get; set; }
+
+        public DbMessenger()
+        {
+        }
+    }
+
+
+
+    [Table("options", Schema = "bot")]
+    internal partial class DbOption
+    {
+        [Key]
+        [Column("option_name")]
+        public String OptionName { get; set; }
+
+        [Column("option_value")]
+        public String OptionValue { get; set; }
+
+        [Column("option_group")]
+        public String OptionGroup { get; set; }
+
+        [Column("option_description")]
+        public String OptionDescription { get; set; }
+
+        [Column("update_date")]
+        public DateTime UpdateDate { get; set; }
+
+        [Column("insert_date")]
+        public DateTime InsertDate { get; set; }
+
+        public DbOption()
+        {
+        }
+    }
+
+
+
+    [Table("received_messages", Schema = "bot")]
+    internal partial class DbReceivedMessage
+    {
+        [Key]
+        [Column("received_message_id")]
+        public Int64 ReceivedMessageId { get; set; }
+
+        [Column("messenger_code")]
+        public String MessengerCode { get; set; }
+
+        [Column("message_type_code")]
+        public String MessageTypeCode { get; set; }
+
+        [Column("user_id")]
+        public Int32 UserId { get; set; }
+
+        [Column("chat_id")]
+        public Int32 ChatId { get; set; }
+
+        [Column("received_message_text")]
+        public String ReceivedMessageText { get; set; }
+
+        [Column("raw_data")]
+        public String RawData { get; set; }
+
+        [Column("update_date")]
+        public DateTime UpdateDate { get; set; }
+
+        [Column("insert_date")]
+        public DateTime InsertDate { get; set; }
+
+        public DbReceivedMessage()
+        {
+        }
+    }
+
+
+
+    [Table("sent_messages", Schema = "bot")]
+    internal partial class DbSentMessage
+    {
+        [Key]
+        [Column("sent_message_id")]
+        public Int64 SentMessageId { get; set; }
+
+        [Column("messenger_code")]
+        public String MessengerCode { get; set; }
+
+        [Column("message_type_code")]
+        public String MessageTypeCode { get; set; }
+
+        [Column("user_id")]
+        public Int32 UserId { get; set; }
+
+        [Column("chat_id")]
+        public Int32 ChatId { get; set; }
+
+        [Column("sent_message_text")]
+        public String SentMessageText { get; set; }
+
+        [Column("raw_data")]
+        public String RawData { get; set; }
+
+        [Column("is_sent_successfully")]
+        public Boolean IsSentSuccessfully { get; set; }
+
+        [Column("update_date")]
+        public DateTime UpdateDate { get; set; }
+
+        [Column("insert_date")]
+        public DateTime InsertDate { get; set; }
+
+        public DbSentMessage()
+        {
+        }
+    }
+
+
+
+    [Table("sessions", Schema = "bot")]
+    internal partial class DbSession
+    {
+        [Key]
+        [Column("session_id")]
+        public Int32 SessionId { get; set; }
+
+        [Column("chat_id")]
+        public Int32 ChatId { get; set; }
+
+        [Column("session_is_logged_in")]
+        public Boolean SessionIsLoggedIn { get; set; }
+
+        [Column("session_current_state")]
+        public String SessionCurrentState { get; set; }
+
+        [Column("update_date")]
+        public DateTime UpdateDate { get; set; }
+
+        [Column("insert_date")]
+        public DateTime InsertDate { get; set; }
+
+        public DbSession()
+        {
+        }
+    }
+
+
+
+    [Table("user_roles", Schema = "bot")]
+    internal partial class DbUserRole
+    {
+        [Key]
+        [Column("user_role_code")]
+        public String UserRoleCode { get; set; }
+
+        [Column("user_role_name")]
+        public String UserRoleName { get; set; }
+
+        [Column("user_role_permissions")]
+        public String UserRolePermissions { get; set; }
+
+        [Column("update_date")]
+        public DateTime UpdateDate { get; set; }
+
+        [Column("insert_date")]
+        public DateTime InsertDate { get; set; }
+
+        public DbUserRole()
+        {
+        }
+    }
+
+
+
+    [Table("users", Schema = "bot")]
+    internal partial class DbUser
+    {
+        [Key]
+        [Column("user_id")]
+        public Int32 UserId { get; set; }
+
+        [Column("user_name")]
+        public String UserName { get; set; }
+
+        [Column("user_full_name")]
+        public String UserFullName { get; set; }
+
+        [Column("user_role_code")]
+        public String UserRoleCode { get; set; }
+
+        [Column("user_is_bot")]
+        public Boolean UserIsBot { get; set; }
+
+        [Column("raw_data")]
+        public String RawData { get; set; }
+
+        [Column("update_date")]
+        public DateTime UpdateDate { get; set; }
+
+        [Column("insert_date")]
+        public DateTime InsertDate { get; set; }
+
+        public DbUser()
+        {
+        }
+    }
+
+
+
+    [Table("v_test", Schema = "bot")]
+    internal partial class DbVTest
+    {
+        [Column("messenger_code")]
+        public String MessengerCode { get; set; }
+
+        [Column("message_type_code")]
+        public String MessageTypeCode { get; set; }
+
+        [Column("user_id")]
+        public Int32 UserId { get; set; }
+
+        [Column("chat_id")]
+        public Int32 ChatId { get; set; }
+
+        [Column("received_message_text")]
+        public String ReceivedMessageText { get; set; }
+
+        public DbVTest()
+        {
+        }
+    }
+
+
+
+    [Table("accountings", Schema = "zl")]
+    internal partial class DbAccounting
+    {
+        [Key]
+        [Column("accounting_id")]
+        public Int32 AccountingId { get; set; }
+
+        [Column("accounting_start_date")]
+        public DateTime AccountingStartDate { get; set; }
+
+        [Column("update_date")]
+        public DateTime UpdateDate { get; set; }
+
+        public DbAccounting()
+        {
+        }
+    }
+
+
+
+    [Table("auxiliary_words", Schema = "zl")]
+    internal partial class DbAuxiliaryWord
+    {
+        [Key]
+        [Column("the_word")]
+        public String TheWord { get; set; }
+
+        [Column("insert_date")]
+        public DateTime InsertDate { get; set; }
+
+        public DbAuxiliaryWord()
+        {
+        }
+    }
+
+
+
+    [Table("bans", Schema = "zl")]
+    internal partial class DbBan
+    {
+        [Key]
+        [Column("ban_id")]
+        public Int32 BanId { get; set; }
+
+        [Column("user_id")]
+        public Int32 UserId { get; set; }
+
+        [Column("chat_id")]
+        public Int32 ChatId { get; set; }
+
+        [Column("ban_has_warned")]
+        public Boolean BanHasWarned { get; set; }
+
+        [Column("ban_finish_date")]
+        public DateTime BanFinishDate { get; set; }
+
+        [Column("ban_is_active")]
+        public Boolean BanIsActive { get; set; }
+
+        [Column("update_date")]
+        public DateTime UpdateDate { get; set; }
+
+        [Column("insert_date")]
+        public DateTime InsertDate { get; set; }
+
+        public DbBan()
+        {
+        }
+    }
+
+
+
+    [Table("notifications", Schema = "zl")]
+    internal partial class DbNotification
+    {
+        [Key]
+        [Column("notification_id")]
+        public Int32 NotificationId { get; set; }
+
+        [Column("notification_is_active")]
+        public Boolean NotificationIsActive { get; set; }
+
+        [Column("notification_message")]
+        public String NotificationMessage { get; set; }
+
+        [Column("notification_month")]
+        public Int32 NotificationMonth { get; set; }
+
+        [Column("notification_day")]
+        public Int32 NotificationDay { get; set; }
+
+        [Column("notification_hour")]
+        public Int32 NotificationHour { get; set; }
+
+        [Column("notification_minute")]
+        public Int32 NotificationMinute { get; set; }
+
+        [Column("notification_exec_date")]
+        public DateTime NotificationExecDate { get; set; }
+
+        [Column("update_date")]
+        public DateTime UpdateDate { get; set; }
+
+        [Column("insert_date")]
+        public DateTime InsertDate { get; set; }
+
+        public DbNotification()
+        {
+        }
+    }
+
+
+}

@@ -1,0 +1,28 @@
+﻿using System;
+using Microsoft.EntityFrameworkCore;
+using Zs.Common.Interfaces;
+
+namespace Zs.Bot.Model.Db
+{
+    public partial class ZsBotDbContext : DbContext
+    {
+        private static DbContextOptions<ZsBotDbContext> _options;
+        private static IZsLogger _logger;
+
+        public virtual DbSet<DbSqlResult> SqlResults { get; set; }
+
+
+        public ZsBotDbContext()
+            : base(_options)
+        {
+        }
+
+        public static void Initialize(DbContextOptions<ZsBotDbContext> options)
+        {
+            if (_options != null)
+                throw new InvalidOperationException("Reinitialize is not allowed");
+
+            _options = options;
+        }
+    }
+}

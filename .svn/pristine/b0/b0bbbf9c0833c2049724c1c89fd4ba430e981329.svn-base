@@ -1,0 +1,28 @@
+﻿using System;
+using Zs.Bot.Model.Db;
+
+namespace Zs.Bot.Modules.Messaging
+{
+    /// <summary>
+    /// Интерфейс, который определяет методы приёма и передачи сообщений
+    /// То, что в будущем будет отделять Telegram, Skype и т.д. от Zs.Bot
+    /// </summary>
+    public interface IMessenger
+    {
+        /// <summary> Вызывается после обработки сообщения. Параметры - ReturnAddress, MessageText </summary>
+        event Action<object, string> InputMessageProcessed;
+
+        /// <summary> Добавление сообщения в очередь на отправку </summary>
+        void AddMessageToOutbox(IDbChat chat, string messageText, string tag = null, int replyToMessageId = -1);
+
+        /// <summary> Добавление сообщения в очередь на отправку </summary>
+        void AddMessageToOutbox(string messageText, params string[] userRoleCodes);
+
+        /// <summary> Преобразование сообщения к общему виду </summary>
+        IDbReceivedMessage ConvertToReceivedMessage(object specificMessage);
+
+        /// <summary> Преобразование сообщения к общему виду </summary>
+        IDbSentMessage ConvertToSentMessage(object specificMessage);
+
+    }
+}

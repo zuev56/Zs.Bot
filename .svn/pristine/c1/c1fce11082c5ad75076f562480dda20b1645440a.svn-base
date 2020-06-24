@@ -1,0 +1,52 @@
+
+--DROP USER IF EXISTS zuev56;
+--DROP USER IF EXISTS robot;
+--CREATE USER zuev56 WITH PASSWORD '105203656';
+--CREATE USER robot WITH PASSWORD 'sqr105203656';
+\c postgres postgres
+set timezone = 'Europe/Moscow';
+DROP DATABASE IF EXISTS "Robot";
+CREATE DATABASE "Robot" WITH ENCODING = 'UTF8';
+\connect "Robot" postgres;
+DROP SCHEMA public;
+CREATE SCHEMA bot;
+CREATE SCHEMA zl;
+CREATE SCHEMA helper;
+COMMENT ON SCHEMA bot    IS 'Базовые сущности для всех ботов';
+COMMENT ON SCHEMA zl     IS 'Сущности бота-администратора чата ЗимаЛето';
+COMMENT ON SCHEMA helper IS 'Вспомогательные сущности, не имеющие прямого отношения к бизнесс-логике';
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA helper;
+
+
+
+GRANT ALL PRIVILEGES ON DATABASE "Robot"            TO zuev56;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA zl  TO zuev56;
+GRANT ALL PRIVILEGES ON DATABASE "Robot"            TO zuev56;
+GRANT ALL PRIVILEGES ON SCHEMA zl                   TO zuev56;
+GRANT ALL PRIVILEGES ON SCHEMA bot                  TO zuev56;
+GRANT ALL PRIVILEGES ON ALL TABLES    IN SCHEMA zl  TO zuev56;
+GRANT ALL PRIVILEGES ON ALL TABLES    IN SCHEMA bot TO zuev56;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA bot TO zuev56;
+
+GRANT CONNECT        ON DATABASE "Robot"            TO robot;
+GRANT ALL PRIVILEGES ON SCHEMA zl                   TO robot;
+GRANT ALL PRIVILEGES ON SCHEMA bot                  TO robot;
+GRANT ALL PRIVILEGES ON ALL TABLES    IN SCHEMA bot TO robot;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA bot TO robot;
+GRANT INSERT         ON ALL TABLES    IN SCHEMA bot TO robot;
+GRANT ALL PRIVILEGES ON ALL TABLES    IN SCHEMA zl  TO robot;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA zl  TO robot;
+
+
+
+CREATE OR REPLACE FUNCTION helper.reset_update_date()
+RETURNS TRIGGER AS $$
+BEGIN
+   NEW.update_date = now(); 
+   RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+COMMENT ON FUNCTION helper.reset_update_date()
+    IS 'Общая триггерная функция обовления поля update_date';
+    

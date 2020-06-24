@@ -1,0 +1,46 @@
+﻿using System;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
+namespace ChatAdminService.NETCore
+{
+    class Program
+    {
+        private static int _reloadCounter = 0;
+
+        public static async Task Main(string[] args)
+        {
+            try
+            {
+                await ServiceLoader(args);
+            }
+            catch (Exception ex)
+            {
+                _reloadCounter++;
+                Console.WriteLine($"\n\nEXCEPTION:\n\n{ex.Message}\n\n{ex.StackTrace}");
+
+                if (_reloadCounter < 3)
+                    await ServiceLoader(args);
+
+                Console.ReadLine();
+            }
+        }
+        
+        public static async Task ServiceLoader(string[] args)
+        {
+            var builder = new HostBuilder()
+                .ConfigureServices((hostContext, services) =>
+                {
+                    services.AddSingleton<IHostedService, ChatAdmin>();
+                });
+
+            await builder.RunConsoleAsync();
+        }
+
+    }
+
+}

@@ -1,0 +1,141 @@
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Threading;
+using Microsoft.Extensions.Logging;
+using Zs.Bot.DbModel;
+using Zs.Common.Enums;
+using Zs.Common.Interfaces;
+
+namespace Zs.Bot.Helpers
+{
+    public class Logger : IZsLogger
+    {
+        private static Logger _instance;
+        private string _emergencyLogDirrectory = AppDomain.CurrentDomain.BaseDirectory;
+
+        /// <summary> Каталог, в который будет записываться лог, когда потеряна связь с БД </summary>
+        public string EmergencyLogDirrectory
+        {
+            get => _emergencyLogDirrectory;
+            set
+            {
+                if (string.IsNullOrWhiteSpace(value))
+                    throw new ArgumentException($"{nameof(EmergencyLogDirrectory)} не может быть пустым!");
+
+                if (!Directory.Exists(value))
+                {
+                    var p = Directory.CreateDirectory(value);
+                    if (!p.Exists)
+                        throw new Exception($"Не удалось создать каталог для хранения логов ({value})");
+                }
+                _emergencyLogDirrectory = value;
+            }
+        }
+
+
+        protected Logger()
+        {
+        }
+
+        public static Logger GetInstance()
+        {
+            if (_instance == null)
+                _instance = new Logger();
+
+            return _instance;
+        }
+
+        /// <summary> Запись информации о сбое </summary>
+        public void SaveException(Exception ex, [CallerMemberName] string method = null, string group = null, Exception outerException = null)
+        {
+            try
+            {
+                if (ex != null && ex.InnerException != null)
+                {
+                    // Собираем данные внешнего исключения
+                    if (outerException != null)
+                        method += $"\n\n\nOuterException: {outerException.GetType()}\n\n{ex.StackTrace}";
+
+                    // Рекурсивно углубляемся
+                    SaveException(ex.InnerException, method, group, ex);
+                    return;
+                }
+
+                method = string.IsNullOrWhiteSpace(method)
+                            ? ""
+                            : $"{method}\n\n\n";
+
+
+                if (!DbModel.DbLog.SaveToDb(ex?.Message, ex, method: method))
+                    File.AppendAllText("./rmgr.log", $"\r\n\r\n===\r\n{DateTime.Now}\r\nType: {ex.GetType()}\r\nMessage: {ex.Message}\r\nStackTrace: {ex.StackTrace}\r\nNote: {method}");
+                
+                Console.WriteLine($"\n{DateTime.Now}\n{ex.GetType()}\n\n{ex.Message}\n\n{ex.StackTrace}");
+                Thread.Sleep(500); // Надеюсь т.о. не будет заноситься более двух записей в секунду
+            }
+            catch { }
+        }
+
+        /// <summary> Запись информации о сбое (асинхронный вариант) </summary>
+        //public async Task SaveExceptionAsync(Exception ex, [CallerMemberName] string method = null)
+        //{
+        //    await Task.Factory.StartNew(()
+        //        =>
+        //    { SaveException(ex, method); }).ConfigureAwait(false);
+        //}
+        //public Task SaveException(Exception ex, [CallerMemberName] string method = null)
+        //{
+        //    return Task.Run(() => { SaveException(ex, method); });
+        //}
+
+        public IDisposable BeginScope<TState>(TState state)
+        {
+            throw new NotImplementedException();
+        }
+         
+        public bool IsEnabled(LogLevel logLevel)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void SaveToDb(LogType type, string group, string msg, string data = null, int? messageId = null, [CallerMemberName] string method = null)
+        {
+            DbModel.DbLog.SaveToDb(type, group, msg, data, messageId, method);
+        }
+
+        public bool SaveToDb(string msg, Exception exception, int? messageId = null, [CallerMemberName] string method = null)
+        {
+            return DbModel.DbLog.SaveToDb(msg, exception, messageId, method);
+        }
+
+        /// <summary> Получение записей журнала в одном сообщении </summary>
+        public static List<string> GetLog(LogType logType, DateTime beginDate, DateTime finishDate)
+        {
+            List<DbLog> log = null;
+            using (var ctx = new ZsBotContext())
+            {
+                log = ctx.Log.Where(l => l.InsertDate >= beginDate
+                                      && l.InsertDate <= finishDate
+                                      && l.LogType    == logType.ToString())
+                             .Cast<DbLog>()
+                             .ToList();
+            }
+
+            // Оформление каждой записи журнала в заданном формате
+            List<string> list = new List<string>();
+            for (int i = 0; i < log.Count; i++)
+                list.Add($"{i + 1}. Время: {log[i].InsertDate.ToShortTimeString()}"
+                      + $"\nТип: {log[i].LogGroup}"
+                      + $"\nОписание: {log[i].LogMessage}");
+
+            return list;
+        }
+    }
+}

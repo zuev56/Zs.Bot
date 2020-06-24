@@ -1,0 +1,988 @@
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Linq;
+using System.Runtime.CompilerServices;
+//using Telegram.Bot.Types;
+using System.Threading.Tasks;
+using Telegram.Bot.Types;
+using Zs.Bot.Enums;
+using Zs.Bot.Modules.Messaging;
+
+namespace Zs.Bot.DbModel
+{
+
+    public class ZsBotEntities : DbContext
+    {
+        /// <summary> Используется при вызове конструктора без параметров </summary>
+        private static DbContextOptions<ZsBotEntities> _options;
+        private static ILogger _logger;
+
+
+        //public static string ConnectionString                 { get; set; }
+
+        public virtual DbSet<DbChat> Chats { get; set; }
+        internal virtual DbSet<DbLog> Log { get; set; }
+        public virtual DbSet<DbMessageType> MessageTypes { get; set; }
+        public virtual DbSet<DbReceivedMsg> ReceivedMessages { get; set; }
+        public virtual DbSet<DbRole> Roles { get; set; }
+        public virtual DbSet<DbSentMsg> SentMessages { get; set; }
+        public virtual DbSet<DbSession> Sessions { get; set; }
+        public virtual DbSet<DbUser> Users { get; set; }
+        public virtual DbSet<DbCommand> Commands { get; set; }
+        public virtual DbSet<DbSqlResult> SqlResults { get; set; }
+
+
+
+        /// <summary> Предоставляет возможность работы с БД, 
+        /// используя статические опции, которые должны были быть ранее определены методом Initialize(...) </summary>
+        public ZsBotEntities()
+            : base(_options)
+        {
+        }
+
+        /// <summary> Инициализация </summary>
+        /// <param name="options">Опции, которые будут использоваться при вызове конструктора без параметров</param>
+        public static void Initialize(DbContextOptions<ZsBotEntities> options, ILogger logger)
+        {
+            _logger = logger;
+            _options = options;
+        }
+
+        //protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        //{
+        //    optionsBuilder.UseNpgsql(ConnectionString);
+        //}
+    }
+
+
+    [Table("Role", Schema = "rmgr")]
+    public partial class DbRole
+    {
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors")]
+        public DbRole()
+        {
+            this.Users = new HashSet<DbUser>();
+        }
+
+        [Key]
+        [Column("RoleName")]
+        public string RoleName { get; set; }
+        public DateTime InsertDate { get; set; }
+        public DateTime UpdateDate { get; set; }
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<DbUser> Users { get; set; }
+
+    }
+
+    [Table("Chat", Schema = "rmgr")]
+    public partial class DbChat
+    {
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors")]
+        public DbChat()
+        {
+            this.ReceivedMessages = new HashSet<DbReceivedMsg>();
+            this.SentMessages = new HashSet<DbSentMsg>();
+            this.Sessions = new HashSet<DbSession>();
+        }
+
+        [Key]
+        public long ChatId { get; set; }
+        public string ChatTitle { get; set; }
+        public string ChatFirstName { get; set; }
+        public string ChatLastName { get; set; }
+        public string ChatDescription { get; set; }
+        public string ChatType { get; set; }
+        public string ChatInviteLink { get; set; }
+        public string ChatUserName { get; set; }
+        public bool? ChatAllMembersAreAdministrators { get; set; }
+        public bool? ChatCanSetStickerSet { get; set; }
+        public string ChatStickerSetName { get; set; }
+        public int? PinnedMessageId { get; set; }
+
+        public bool IsSubscribed { get; set; }
+        public DateTime InsertDate { get; set; }
+        public DateTime UpdateDate { get; set; }
+
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<DbReceivedMsg> ReceivedMessages { get; set; }
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<DbSentMsg> SentMessages { get; set; }
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<DbSession> Sessions { get; set; }
+
+        /// <summary> Получаем объект Telegram API из БД </summary>
+        public async Task<Telegram.Bot.Types.Chat> GetTelegramType()
+        {
+            try
+            {
+                Telegram.Bot.Types.Message pinnedMsg = null;
+                using (var ctx = new ZsBotEntities())
+                {
+                    var msg = await ctx.ReceivedMessages.FirstOrDefaultAsync(m => m.ReceivedMsgMessageId == PinnedMessageId);
+                    pinnedMsg = msg != null
+                              ? await msg.GetTelegramType()
+                              : null;
+                }
+
+                return new Telegram.Bot.Types.Chat()
+                {
+                    AllMembersAreAdministrators = ChatAllMembersAreAdministrators ?? false,
+                    CanSetStickerSet = ChatCanSetStickerSet,
+                    Description = ChatDescription,
+                    FirstName = ChatFirstName,
+                    Id = ChatId,
+                    InviteLink = ChatInviteLink,
+                    LastName = ChatLastName,
+                    Photo = null,
+                    PinnedMessage = pinnedMsg,
+                    StickerSetName = ChatStickerSetName,
+                    Title = ChatTitle,
+                    Type = Enum.Parse<Telegram.Bot.Types.Enums.ChatType>(ChatType, true),
+                    Username = ChatUserName
+                };
+
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+        /// <summary> Сохранение данных чата Telegram API в БД </summary>
+        /// <returns>Вернёт TRUE при удачном сохранении, иначе вернёт FALSE</returns>
+        public static bool SaveToDb(Telegram.Bot.Types.Chat chat, ZsBotEntities ctx = null)
+        {
+            bool IsLocalDbContext = false;
+            try
+            {
+                if (ctx == null)
+                {
+                    ctx = new ZsBotEntities();
+                    IsLocalDbContext = true;
+                }
+
+                // Сохранение данных чата, если их нет в базе
+                if (!ctx.Chats.Any(c => c.ChatId == chat.Id))
+                {
+                    ctx.Chats.Add(new DbChat
+                    {
+                        ChatId = chat.Id,
+                        ChatTitle = chat.Title,
+                        ChatFirstName = chat.FirstName,
+                        ChatLastName = chat.LastName,
+                        ChatDescription = chat.Description,
+                        ChatType = $"{chat?.Type}",
+                        ChatInviteLink = chat.InviteLink,
+                        ChatUserName = chat.Username,
+                        ChatAllMembersAreAdministrators = chat.AllMembersAreAdministrators,
+                        ChatCanSetStickerSet = chat.CanSetStickerSet,
+                        ChatStickerSetName = chat.StickerSetName,
+                        PinnedMessageId = chat.PinnedMessage?.MessageId,
+
+                        IsSubscribed = false,
+                        InsertDate = DateTime.Now,
+                        UpdateDate = DateTime.Now
+                    });
+
+                    return ctx.SaveChanges() > 0 ? true : false;
+                }
+                return false;
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
+            finally
+            {
+                // Освобождаем ресурсы, если создавали контекст локально
+                if (IsLocalDbContext)
+                    ctx?.Dispose();
+            }
+        }
+
+
+        /// <summary> Сохранение данных чата Telegram API в БД </summary>
+        /// <returns>Вернёт TRUE при удачном сохранении, иначе вернёт FALSE</returns>
+        public static async Task<bool> SaveToDbAsync(Telegram.Bot.Types.Chat chat, ZsBotEntities ctx = null)
+        {
+            bool IsLocalDbContext = false;
+            try
+            {
+                return await Task<bool>.Factory.StartNew(() =>
+                {
+                    if (ctx == null)
+                    {
+                        ctx = new ZsBotEntities();
+                        IsLocalDbContext = true;
+                    }
+
+                    // Сохранение данных чата, если их нет в базе
+                    if (!ctx.Chats.AnyAsync(c => c.ChatId == chat.Id).Result)
+                    {
+                        ctx.Chats.Add(new DbChat
+                        {
+                            ChatId = chat.Id,
+                            ChatTitle = chat.Title,
+                            ChatFirstName = chat.FirstName,
+                            ChatLastName = chat.LastName,
+                            ChatDescription = chat.Description,
+                            ChatType = $"{chat?.Type}",
+                            ChatInviteLink = chat.InviteLink,
+                            ChatUserName = chat.Username,
+                            ChatAllMembersAreAdministrators = chat.AllMembersAreAdministrators,
+                            ChatCanSetStickerSet = chat.CanSetStickerSet,
+                            ChatStickerSetName = chat.StickerSetName,
+                            PinnedMessageId = chat.PinnedMessage?.MessageId,
+
+                            IsSubscribed = false,
+                            InsertDate = DateTime.Now,
+                            UpdateDate = DateTime.Now
+                        });
+
+                        return ctx.SaveChanges() > 0 ? true : false;
+                    }
+                    return false;
+                });
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
+            finally
+            {
+                // Освобождаем ресурсы в случае, если создавали контекст локально
+                if (IsLocalDbContext)
+                    ctx?.Dispose();
+            }
+        }
+
+        public static Telegram.Bot.Types.Chat GetChatById(long chatId)
+        {
+            using (var ctx = new ZsBotEntities())
+            {
+                var dbChat = ctx.Chats.FirstOrDefault(c => c.ChatId == chatId);
+                return dbChat.GetTelegramType().Result;
+            }
+        }
+
+    }
+
+    [Table("MessageType", Schema = "rmgr")]
+    public partial class DbMessageType
+    {
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors")]
+        public DbMessageType()
+        {
+            this.ReceivedMessages = new HashSet<DbReceivedMsg>();
+            this.SentMessages = new HashSet<DbSentMsg>();
+        }
+
+        [Key]
+        [Column("MessageTypeName")]
+        public string MessageTypeName { get; set; }
+        public DateTime InsertDate { get; set; }
+        public DateTime UpdateDate { get; set; }
+
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<DbReceivedMsg> ReceivedMessages { get; set; }
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<DbSentMsg> SentMessages { get; set; }
+    }
+
+    [Table("ReceivedMsg", Schema = "rmgr")]
+    public partial class DbReceivedMsg
+    {
+        [Key]
+        public long ReceivedMsgId { get; set; }
+        public int ReceivedMsgMessageId { get; set; }
+        public int UserId { get; set; }
+        public long ChatId { get; set; }
+        [ForeignKey("MessageTypeName")]
+        [Column("MessageTypeName")]
+        public string MessageTypeName { get; set; } // Type
+        public string ReceivedMsgAuthorSignature { get; set; }
+        public string ReceivedMsgCaption { get; set; }
+        public bool? ReceivedMsgChannelChatCreated { get; set; }
+        public string ReceivedMsgConnectedWebsite { get; set; }
+        public DateTime? ReceivedMsgDate { get; set; }
+        public bool? ReceivedMsgDeleteChatPhoto { get; set; }
+        public DateTime? ReceivedMsgEditDate { get; set; }
+        public DateTime? ReceivedMsgForwardDate { get; set; }
+        public int? ReceivedMsgForwardFromId { get; set; }
+        public long? ReceivedMsgForwardFromChatId { get; set; }
+        public int? ReceivedMsgForwardFromMessageId { get; set; }
+        public string ReceivedMsgForwardSignature { get; set; }
+        public bool? ReceivedMsgGroupChatCreated { get; set; }
+        public long? ReceivedMsgLeftChatMemberId { get; set; }
+        public string ReceivedMsgLocation { get; set; }
+        public string ReceivedMsgMediaGroupId { get; set; }
+        public long? ReceivedMsgMigrateFromChatId { get; set; }
+        public long? ReceivedMsgMigrateToChatId { get; set; }
+        public string ReceivedMsgNewChatTitle { get; set; }
+        public int? ReceivedMsgPinnedMessageId { get; set; }
+        public int? ReceivedMsgReplyToMessageId { get; set; }
+        public bool? ReceivedMsgSupergroupChatCreated { get; set; }
+        public string ReceivedMsgText { get; set; } // Text
+        public bool? IsDeleted { get; set; }
+        public DateTime InsertDate { get; set; }
+        public DateTime UpdateDate { get; set; }
+
+
+        public virtual DbChat Chat { get; set; }
+        [ForeignKey("MessageTypeName")]
+        public virtual DbMessageType MessageType { get; set; }
+        public virtual DbUser User { get; set; }
+
+        public async Task<Message> GetTelegramType()
+        {
+            Telegram.Bot.Types.Chat chat = null;
+            Telegram.Bot.Types.User forwardFrom = null;
+            Telegram.Bot.Types.Chat forwardFromChat = null;
+            Telegram.Bot.Types.User from = null;
+            Telegram.Bot.Types.User leftChatMember = null;
+            Telegram.Bot.Types.Message pinnedMessage = null;
+            Telegram.Bot.Types.Message replyToMessage = null;
+
+            using (var ctx = new ZsBotEntities())
+            {
+                var dbChat = await ctx.Chats.FirstOrDefaultAsync(c => c.ChatId == ChatId);
+                chat = dbChat != null ? await dbChat.GetTelegramType() : null;
+
+                var dbForwardFrom = await ctx.Users.FirstOrDefaultAsync(u => u.UserId == ReceivedMsgForwardFromId);
+                forwardFrom = dbForwardFrom?.GetTelegramType();
+
+                var dbForwardFromChat = await ctx.Chats.FirstOrDefaultAsync(c => c.ChatId == ReceivedMsgForwardFromChatId);
+                forwardFromChat = dbForwardFromChat != null ? await dbChat.GetTelegramType() : null;
+
+                var dbFrom = await ctx.Users.FirstOrDefaultAsync(u => u.UserId == UserId);
+                from = dbForwardFrom?.GetTelegramType();
+
+                var dbLeftChatMember = await ctx.Users.FirstOrDefaultAsync(u => u.UserId == ReceivedMsgLeftChatMemberId);
+                from = dbLeftChatMember?.GetTelegramType();
+
+                var dbPinnedMessage = await ctx.ReceivedMessages.FirstOrDefaultAsync(m => m.ReceivedMsgPinnedMessageId == ReceivedMsgPinnedMessageId);
+                pinnedMessage = dbPinnedMessage != null ? await dbPinnedMessage.GetTelegramType() : null;
+
+                var dbReplyToMessage = await ctx.ReceivedMessages.FirstOrDefaultAsync(m => m.ReceivedMsgReplyToMessageId == ReceivedMsgReplyToMessageId);
+                replyToMessage = dbReplyToMessage != null ? await dbReplyToMessage.GetTelegramType() : null;
+            }
+
+            return new Message()
+            {
+                Animation = null,
+                Audio = null,
+                AuthorSignature = ReceivedMsgAuthorSignature,
+                Caption = ReceivedMsgCaption,
+                CaptionEntities = null,
+                ChannelChatCreated = ReceivedMsgChannelChatCreated ?? false,
+                Chat = chat,
+                ConnectedWebsite = ReceivedMsgConnectedWebsite,
+                Contact = null,
+                Date = ReceivedMsgDate ?? DateTime.Now.Date,
+                DeleteChatPhoto = ReceivedMsgDeleteChatPhoto ?? false,
+                Document = null,
+                EditDate = ReceivedMsgEditDate,
+                Entities = null,
+                ForwardDate = ReceivedMsgForwardDate,
+                ForwardFrom = forwardFrom,
+                ForwardFromChat = forwardFromChat,
+                ForwardFromMessageId = ReceivedMsgForwardFromMessageId ?? -1,
+                ForwardSignature = ReceivedMsgForwardSignature,
+                From = from,
+                Game = null,
+                GroupChatCreated = ReceivedMsgGroupChatCreated ?? false,
+                Location = null,
+                Invoice = null,
+                LeftChatMember = leftChatMember,
+                MediaGroupId = ReceivedMsgMediaGroupId,
+                MessageId = ReceivedMsgMessageId,
+                MigrateFromChatId = ReceivedMsgMigrateFromChatId ?? -1,
+                MigrateToChatId = ReceivedMsgMigrateToChatId ?? -1,
+                NewChatMembers = null,
+                NewChatPhoto = null,
+                NewChatTitle = ReceivedMsgNewChatTitle,
+                Photo = null,
+                PinnedMessage = pinnedMessage,
+                ReplyToMessage = replyToMessage,
+                Sticker = null,
+                SuccessfulPayment = null,
+                SupergroupChatCreated = ReceivedMsgSupergroupChatCreated ?? false,
+                Text = ReceivedMsgText,
+                Venue = null,
+                Video = null,
+                VideoNote = null,
+                Voice = null
+            };
+        }
+
+        /// <summary> Сохранение данных сообщения Telegram API в БД </summary>
+        /// <returns> Вернёт TRUE при удачном сохранении, иначе вернёт FALSE </returns>
+        public static bool SaveToDb(InMessage msg)
+        {
+            try
+            {
+                using (var ctx = new ZsBotEntities())
+                {
+                    // Сохранение данных чата и пользователя
+                    DbChat.SaveToDb(msg.Chat, ctx);
+                    DbUser.SaveToDb(msg.From, ctx);
+                }
+
+                using (var ctx = new ZsBotEntities())
+                {
+                    // Сохранение сообщения
+                    ctx.ReceivedMessages.Add(new DbReceivedMsg
+                    {
+                        //ReceivedMsgId                    = tgMessage.
+                        ReceivedMsgMessageId = msg.MessageId,
+                        UserId = msg.From.Id,
+                        ChatId = msg.Chat.Id,
+                        MessageTypeName = msg.Type.ToString(),
+                        ReceivedMsgAuthorSignature = msg.AuthorSignature,
+                        ReceivedMsgCaption = msg.Caption,
+                        ReceivedMsgChannelChatCreated = msg.ChannelChatCreated,
+                        ReceivedMsgConnectedWebsite = msg.ConnectedWebsite,
+                        ReceivedMsgDate = msg.Date,
+                        ReceivedMsgDeleteChatPhoto = msg.DeleteChatPhoto,
+                        ReceivedMsgEditDate = msg.EditDate,
+                        ReceivedMsgForwardDate = msg.ForwardDate,
+                        ReceivedMsgForwardFromId = msg.ForwardFrom?.Id,
+                        ReceivedMsgForwardFromChatId = msg.ForwardFromChat?.Id,
+                        ReceivedMsgForwardFromMessageId = msg.ForwardFromMessageId,
+                        ReceivedMsgForwardSignature = msg.ForwardSignature,
+                        ReceivedMsgGroupChatCreated = msg.GroupChatCreated,
+                        ReceivedMsgLeftChatMemberId = msg.LeftChatMember?.Id,
+                        ReceivedMsgLocation = $"{msg.Location?.Latitude}; {msg.Location?.Longitude}",
+                        ReceivedMsgMediaGroupId = msg.MediaGroupId,
+                        ReceivedMsgMigrateFromChatId = msg.MigrateFromChatId,
+                        ReceivedMsgMigrateToChatId = msg.MigrateToChatId,
+                        ReceivedMsgNewChatTitle = msg.NewChatTitle,
+                        ReceivedMsgPinnedMessageId = msg.PinnedMessage?.MessageId,
+                        ReceivedMsgReplyToMessageId = msg.ReplyToMessage?.MessageId,
+                        ReceivedMsgSupergroupChatCreated = msg.SupergroupChatCreated,
+                        ReceivedMsgText = msg.Text,
+                        IsDeleted = false,
+                        InsertDate = DateTime.Now,
+                        UpdateDate = DateTime.Now
+                    });
+
+                    return ctx.SaveChanges() > 0 ? true : false; // Если сохранилось > 0 записей, то true
+                }
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
+        }
+
+        /// <summary> Сохранение данных сообщения Telegram API в БД </summary>
+        /// <returns> Вернёт TRUE при удачном сохранении, иначе вернёт FALSE </returns>
+        public static async Task<bool> SaveToDbAsync(InMessage msg)
+        {
+#warning Привести к виду синхронного метода (набор полей)
+            try
+            {
+                using (var ctx = new ZsBotEntities())
+                {
+                    // Сохранение данных чата и пользователя
+                    await DbChat.SaveToDbAsync(msg.Chat, ctx);
+                    await DbUser.SaveToDbAsync(msg.From, ctx);
+                }
+
+                return await Task<bool>.Factory.StartNew(() =>
+                {
+                    using (var ctx = new ZsBotEntities())
+                    {
+                        // Сохранение сообщения
+                        ctx.ReceivedMessages.Add(new DbReceivedMsg
+                        {
+                            //ReceivedMsgId                    = tgMessage.
+                            ReceivedMsgMessageId = msg.MessageId,
+                            UserId = msg.From.Id,
+                            ChatId = msg.Chat.Id,
+                            MessageTypeName = msg.Type.ToString(),
+                            ReceivedMsgAuthorSignature = msg.AuthorSignature,
+                            ReceivedMsgCaption = msg.Caption,
+                            ReceivedMsgChannelChatCreated = msg.ChannelChatCreated,
+                            ReceivedMsgConnectedWebsite = msg.ConnectedWebsite,
+                            ReceivedMsgDate = msg.Date,
+                            ReceivedMsgDeleteChatPhoto = msg.DeleteChatPhoto,
+                            ReceivedMsgEditDate = msg.EditDate,
+                            ReceivedMsgForwardDate = msg.ForwardDate,
+                            ReceivedMsgForwardFromId = msg.ForwardFrom?.Id,
+                            ReceivedMsgForwardFromChatId = msg.ForwardFromChat?.Id,
+                            ReceivedMsgForwardFromMessageId = msg.ForwardFromMessageId,
+                            ReceivedMsgForwardSignature = msg.ForwardSignature,
+                            ReceivedMsgGroupChatCreated = msg.GroupChatCreated,
+                            ReceivedMsgLeftChatMemberId = msg.LeftChatMember?.Id,
+                            ReceivedMsgLocation = $"{msg.Location?.Latitude}; {msg.Location?.Longitude}",
+                            ReceivedMsgMediaGroupId = msg.MediaGroupId,
+                            ReceivedMsgMigrateFromChatId = msg.MigrateFromChatId,
+                            ReceivedMsgMigrateToChatId = msg.MigrateToChatId,
+                            ReceivedMsgNewChatTitle = msg.NewChatTitle,
+                            ReceivedMsgPinnedMessageId = msg.PinnedMessage?.MessageId,
+                            ReceivedMsgReplyToMessageId = msg.ReplyToMessage?.MessageId,
+                            ReceivedMsgSupergroupChatCreated = msg.SupergroupChatCreated,
+                            ReceivedMsgText = msg.Text,
+                            InsertDate = DateTime.Now,
+                            UpdateDate = DateTime.Now
+                        });
+
+                        return ctx.SaveChanges() > 0 ? true : false; // Если сохранилось > 0 записей, то true
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
+        }
+
+
+
+    }
+
+    [Table("SentMsg", Schema = "rmgr")]
+    public partial class DbSentMsg
+    {
+        [Key]
+        public int SentMsgId { get; set; }
+        public long ChatId { get; set; }
+        public int SentMsgMessageId { get; set; }
+        public string SentMsgText { get; set; }
+
+        [ForeignKey("MessageTypeName")]
+        [Column("MessageTypeName")]
+        public string MessageTypeName { get; set; }
+
+        public string SentMsgParseMode { get; set; }
+        public bool? SentMsgDisableWebPagePreview { get; set; }
+        public bool? SentMsgDisableNotification { get; set; }
+        public int? SentMsgReplyToMessageId { get; set; }
+        public string SentMsgCaption { get; set; }
+        public int? SentMsgDuration { get; set; }
+        public string SentMsgPerformer { get; set; }
+        public string SentMsgTitle { get; set; }
+        public int? SentMsgWidth { get; set; }
+        public int? SentMsgHeight { get; set; }
+        public bool? SentMsgSupportsStreaming { get; set; }
+        public int? SentMsgLength { get; set; }
+        public float? SentMsgLatitude { get; set; }
+        public float? SentMsgLongitude { get; set; }
+        public int? SentMsgLivePeriod { get; set; }
+        public string SentMsgAddress { get; set; }
+        public string SentMsgFoursquareId { get; set; }
+        public string SentMsgFoursquareType { get; set; }
+        public string SentMsgPhoneNumber { get; set; }
+        public string SentMsgFirstName { get; set; }
+        public string SentMsgLastName { get; set; }
+        public string SentMsgVCard { get; set; }
+
+        public string SentMsgKeyboardType { get; set; }
+        public int? SentMsgFailedSendings { get; set; }
+        public string SentMsgFailDescription { get; set; }
+        public bool IsSentSuccessfully { get; set; }
+        public string SentMsgTag { get; set; }
+        public bool IsDeleted { get; set; }
+        public DateTime InsertDate { get; set; }
+        public DateTime UpdateDate { get; set; }
+
+
+        public virtual DbChat Chat { get; set; }
+        [ForeignKey("MessageTypeName")]
+        public virtual DbMessageType MessageType { get; set; }
+
+
+        //public IReplyMarkup         replyMarkup           { get; set; }
+        //public InputOnlineFile      photo     { get; set; } // Photo
+        //public InputOnlineFile      audio     { get; set; } // Audio
+        //public InputMedia           thumb     { get; set; } // Audio
+        //public InputOnlineFile      document  { get; set; } // Document   
+        //public InputOnlineFile      sticker   { get; set; } //Sticker
+        //public InputOnlineFile      video     { get; set; } //Video 
+        //public InputOnlineFile      animation { get; set; } // Animation
+        //public InputOnlineFile      voice     { get; set; } // Voice
+        //public InputTelegramFile    videoNote { get; set; } //VideoNote
+        //IEnumerable<InputMediaBase> media     { get; set; } //MediaGroup
+
+        /// <summary> Сохранение данных сообщения в БД </summary>
+        /// <returns> Вернёт TRUE при удачном сохранении, иначе вернёт FALSE </returns>
+        public static async Task<bool> SaveToDbAsync(OutMessage msg) //(long chatId, string text /*, SentMsgKeyboardType*/ )
+        {
+            bool savedSuccessfully = false;
+            try
+            {
+                await Task.Factory.StartNew(() =>
+                {
+                    using (var ctx = new ZsBotEntities())
+                    {
+                        // Сохранение сообщения
+                        ctx.SentMessages.Add(new DbSentMsg
+                        {
+                            ChatId = msg.Chat.Id,
+                            SentMsgMessageId = msg.MessageId,
+                            SentMsgText = msg.Text,
+                            MessageTypeName = $"{msg.Type}",// $"{Telegram.Bot.Types.Enums.MessageType.Text}",
+
+                            //SentMsgParseMode
+                            //SentMsgDisableWebPagePreview
+                            //SentMsgDisableNotification
+                            SentMsgReplyToMessageId = msg.ReplyToMessageId,
+                            //SentMsgCaption
+                            //SentMsgDuration
+                            //SentMsgPerformer
+                            //SentMsgTitle
+                            //SentMsgWidth
+                            //SentMsgHeight
+                            //SentMsgsupportsStreaming
+                            //SentMsgLength
+                            //SentMsgLatitude
+                            //SentMsgLongitude
+                            //SentMsgLivePeriod
+                            //SentMsgAddress
+                            //SentMsgFoursquareId
+                            //SentMsgFoursquareType
+                            //SentMsgPhoneNumber
+                            //SentMsgFirstName
+                            //SentMsgLastName
+                            //SentMsgVCard        
+
+                            //SentMsgKeyboardType = msg.
+                            SentMsgTag = msg.Tag,
+                            SentMsgFailedSendings = msg.FailedSendings,
+                            SentMsgFailDescription = msg.FailDescription,
+                            IsSentSuccessfully = msg.IsSentSuccessfully,
+                            IsDeleted = false,
+                            InsertDate = DateTime.Now,
+                            UpdateDate = DateTime.Now
+                        });
+
+                        savedSuccessfully = ctx.SaveChanges() > 0 ? true : false; // Если сохранилось > 0 записей, то true
+                    }
+                });
+                return savedSuccessfully;
+            }
+            catch (Exception ex)
+            {
+                return savedSuccessfully;
+            }
+        }
+
+    }
+
+    /// <summary>
+    /// Содержит информацию о прямом взаимодействии пользователя с ботом
+    /// </summary>
+    [Table("Session", Schema = "rmgr")]
+    public partial class DbSession
+    {
+        [Key]
+        public int SessionId { get; set; }
+        [ForeignKey("ChatId")]
+        public long ChatId { get; set; }
+        public bool SessionIsLoggedIn { get; set; }
+
+        /// <summary> Текущий шаг (при многошаговом взаимодействии) </summary>
+        public string SessionCurrentStep { get; set; }
+        public DateTime InsertDate { get; set; }
+        public DateTime UpdateDate { get; set; }
+
+
+        public virtual DbChat Chat { get; set; }
+
+        /// <summary> Сохранение сессии в БД </summary>
+        /// <returns>Вернёт TRUE при удачном сохранении, иначе вернёт FALSE</returns>
+        public static async Task<bool> SaveToDb(long chatId, bool? isLoggedIn = null, string currentStep = null)
+        {
+            try
+            {
+                return await Task<bool>.Factory.StartNew(() =>
+                {
+                    using (var ctx = new ZsBotEntities())
+                    {
+                        ctx.Sessions.Add(new DbSession()
+                        {
+                            ChatId = chatId,
+                            SessionIsLoggedIn = isLoggedIn ?? false,
+                            SessionCurrentStep = currentStep,
+                            InsertDate = DateTime.Now
+                        });
+                        return ctx.SaveChanges() > 0 ? true : false;
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
+        }
+
+    }
+
+    [Table("User", Schema = "rmgr")]
+    public partial class DbUser
+    {
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors")]
+        public DbUser()
+        {
+            this.ReceivedMessages = new HashSet<DbReceivedMsg>();
+        }
+
+        [Key]
+        public int UserId { get; set; }
+        public string UserName { get; set; }
+        public string UserManualName { get; set; }
+        public string UserFirstName { get; set; }
+        public string UserLastName { get; set; }
+        [ForeignKey("RoleName")]
+        public string RoleName { get; set; }
+        public bool? IsBot { get; set; }
+        public DateTime InsertDate { get; set; }
+        public DateTime UpdateDate { get; set; }
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<DbReceivedMsg> ReceivedMessages { get; set; }
+
+        [ForeignKey("RoleName")]
+        public virtual DbRole Role { get; set; }
+
+        internal Telegram.Bot.Types.User GetTelegramType()
+        {
+            return new Telegram.Bot.Types.User()
+            {
+                Id = UserId,
+                IsBot = IsBot ?? false,
+                LanguageCode = null,
+                FirstName = UserFirstName,
+                LastName = UserLastName,
+                Username = UserName
+            };
+        }
+
+        /// <summary> Сохранение данных пользователя Telegram API в БД </summary>
+        /// <returns>Вернёт TRUE при удачном сохранении, иначе вернёт FALSE</returns>
+        public static bool SaveToDb(Telegram.Bot.Types.User user, ZsBotEntities ctx = null)
+        {
+            bool IsLocalDbContext = false;
+            try
+            {
+                if (ctx == null)
+                {
+                    ctx = new ZsBotEntities();
+                    IsLocalDbContext = true;
+                }
+
+                // Сохранение данных пользователя, если их нет в базе
+                if (!ctx.Users.AnyAsync(u => u.UserId == user.Id).Result)
+                {
+                    ctx.Users.Add(new DbUser
+                    {
+                        UserId = user.Id,
+                        UserName = user.Username,
+                        UserManualName = null,
+                        UserFirstName = user.FirstName,
+                        UserLastName = user.LastName,
+                        RoleName = "User",
+                        IsBot = user.IsBot,
+                        InsertDate = DateTime.Now,
+                        UpdateDate = DateTime.Now
+                    });
+                    return ctx.SaveChanges() > 0 ? true : false;
+                }
+                return false;
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
+            finally
+            {
+                // Освобождаем ресурсы, если создавали контекст локально
+                if (IsLocalDbContext)
+                    ctx?.Dispose();
+            }
+        }
+
+        /// <summary> Сохранение данных пользователя Telegram API в БД </summary>
+        /// <returns>Вернёт TRUE при удачном сохранении, иначе вернёт FALSE</returns>
+        public static async Task<bool> SaveToDbAsync(Telegram.Bot.Types.User user, ZsBotEntities ctx = null)
+        {
+            bool IsLocalDbContext = false;
+            try
+            {
+                return await Task<bool>.Factory.StartNew(() =>
+                {
+                    if (ctx == null)
+                    {
+                        ctx = new ZsBotEntities();
+                        IsLocalDbContext = true;
+                    }
+
+                    // Сохранение данных пользователя, если их нет в базе
+                    if (!ctx.Users.AnyAsync(u => u.UserId == user.Id).Result)
+                    {
+                        ctx.Users.Add(new DbUser
+                        {
+                            UserId = user.Id,
+                            UserName = user.Username,
+                            UserManualName = null,
+                            UserFirstName = user.FirstName,
+                            UserLastName = user.LastName,
+                            RoleName = "User",
+                            IsBot = user.IsBot,
+                            InsertDate = DateTime.Now,
+                            UpdateDate = DateTime.Now
+                        });
+                        return ctx.SaveChanges() > 0 ? true : false;
+                    }
+                    return false;
+                });
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
+            finally
+            {
+                //if (Monitor.IsEntered(_lockObject_Common))
+                //    Monitor.Exit(_lockObject_Common);
+
+                // Освобождаем ресурсы, если создавали контекст локально
+                if (IsLocalDbContext)
+                    ctx?.Dispose();
+            }
+        }
+
+        /// <summary> Полечение роли пользователя по идентификатору </summary>
+        public static UserRole GetUserRole(int userId)
+        {
+            using (var ctx = new ZsBotEntities())
+            {
+                var user = ctx.Users.FirstOrDefault(u => u.UserId == userId);
+
+                return user?.RoleName != null
+                       && Enum.TryParse(typeof(UserRole), user.RoleName, out object r)
+                    ? (UserRole)r
+                    : UserRole.Undefined;
+            }
+        }
+    }
+
+    [Table("Log", Schema = "rmgr")]
+    internal partial class DbLog
+    {
+        // TODO: сделать класс internal. Только Logger должен использоватье его
+        [Key]
+        public int LogId { get; set; }
+        public string LogType { get; set; }
+        public string LogGroup { get; set; }
+        public string LogMessage { get; set; }
+        public string LogData { get; set; }
+        public string LogMethod { get; set; }
+        public int? MessageId { get; set; }
+        public DateTime UpdateDate { get; set; }
+        public DateTime InsertDate { get; set; }
+
+
+        /// <summary> Сохранение ошибок в БД </summary>
+        /// <returns>Вернёт TRUE при удачном сохранении, иначе вернёт FALSE</returns>
+        public static bool SaveToDb(LogType type, string group, string msg, string data = null, int? messageId = null, [CallerMemberName] string method = null)
+        {
+            try
+            {
+                using (var ctx = new ZsBotEntities())
+                {
+                    ctx.Log.Add(new DbLog()
+                    {
+                        LogType = type.ToString(),
+                        LogGroup = group,
+                        LogMessage = msg,
+                        LogData = data,
+                        LogMethod = method,
+                        MessageId = messageId,
+                        InsertDate = DateTime.Now,
+                        UpdateDate = DateTime.Now
+                    });
+                    return ctx.SaveChanges() == 1 ? true : false;
+                }
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
+        }
+
+        /// <summary> Сохранение ошибок в БД </summary>
+        /// <returns>Вернёт TRUE при удачном сохранении, иначе вернёт FALSE</returns>
+        public static bool SaveToDb(string msg, Exception exception, int? messageId = null, string method = null)
+        {
+            try
+            {
+                string data = formExceptionText(exception, "", 0);
+
+                string formExceptionText(Exception ex, string text, int level)
+                {
+                    if (ex == null)
+                        return "";
+
+                    text += $"ExceptionLevel: {level}\nType: {ex.GetType()}\nStackTrace:\n{ex.StackTrace}";
+
+                    if (ex.InnerException != null)
+                        text += "\n\n\n" + formExceptionText(ex.InnerException, text, level + 1);
+
+                    return text;
+                }
+
+
+                using (var ctx = new ZsBotEntities())
+                {
+                    ctx.Log.Add(new DbLog()
+                    {
+                        LogType = Enums.LogType.Error.ToString(),
+                        LogGroup = exception.GetType().ToString(),
+                        LogMessage = msg,
+                        LogData = data,
+                        LogMethod = method,
+                        MessageId = messageId,
+                        InsertDate = DateTime.Now,
+                        UpdateDate = DateTime.Now
+                    });
+                    return ctx.SaveChanges() == 1 ? true : false;
+                }
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
+        }
+
+    }
+
+    [Table("Command", Schema = "rmgr")]
+    public partial class DbCommand
+    {
+        [Key] // Чтоб не ругался
+        public string CommandName { get; set; }
+        public string CommandScript { get; set; }
+        public string CommandDefaultArgs { get; set; }
+        public string CommandDesc { get; set; }
+        public string RoleList { get; set; }
+        public DateTime UpdateDate { get; set; }
+        public DateTime InsertDate { get; set; }
+
+    }
+
+    /// <summary> Класс, содержащий результат SQL-запроса </summary>
+    public class DbSqlResult
+    {
+        [Key] // Чтоб не ругался
+        public string Result { get; set; }
+    }
+}

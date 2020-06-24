@@ -1,0 +1,177 @@
+﻿using System;
+using System.Linq;
+using System.Net;
+using System.Net.NetworkInformation;
+using Zs.Common.Enums;
+using Zs.Common.Interfaces;
+
+namespace Zs.Common.Modules.Connectors
+{
+    /// <summary>
+    /// Объект, управляющий подключением к сети
+    /// </summary>
+    public class WebConnector
+    {
+        // TODO: Сделать возможность включать и отключать постоянную 
+        //       САМОСТОЯТЕЛЬНУЮ проверку соединения 
+
+        private IZsLogger _logger;
+
+        public WebProxy WebProxy { get; set; } = null;
+
+        /// <summary> Дата восстановления подключения к интернету </summary>
+        public DateTime? InternetRepairDate { get; set; } = null;
+
+        public WebConnector(IZsLogger logger = null)
+        {
+            SetLogger(logger);
+        }
+        
+        public void SetLogger(IZsLogger logger)
+        {
+            _logger = logger;
+        }
+
+        public void StartAnalyzing(int intervalMs)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void StopAnalyzing()
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary> Проверка соединения с интернетом и прокси-сервером </summary>
+        public ConnectionStatus AnalyzeConnection(params string[] internetServers)
+        {
+            if (internetServers == null || internetServers.Length == 0)
+                throw new ArgumentException("Должен быть задан адрес сервера для проверки соединения с интернетом!");
+
+            var iSrvList = internetServers.ToList();
+            var proxyServer = WebProxy?.Address?.Host;
+
+            // Проверка доступности хотя бы одного интернет-сервера
+            ConnectionStatus result = ConnectionStatus.Undefined;
+            foreach (var s in iSrvList)
+            {
+                if (PingHost(s))
+                {
+                    result = ConnectionStatus.NoProxyConnection;
+                    break;
+                }
+                else result = ConnectionStatus.NoInternetConnection;
+            }
+
+            //Если ни один интернет-сервер не доступен, выходим
+            if (result != ConnectionStatus.NoProxyConnection)
+            {
+                InternetRepairDate = null;
+                return result;
+            }
+
+            // Проверка доступности проски-сервера
+            if (!string.IsNullOrWhiteSpace(proxyServer))
+            {
+                int i = 3;
+                while (i-- > 0)
+                {
+                    if (PingHost(proxyServer))
+                    {
+                        result = ConnectionStatus.Ok;
+                        break;
+                    }
+                }
+
+                if (result != ConnectionStatus.Ok)
+                {
+                    InternetRepairDate = null;
+                    return result;
+                }
+            }
+
+            // Переопределение времени восстановления связи
+            if (InternetRepairDate == null && result == ConnectionStatus.Ok)
+                InternetRepairDate = DateTime.Now;
+
+            return result;
+        }
+
+
+        /// <summary> Проверка доступности сервера </summary>
+        public bool PingHost(string nameOrAddress)
+        {
+            // Удаляем порт и протокол из адреса
+            if (nameOrAddress?.Length > 0)
+            {
+                nameOrAddress = nameOrAddress.Contains("://")
+                              ? nameOrAddress.Substring(nameOrAddress.IndexOf("://") + 3)
+                              : nameOrAddress;
+
+                nameOrAddress = nameOrAddress.Contains(":") && !nameOrAddress.Contains("://")
+                              ? nameOrAddress.Substring(0, nameOrAddress.IndexOf(":"))
+                              : nameOrAddress;
+
+                nameOrAddress = nameOrAddress.Trim('/');
+            }
+
+            bool pingable = false;
+            Ping pinger = null;
+
+            try
+            {
+                pinger = new Ping();
+                PingReply reply = pinger.Send(nameOrAddress);
+                pingable = reply.Status == IPStatus.Success;
+            }
+            catch (PingException ex)
+            {
+                _logger.SaveException(ex);
+            }
+            finally
+            {
+                if (pinger != null)
+                    pinger.Dispose();
+            }
+
+            return pingable;
+        }
+
+
+        /// <summary> Проверка правильности IP-адреса </summary>
+        public bool ValidateIPv4(string ipString)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(ipString))
+                    return false;
+
+                string[] splitValues = ipString.Split('.');
+                if (splitValues.Length != 4)
+                    return false;
+
+                byte tempForParsing;
+
+                return splitValues.All(r => byte.TryParse(r, out tempForParsing));
+            }
+            catch (Exception ex)
+            {
+                _logger.SaveException(ex);
+                return false;
+            }
+        }
+
+        /// <summary> Инициализация WebProxy </summary>
+        public void InitializeProxy(string socket, string userName = null, string password = null)
+        {
+            WebProxy = new WebProxy(socket, true);
+            if (!string.IsNullOrWhiteSpace(userName)
+                && !string.IsNullOrWhiteSpace(password))
+            {
+                ICredentials crd = new NetworkCredential(userName, password);
+                WebProxy.Credentials = crd;
+                _logger.SaveToDb(LogType.Info, $"{nameof(WebConnector)}", "Задействован прокси-сервер", default(string));
+            }
+        }
+    }
+}

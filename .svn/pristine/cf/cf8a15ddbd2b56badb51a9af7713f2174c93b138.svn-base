@@ -1,0 +1,70 @@
+﻿using System;
+using Telegram.Bot.Types;
+
+namespace Zs.Bot.Telegram
+{
+    /// <summary>
+    /// Обёртка входящего сообщения Telegram.
+    /// Сделана по большей части для удобства и на перспективу
+    /// </summary>
+    public class InMessage : Message
+    {
+
+        public InMessage(Message msg)
+        {
+            if (msg == null)
+                throw new ArgumentNullException(nameof(msg));
+
+            Parse(msg);
+        }
+
+
+        /// <summary> Наполнение полей класса данными оригинального сообщения </summary>
+        private void Parse(Message msg)
+        {
+            Animation             = msg.Animation;
+            Audio                 = msg.Audio;
+            AuthorSignature       = msg.AuthorSignature;
+            Caption               = msg.Caption;
+            CaptionEntities       = msg.CaptionEntities;
+            ChannelChatCreated    = msg.ChannelChatCreated;
+            Chat                  = msg.Chat;
+            ConnectedWebsite      = msg.ConnectedWebsite;
+            Contact               = msg.Contact;
+            Date                  = msg.Date;
+            DeleteChatPhoto       = msg.DeleteChatPhoto;
+            Document              = msg.Document;
+            EditDate              = msg.EditDate;
+            Entities              = msg.Entities;
+            ForwardDate           = msg.ForwardDate;
+            ForwardFrom           = msg.ForwardFrom;
+            ForwardFromChat       = msg.ForwardFromChat;
+            ForwardFromMessageId  = msg.ForwardFromMessageId;
+            ForwardSignature      = msg.ForwardSignature;
+            From                  = msg.From;
+            Game                  = msg.Game;
+            GroupChatCreated      = msg.GroupChatCreated;
+            Invoice               = msg.Invoice;
+            LeftChatMember        = msg.LeftChatMember;
+            Location              = msg.Location;
+            MediaGroupId          = msg.MediaGroupId;
+            MessageId             = msg.MessageId;
+            MigrateFromChatId     = msg.MigrateFromChatId;
+            MigrateToChatId       = msg.MigrateToChatId;
+            NewChatMembers        = msg.NewChatMembers;
+            NewChatPhoto          = msg.NewChatPhoto;
+            NewChatTitle          = msg.NewChatTitle;
+            Photo                 = msg.Photo;
+            PinnedMessage         = msg.PinnedMessage;
+            ReplyToMessage        = msg.ReplyToMessage;
+            Sticker               = msg.Sticker;
+            SuccessfulPayment     = msg.SuccessfulPayment;
+            SupergroupChatCreated = msg.SupergroupChatCreated;
+            Text                  = msg.Text;
+            Venue                 = msg.Venue;
+            Video                 = msg.Video;
+            VideoNote             = msg.VideoNote;
+            Voice                 = msg.Voice;
+        }
+    }
+}

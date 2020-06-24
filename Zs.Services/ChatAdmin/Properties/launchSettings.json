@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Zs.Service.ChatAdmin": {
+      "commandName": "Project",
+      "commandLineArgs": "M:\\PrivateBotConfiguration.json"
+    }
+  }
+}

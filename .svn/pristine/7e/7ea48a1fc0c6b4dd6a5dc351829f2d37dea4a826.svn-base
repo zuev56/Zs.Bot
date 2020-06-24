@@ -1,0 +1,72 @@
+﻿using System;
+using System.Threading;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Zs.Common.Enums;
+using Zs.Common.Modules.Connectors;
+
+namespace Zs.UnitTest.Bot
+{
+    [TestClass]
+    public class ConnectionAnalyzerTest : TestBase
+    {
+        private readonly ConnectionAnalyser _connectionAnalyser;
+
+        // Эта пременная должна покажет, что произошёл вызов события ConnectionStatusChanged
+        private ConnectionStatus _changedStatus = ConnectionStatus.Undefined;
+
+        public ConnectionAnalyzerTest()
+        {
+            // TODO: Вынести тестовые данные прокси в файл конфигурации!
+            _connectionAnalyser = new ConnectionAnalyser(null, "https://vk.com/", "https://yandex.ru/", "https://www.google.ru/");
+            _connectionAnalyser.InitializeProxy("193.0.179.128:65233", "veranda56", "T5p5EfB");
+            _connectionAnalyser.ConnectionStatusChanged += СonnectionAnalyser_ConnectionStatusChanged;
+            _connectionAnalyser.Start();
+        }
+
+        /// <summary> Единичная проверка соединения </summary>
+        [TestMethod]
+        public void PingHost_Test()
+        {
+            try
+            {
+                Thread.Sleep(2000);
+
+                Assert.IsTrue(_connectionAnalyser.PingHost("localhost"));
+                Assert.IsTrue(_connectionAnalyser.PingHost("https://vk.com/"));
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+        /// <summary> Результат выполнения в другом потоке </summary>
+        [TestMethod]
+        public void CycleWork_Test()
+        {
+            try
+            {
+                throw new NotImplementedException();
+                // После инициализации _connectionAnalyser в другом потоке 
+                // будет запущена циклическая проверка соединения.
+                // Предполагается, что к этому моменту пройдёт хотя бы один цикл
+                Thread.Sleep(3000);
+                Assert.IsTrue(_changedStatus != ConnectionStatus.Undefined);
+                //Assert.IsTrue(_connectionAnalyser.CycleCounter <= 2);
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+
+
+
+        private void СonnectionAnalyser_ConnectionStatusChanged(ConnectionStatus newConnectionStatus)
+        {
+            _changedStatus = newConnectionStatus;
+        }
+
+    }
+}

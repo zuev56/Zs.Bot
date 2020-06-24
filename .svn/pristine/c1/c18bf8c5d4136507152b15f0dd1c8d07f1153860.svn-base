@@ -1,0 +1,7 @@
+{
+  "ConnectionString": "Server=localhost;Port=5632;Database=RemoteManagerDb;Uid=robot;Pwd=sqr105203656;",
+
+  "_ConnectionString_local_TEST": "Server=localhost;Port=5432;Database=RemoteManagerDb;Uid=robot;Pwd=sqr105203656;",
+  "_ConnectionString_local": "Server=192.168.1.12;Port=5632;Database=RemoteManagerDb;Uid=robot;Pwd=sqr105203656;",
+  "_ConnectionString_remote": "Server=185.42.61.9;Port=5632;Database=RemoteManagerDb;Uid=robot;Pwd=sqr105203656;"
+}

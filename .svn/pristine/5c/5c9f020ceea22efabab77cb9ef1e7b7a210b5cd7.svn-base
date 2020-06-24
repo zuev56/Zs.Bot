@@ -1,0 +1,38 @@
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Zs.Bot.DbModel;
+using Zs.ChatAdminService;
+using Zs.ChatAdminService.DbModel;
+
+namespace UnitTest
+{
+    [TestClass]
+    public class TestBase
+    {
+        private static DbContextOptionsBuilder<ZsBotContext> _rmOptionsBuilder;
+        private static DbContextOptionsBuilder<ChatAdminContext> _caOptionsBuilder;
+
+        static TestBase() => Init(null);
+
+        [ClassInitialize()]
+        public static void Init(TestContext testContext)
+        {
+            Configuration.Initialize("AppSettings.json");
+
+            _rmOptionsBuilder = new DbContextOptionsBuilder<ZsBotContext>();
+            _rmOptionsBuilder.UseNpgsql(Configuration.ConnectionString);
+            ZsBotContext.Initialize(_rmOptionsBuilder.Options, null);
+
+            _caOptionsBuilder = new DbContextOptionsBuilder<ChatAdminContext>();
+            _caOptionsBuilder.UseNpgsql(Configuration.ConnectionString);
+            ChatAdminContext.Initialize(_caOptionsBuilder.Options, null);
+        }
+
+        [ClassCleanup]
+        public static void TestCleanup()
+        {
+        }
+
+
+    }
+}

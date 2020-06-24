@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Zs.Service.ChatAdmin": {
+      "commandName": "Project",
+      "commandLineArgs": "app; app; 538442633:AAGvZgtmWSxB7oHgRCL1zqZFP8Wb5OEq1Y0; 185.166.216.44:65233; veranda56; T5p5EfB"
+    }
+  }
+}

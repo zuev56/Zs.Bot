@@ -1,0 +1,41 @@
+﻿using System;
+using System.IO;
+using Microsoft.Extensions.Configuration;
+using Zs.Common.Interfaces;
+
+namespace Zs.ChatAdminService
+{
+    /// <summary> Для удобства работы с файлом конфигурации </summary>
+    public class Configuration : IServiceConfiguration
+    {
+        private IConfiguration _configuration;
+
+        public string ConnectionString { get; set; }
+        public string WorkPath { get; set; }
+
+
+        public Configuration()
+        {
+            throw new NotImplementedException("Пока не допускается использование конструктора без параметров");
+        }
+
+        public Configuration(string configurationPath)
+        {
+            //var configBuilder = new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory()).AddJsonFile(configurationPath);
+           
+            _configuration = new ConfigurationBuilder().AddJsonFile(configurationPath, true, true).Build();
+
+            ConnectionString = _configuration["ConnectionString"];
+            WorkPath         = Path.GetFullPath(_configuration["WorkPath"]);
+        }
+
+        //public static void Initialize(string configurationPath)
+        //{
+        //    //var configBuilder = new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory()).AddJsonFile(configurationPath);
+        //    _configuration = new ConfigurationBuilder().AddJsonFile(configurationPath, true, true).Build();
+
+        //    ConnectionString = _configuration["ConnectionString"];
+        //}
+
+    }
+}

@@ -1,0 +1,192 @@
+﻿using System;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
+
+namespace Zs.Service.ChatAdmin.DbModel
+{
+    #region Interfaces zl
+
+    /// <summary> Информация о времени начала учёта сообщений каждого отдельного пользователя </summary>
+    public interface IDbAccounting
+    {
+        public Int32 AccountingId { get; set; }
+
+        public DateTime AccountingStartDate { get; set; }
+
+        public DateTime UpdateDate { get; set; }
+
+    }
+
+
+    /// <summary> Вспомогательные слова - то, что должно быть отсеяно из статистики </summary>
+    public interface IDbAuxiliaryWord
+    {
+        public String TheWord { get; set; }
+
+        public DateTime InsertDate { get; set; }
+
+    }
+
+
+    /// <summary> Информация о банах </summary>
+    public interface IDbBan
+    {
+        public Int32 BanId { get; set; }
+
+        public Int32 UserId { get; set; }
+
+        public Int32 ChatId { get; set; }
+
+        public Boolean BanHasWarned { get; set; }
+
+        public DateTime BanFinishDate { get; set; }
+
+        public Boolean BanIsActive { get; set; }
+
+        public DateTime UpdateDate { get; set; }
+
+        public DateTime InsertDate { get; set; }
+
+    }
+
+
+    /// <summary> Напоминание о событиях </summary>
+    public interface IDbNotification
+    {
+        public Int32 NotificationId { get; set; }
+
+        public Boolean NotificationIsActive { get; set; }
+
+        public String NotificationMessage { get; set; }
+
+        public Int32 NotificationMonth { get; set; }
+
+        public Int32 NotificationDay { get; set; }
+
+        public Int32 NotificationHour { get; set; }
+
+        public Int32 NotificationMinute { get; set; }
+
+        public DateTime NotificationExecDate { get; set; }
+
+        public DateTime UpdateDate { get; set; }
+
+        public DateTime InsertDate { get; set; }
+
+    }
+
+    #endregion
+    #region Classes zl
+
+    /// <summary> Информация о времени начала учёта сообщений каждого отдельного пользователя </summary>
+    [Table("accountings", Schema = "zl")]
+    public partial class DbAccounting : IDbAccounting
+    {
+        [Key]
+        [Column("accounting_id", TypeName = "integer")]
+        public Int32 AccountingId { get; set; }
+
+        [Column("accounting_start_date", TypeName = "timestamp with time zone")]
+        public DateTime AccountingStartDate { get; set; }
+
+        [Column("update_date", TypeName = "timestamp with time zone")]
+        public DateTime UpdateDate { get; set; }
+
+    }
+
+
+    /// <summary> Вспомогательные слова - то, что должно быть отсеяно из статистики </summary>
+    [Table("auxiliary_words", Schema = "zl")]
+    public partial class DbAuxiliaryWord : IDbAuxiliaryWord
+    {
+        [Key]
+        [Column("the_word", TypeName = "character varying")]
+        public String TheWord { get; set; }
+
+        [Column("insert_date", TypeName = "timestamp with time zone")]
+        public DateTime InsertDate { get; set; }
+
+    }
+
+
+    /// <summary> Информация о банах </summary>
+    [Table("bans", Schema = "zl")]
+    public partial class DbBan : IDbBan
+    {
+        [Key]
+        [Column("ban_id", TypeName = "integer")]
+        public Int32 BanId { get; set; }
+
+        [Column("user_id", TypeName = "integer")]
+        public Int32 UserId { get; set; }
+
+        [Column("chat_id", TypeName = "integer")]
+        public Int32 ChatId { get; set; }
+
+        [Column("ban_has_warned", TypeName = "boolean")]
+        public Boolean BanHasWarned { get; set; }
+
+        [Column("ban_finish_date", TypeName = "timestamp with time zone")]
+        public DateTime BanFinishDate { get; set; }
+
+        [Column("ban_is_active", TypeName = "boolean")]
+        public Boolean BanIsActive { get; set; }
+
+        [Column("update_date", TypeName = "timestamp with time zone")]
+        public DateTime UpdateDate { get; set; }
+
+        [Column("insert_date", TypeName = "timestamp with time zone")]
+        public DateTime InsertDate { get; set; }
+
+    }
+
+
+    /// <summary> Напоминание о событиях </summary>
+    [Table("notifications", Schema = "zl")]
+    public partial class DbNotification : IDbNotification
+    {
+        [Key]
+        [Column("notification_id", TypeName = "integer")]
+        public Int32 NotificationId { get; set; }
+
+        [Column("notification_is_active", TypeName = "boolean")]
+        public Boolean NotificationIsActive { get; set; }
+
+        [Column("notification_message", TypeName = "character varying")]
+        public String NotificationMessage { get; set; }
+
+        [Column("notification_month", TypeName = "integer")]
+        public Int32 NotificationMonth { get; set; }
+
+        [Column("notification_day", TypeName = "integer")]
+        public Int32 NotificationDay { get; set; }
+
+        [Column("notification_hour", TypeName = "integer")]
+        public Int32 NotificationHour { get; set; }
+
+        [Column("notification_minute", TypeName = "integer")]
+        public Int32 NotificationMinute { get; set; }
+
+        [Column("notification_exec_date", TypeName = "timestamp with time zone")]
+        public DateTime NotificationExecDate { get; set; }
+
+        [Column("update_date", TypeName = "timestamp with time zone")]
+        public DateTime UpdateDate { get; set; }
+
+        [Column("insert_date", TypeName = "timestamp with time zone")]
+        public DateTime InsertDate { get; set; }
+
+    }
+
+    #endregion
+    ТУТ НАДО ЧТОТО ПОДУМАТЬ ПРО НАЗВАНИЕ
+    public partial class RobotDbContext : DbContext
+    {
+        public DbSet<DbAccounting> Accountings { get; set; }
+        public DbSet<DbAuxiliaryWord> AuxiliaryWords { get; set; }
+        public DbSet<DbBan> Bans { get; set; }
+        public DbSet<DbNotification> Notifications { get; set; }
+    }
+
+}

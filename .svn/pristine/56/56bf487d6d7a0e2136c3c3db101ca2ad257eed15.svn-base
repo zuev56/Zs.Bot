@@ -1,0 +1,243 @@
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using Microsoft.VisualStudio.TextTemplating;
+
+namespace Zs.Common.T4Generator
+{
+
+    [Flags]
+    public enum EntityTypes
+    {
+        Undefined = -1,
+        DbClass = 1,
+        DbInterface = 2,
+        WcfClass = 4,
+        WcfInterface = 8,
+        VmClass = 16,
+        VmInterface = 32,
+        DbEntities = DbClass | DbInterface,
+        WcfEntities = WcfClass | WcfInterface,
+        VmEntities = VmClass | VmInterface,
+        AllClasses = DbClass | WcfClass | VmClass,
+        AllInterfaces = DbInterface | WcfInterface | VmInterface,
+        All = AllClasses | AllInterfaces
+    }
+
+    public static class ModelGenerator
+    {
+
+        //private const string _connectionString = "Host=localhost;Port=5632;Username=postgres;Password=postgres;Database=RobotDb";
+
+
+        public static void Test(TextTransformation tt)
+        {
+            tt.WriteLine("Hello!");
+        }
+
+        public static Dictionary<string, string> GetTableNameToClassNameMap(string filePath)
+        {
+            if (!File.Exists(filePath))
+                throw new FileNotFoundException("Не удалось найти файл", filePath);
+
+            var fileLines = File.ReadAllLines(filePath);
+            var map = new Dictionary<string, string>(fileLines.Length);
+            
+            foreach (var rawLine in fileLines)
+            {
+                var line = rawLine.Trim();
+
+                if (line == "" || line.StartsWith("#"))
+                    continue;
+
+                var words = line.Split(':');
+
+                if (words?.Length < 2)
+                    throw new FormatException($"Неверный формат строки файла \"{line}\". Необходимо привести строку к следующему виду: \"ИмяТаблицы:ИмяКласса\"");
+
+                for (int i = 0; i < words.Length; i++)
+                {
+                    words[i] = words[i].Trim();
+
+                    if (words[i].Length == 0)
+                        throw new FormatException($"Неверный формат строки файла \"{line}\". Слева и справа от знака \":\" должно быть непустое значение");
+                }
+
+                map.Add(words[0], words[1]);
+            }
+
+            return map;
+        }
+
+
+
+        /// <summary> Генерация классов - модели таблиц и вьюх базы данных </summary>
+        /// <param name="tt"></param>
+        /// <param name="dataBase"></param>
+        /// <param name="usings"></param>
+        /// <param name="namespase"></param>
+        /// <param name="modifier"></param>
+        /// <param name="namePrefix"></param>
+        /// <param name="useAutoInterface">Если TRUE, то класс будет реализовывать интерфейс I{ClassName}. Сам интерфейс с аналогичным набором полей тоже будет создан</param>
+        /// <param name="pluralToSingularMap"></param>
+        public static void GenerateClasses(
+            TextTransformation tt,
+            DbInfo dataBase,
+            string[] usings = null,
+            string namespase = null,
+            string modifier = null,
+            string namePrefix = null,
+            bool useAutoInterface = false,
+            Dictionary<string, string> pluralToSingularMap = null
+            )
+        {
+            if (usings != null)
+            {
+                foreach (var u in usings)
+                    tt.WriteLine(u);
+                tt.WriteLine("");
+            }
+
+            if (namespase != null)
+            {
+                tt.WriteLine($"namespace {namespase}");
+                tt.WriteLine("{");
+                tt.PushIndent("    ");
+            }
+
+            if (useAutoInterface)
+            {
+                foreach (var schemaInfo in dataBase)
+                {
+                    tt.WriteLine($"#region {schemaInfo.Name} Interfaces");
+
+                    foreach (var tableInfo in schemaInfo)
+                    {
+                        var className = pluralToSingularMap != null
+                                          && pluralToSingularMap.ContainsKey(tableInfo.Name)
+                                      ? namePrefix + pluralToSingularMap[tableInfo.Name]
+                                      : namePrefix + UnderscoreToPascalCase(tableInfo.Name).TrimEnd('s');
+
+                        GenerateInterface(tt, modifier, $"I{className}", tableInfo);
+
+                        tt.WriteLine("");
+                    }            
+                    tt.WriteLine("#endregion");
+                }
+            }
+
+            foreach (var schemaInfo in dataBase)
+            {
+                tt.WriteLine($"#region {schemaInfo.Name} Classes");
+
+                foreach (var tableInfo in schemaInfo)
+                {
+                    var className = pluralToSingularMap != null
+                                 && pluralToSingularMap.ContainsKey(tableInfo.Name)
+                        ? namePrefix + pluralToSingularMap[tableInfo.Name]
+                        : namePrefix + UnderscoreToPascalCase(tableInfo.Name).TrimEnd('s');
+                    
+                    var inheritedInterfaces = useAutoInterface
+                        ? new[] { $"I{className}" }
+                        : null;
+
+                    GenerateClass(tt, modifier, className, tableInfo, schemaInfo.Name, inheritedInterfaces);
+
+                    tt.WriteLine("");
+                }             
+                tt.WriteLine("#endregion");
+            }
+
+            if (namespase != null)
+            {
+                tt.PopIndent();
+                tt.WriteLine("}");
+            }
+        }
+
+        private static void GenerateClass(
+            TextTransformation tt, 
+            string modifier, 
+            string className, 
+            DbTable table, 
+            string schemaName,
+            string[] inheritedInterfaces)
+        {
+            try
+            {
+                string inherit = inheritedInterfaces?.Length > 0 
+                               ? $" : {string.Join(", ", inheritedInterfaces)}"
+                               : "";
+
+                tt.WriteLine("");
+                tt.WriteLine($"[Table(\"{table.Name}\", Schema = \"{schemaName}\")]");
+                tt.WriteLine($"{modifier} partial class {className}{inherit}");
+                tt.WriteLine("{");
+                tt.PushIndent("    ");
+                {
+                    foreach (var column in table)
+                    {
+                        if (column.ConstraintType == ConstraintType.PrimaryKey)
+                            tt.WriteLine("[Key]");
+
+                        tt.WriteLine($"[Column(\"{column.Name}\")]");
+                        tt.WriteLine($"public {column.DataType.Name} {UnderscoreToPascalCase(column.Name)} {{ get; set; }}");
+                        tt.WriteLine("");
+                    }
+                }
+                tt.PopIndent();
+                tt.WriteLine("}");
+                tt.WriteLine("");
+            }
+            catch (Exception ex)
+            {
+                Logger.TraceException(ex);
+            }
+        }
+
+        private static void GenerateInterface(
+            TextTransformation tt, 
+            string modifier, 
+            string interfaceName, 
+            DbTable table)
+        {
+            try
+            {
+                tt.WriteLine("");
+                tt.WriteLine($"{modifier} interface {interfaceName}");
+                tt.WriteLine("{");
+                tt.PushIndent("    ");
+                {
+                    foreach (var column in table)
+                    {
+                        tt.WriteLine($"public {column.DataType.Name} {UnderscoreToPascalCase(column.Name)} {{ get; set; }}");
+                        tt.WriteLine("");
+                    }
+                }
+                tt.PopIndent();
+                tt.WriteLine("}");
+                tt.WriteLine("");
+            }
+            catch (Exception ex)
+            {
+                Logger.TraceException(ex);
+            }
+        }
+
+
+        internal static string UnderscoreToPascalCase(string value)
+        {
+            var parts = value.ToLowerInvariant().Split(' ', '_').ToList();
+            parts.RemoveAll(p => p.Length == 0);
+
+
+            for (int i = 0; i < parts.Count; i++)
+                parts[i] = char.ToUpper(parts[i][0]) + (parts[i].Length > 1 ? parts[i].Substring(1) : "");
+
+            return string.Join("", parts);
+        }
+
+        
+    }
+}

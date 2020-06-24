@@ -1,0 +1,21 @@
+﻿using System;
+using System.Diagnostics;
+
+namespace Zs.Common.T4Generator
+{
+    internal sealed class Logger
+    {
+        public static void TraceException(Exception ex)
+        {
+            if (ex.InnerException != null)
+            {
+                Trace.Indent();
+                Trace.WriteLine($"INNER EXCEPTION: {ex.InnerException.Message}");
+                Trace.WriteLine($"StackTrace: {ex.InnerException.StackTrace}");
+                Trace.Unindent();
+            }
+            Trace.WriteLine($"EXCEPTION: {ex.Message}");
+            Trace.WriteLine($"StackTrace: {ex.StackTrace}");
+        }
+    }
+}

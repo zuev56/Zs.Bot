@@ -1,0 +1,15 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace Zs.Common.Interfaces
+{
+    /// <summary> Конфигурация для всех модулей сервиса </summary>
+    public interface IServiceConfiguration
+    {
+        string ConnectionString { get; set; }
+
+        string WorkPath { get; set; }
+
+    }
+}

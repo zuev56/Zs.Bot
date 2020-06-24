@@ -1,0 +1,68 @@
+﻿<#@ template debug="true" hostspecific="true" language="C#" #>
+<#@ output extension="generated.cs" #>
+<#@ assembly name="$(SolutionDir)Zs.Common.T4\bin\Debug\Zs.Common.T4.dll" #>
+<#@ import namespace="Zs.Common.T4" #>
+using System;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
+
+namespace Zs.Bot.Model.Db
+{
+<#
+PushIndent("    ");
+    try
+    {
+        var projectDir = Host.ResolveAssemblyReference("$(ProjectDir)");
+        var tableToClassMapPath = $@"{projectDir}\DbModel\TableNameToClassNameMap.txt";
+        var referenceTablesInfoPath = $@"{projectDir}\DbModel\ReferenceTables.json";
+
+        var connectionString = "Host=localhost;Port=5632;Username=postgres;Password=postgres;Database=Robot;";//ModelGenerator.GetConfigurationValue(@"M:\Zs.Bot\Zs.Bot\AppSettings.json", "T4_ConnectionString");
+        
+        // Этот вариант не отрабатывает, т.к. Zs.Common.T4 - 4.8, а не Core
+        //var connectionString = ModelGenerator.GetConfigurationValue($@"{projectDir}\Zs.Bot.Model.json", "T4_ConnectionString");
+        
+        var tableToClassNameMap = ModelGenerator.GetTableNameToClassNameMap(tableToClassMapPath);
+        
+        var databaseInfo = DbReader.GetDbInfo(connectionString, "bot");
+        
+        ModelGenerator.GenerateClasses(
+            this,
+            databaseInfo,
+            "public",
+            "Db",
+            true,
+            tableToClassNameMap
+        );
+
+        ModelGenerator.GenerateDbContext(
+           this,
+           databaseInfo,
+           "public",
+           "Db",
+           dbContextClassName: default,
+           tableToClassNameMap
+        );
+
+        //ModelGenerator.GenerateEnums(
+        //    this,
+        //    databaseInfo,
+        //    referenceTablesInfoPath
+        //);
+    }
+    catch (Exception ex)
+    {
+        if (ex.InnerException != null)
+        {
+            WriteLine($"{ex.InnerException.Message}");
+            WriteLine("");
+            WriteLine($"{ex.InnerException.StackTrace}");
+        }
+
+        WriteLine($"{ex.Message}");
+        WriteLine("");
+        WriteLine($"{ex.StackTrace}");
+    }
+    PopIndent();
+#>
+}

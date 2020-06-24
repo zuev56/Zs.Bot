@@ -1,0 +1,4 @@
+{
+  "T4_ConnectionString": "Host=localhost;Port=5632;Username=app;Password=app;Database=ZsBot;"
+  // "WorkPath": "C:\\"
+}

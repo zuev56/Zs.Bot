@@ -1,0 +1,8 @@
+version: '3.4'
+
+services:
+  sitecheckservice.netcore:
+    image: ${DOCKER_REGISTRY}sitecheckservicenetcore
+    build:
+      context: .
+      dockerfile: SiteCheckService.NETCore\Dockerfile

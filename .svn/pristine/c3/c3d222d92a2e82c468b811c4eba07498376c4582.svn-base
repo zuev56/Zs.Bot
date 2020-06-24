@@ -1,0 +1,22 @@
+﻿namespace Zs.Bot.Modules.Command
+{
+    /// <summary> 
+    /// Содержит результат выполнения команды 
+    /// </summary>
+    public class CommandResult
+    {
+        /// <summary> Адресс для возврата результата (например, идентификатор чата) </summary>
+        public object ReturnAddress { get; private set; }
+
+        /// <summary> Результат выполнения команды </summary>
+        public string Text { get; private set; }
+
+
+        /// <summary> Содержит результат выполнения команды </summary>
+        public CommandResult(object returnAddress, string result)
+        {
+            ReturnAddress = returnAddress;
+            Text = result;
+        }
+    }
+}

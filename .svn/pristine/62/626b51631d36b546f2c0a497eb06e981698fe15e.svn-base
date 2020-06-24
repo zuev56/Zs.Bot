@@ -1,0 +1,124 @@
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text.Json;
+using System.Threading.Tasks;
+using Zs.Bot.Model.Db;
+using Zs.Common.Enums;
+using Zs.Common.Interfaces;
+
+namespace Zs.Bot.Helpers
+{
+    public class Logger : IZsLogger
+    {
+        private static Logger _instance;
+        private string _emergencyLogDirrectory = AppDomain.CurrentDomain.BaseDirectory;
+
+        public string EmergencyLogDirrectory
+        {
+            get => _emergencyLogDirrectory;
+            set
+            {
+                if (string.IsNullOrWhiteSpace(value))
+                    throw new ArgumentException($"{nameof(EmergencyLogDirrectory)} не может быть пустым!");
+
+                if (!Directory.Exists(value))
+                {
+                    var p = Directory.CreateDirectory(value);
+                    if (!p.Exists)
+                        throw new Exception($"Не удалось создать каталог для хранения логов ({value})");
+                }
+                _emergencyLogDirrectory = value;
+            }
+        }
+
+
+        protected Logger()
+        {
+        }
+
+        public static Logger GetInstance()
+        {
+            if (_instance == null)
+                _instance = new Logger();
+
+            return _instance;
+        }
+
+        public void LogError(Exception ex, string message = null, string logGroup = null)
+        {
+            var jsonData = JsonSerialize(ex);
+            SaveToDb(LogType.Error, message, logGroup, jsonData);
+        }
+
+        public void LogInfo(string message, string logGroup = null)
+        {
+            SaveToDb(LogType.Info, message, logGroup);
+        }
+        public void LogInfo<T>(string message, T logData, string logGroup = null)
+        {
+            var jsonData = JsonSerialize(logData);
+            SaveToDb(LogType.Info, message, logGroup, jsonData);
+        }
+
+        public void LogWarning(string message = null, string logGroup = null)
+        {
+            SaveToDb(LogType.Warning, message, logGroup);
+        }
+
+
+        private void SaveToDb(LogType logType, string message, string logGroup = null, string logData = null)
+        {
+            using (var ctx = new RobotDbContext())
+            {
+                ctx.Logs.Add(new DbLog 
+                { 
+                    LogType    = logType.ToString(),
+                    LogMessage = message,
+                    LogGroup   = logGroup,
+                    LogData    = logData,
+                    InsertDate = DateTime.Now
+                });
+                Task.Factory.StartNew(() => ctx.SaveChanges());
+            }
+        }
+
+        private static string JsonSerialize<T>(T item)
+        {
+            var options = new JsonSerializerOptions()
+            {
+                IgnoreNullValues = true,
+                WriteIndented = true
+            };
+
+            return JsonSerializer.Serialize(item, options);
+        }
+
+        /// <summary> Получение записей журнала в одном сообщении </summary>
+        public static List<string> GetLog(LogType logType, DateTime beginDate, DateTime finishDate, int rows)
+        {
+            List<DbLog> log = null;
+            using (var ctx = new RobotDbContext())
+            {
+                log = ctx.Logs.Where(l => l.InsertDate >= beginDate
+                                       && l.InsertDate <= finishDate
+                                       && l.LogType == logType.ToString())
+                               .Take(rows)
+                               .Cast<DbLog>()
+                               .ToList();
+            }
+            
+            // Оформление каждой записи журнала в заданном формате
+            List<string> list = new List<string>();
+            for (int i = 0; i < log.Count; i++)
+                list.Add($"{i + 1}. Время: {log[i].InsertDate.ToShortTimeString()}"
+                      + $"\nТип: {log[i].LogGroup}"
+                      + $"\nОписание: {log[i].LogMessage}");
+            
+            return list;
+        }
+
+       
+    }
+}

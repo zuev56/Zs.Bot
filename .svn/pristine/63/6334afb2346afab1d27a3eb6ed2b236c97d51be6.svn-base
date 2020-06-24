@@ -1,0 +1,151 @@
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using Microsoft.VisualStudio.TextTemplating;
+
+namespace Zs.Common.T4Generator
+{
+    public static class ClassGenerator
+    {
+
+        private const string _connectionString = "Host=localhost;Port=5632;Username=postgres;Password=postgres;Database=RobotDb";
+
+
+        public static void Test(TextTransformation tt)
+        {
+            tt.WriteLine("Hello!");
+        }
+
+        public static Dictionary<string, string> GetTableNameToClassNameMap(string filePath)
+        {
+            if (!File.Exists(filePath))
+                throw new FileNotFoundException("Не удалось найти файл", filePath);
+
+            var fileLines = File.ReadAllLines(filePath);
+            var map = new Dictionary<string, string>(fileLines.Length);
+            
+            foreach (var rawLine in fileLines)
+            {
+                var line = rawLine.Trim();
+
+                if (line == "" || line.StartsWith("#"))
+                    continue;
+
+                var words = line.Split(':');
+
+                if (words?.Length < 2)
+                    throw new FormatException($"Неверный формат строки файла \"{line}\". Необходимо привести строку к следующему виду: \"ИмяТаблицы:ИмяКласса\"");
+
+                for (int i = 0; i < words.Length; i++)
+                {
+                    words[i] = words[i].Trim();
+
+                    if (words[i].Length == 0)
+                        throw new FormatException($"Неверный формат строки файла \"{line}\". Слева и справа от знака \":\" должно быть непустое значение");
+                }
+
+                map.Add(words[0], words[1]);
+            }
+
+            return map;
+        }
+
+        public static void GenerateFile(
+            TextTransformation tt,
+            string connectionString,
+            string[] usings,
+            string namespase,
+            string modifier,
+            Dictionary<string, string> pluralToSingularMap = null
+            )
+        {
+            foreach (var u in usings)
+                tt.WriteLine(u);
+
+            tt.WriteLine("");
+            tt.WriteLine($"namespace {namespase}");
+            tt.WriteLine("{");
+            tt.PushIndent("    ");
+            {
+                foreach (var schemaInfo in DbReader.GetDbShemas(connectionString).Result)
+                {
+                    foreach (var tableInfo in schemaInfo)
+                    {
+                        var className = pluralToSingularMap != null 
+                                          && pluralToSingularMap.ContainsKey(tableInfo.Name) 
+                                      ? pluralToSingularMap[tableInfo.Name]
+                                      : UnderscoreToPascalCase(tableInfo.Name).TrimEnd('s');
+                    
+                        GenerateClass(tt, modifier, "Db"+className, tableInfo, schemaInfo.Name); 
+                        tt.WriteLine("");
+                    }
+                }
+            }
+            tt.PopIndent();
+            tt.WriteLine("}");
+
+            //return Task.CompletedTask;
+        }
+
+        internal static string UnderscoreToPascalCase(string value)
+        {
+            var parts = value.ToLowerInvariant().Split(' ', '_').ToList();
+            parts.RemoveAll(p => p.Length == 0);
+
+
+            for (int i = 0; i < parts.Count; i++)
+                parts[i] = char.ToUpper(parts[i][0]) + (parts[i].Length > 1 ? parts[i].Substring(1) : "");
+
+            return string.Join("", parts);
+        }
+
+        private static void GenerateClass(TextTransformation tt, string modifier, string className, DbTable table, string schemaName)
+        {
+            try
+            {
+                tt.WriteLine("");
+                tt.WriteLine($"[Table(\"{table.Name}\", Schema = \"{schemaName}\")]");
+                tt.WriteLine($"{modifier} partial class {className}");
+                tt.WriteLine("{");
+                tt.PushIndent("    ");
+                {
+                    foreach (var column in table)
+                    {
+                        if (column.ConstraintType == ConstraintType.PrimaryKey)
+                            tt.WriteLine("[Key]");
+
+                        tt.WriteLine($"[Column(\"{column.Name}\")]");
+                        tt.WriteLine($"public {column.DataType.Name} {UnderscoreToPascalCase(column.Name)} {{ get; set; }}");
+                        tt.WriteLine("");
+                    }
+
+                    //public virtual ICollection<DbReceivedMsg> ReceivedMessages { get; set; }
+                    //public virtual ICollection<DbSentMsg> SentMessages { get; set; }
+                    //public virtual ICollection<DbSession> Sessions { get; set; }
+
+                    // Constructor
+                    tt.WriteLine($"public {className}()");
+                    tt.WriteLine("{");
+                    tt.PushIndent("    ");
+                    {
+                        // Foreign Key refferences
+                        //    this.ReceivedMessages = new HashSet<DbReceivedMsg>();
+                        //    this.SentMessages     = new HashSet<DbSentMsg>();
+                        //    this.Sessions         = new HashSet<DbSession>();
+                    }
+                    tt.PopIndent();
+                    tt.WriteLine("}");
+
+                }
+                tt.PopIndent();
+                tt.WriteLine("}");
+                tt.WriteLine("");
+            }
+            catch (Exception ex)
+            {
+                Logger.TraceException(ex);
+            }
+        }
+    }
+}

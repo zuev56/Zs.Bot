@@ -1,0 +1,139 @@
+﻿using System;
+using System.Threading;
+using System.Threading.Tasks;
+using Zs.Common.Enums;
+using Zs.Common.Interfaces;
+using Zs.Common.Modules;
+
+namespace Zs.Bot.Modules.Agent
+{
+    /// <summary>
+    /// Агент для выполнения заданий в заданное время
+    /// </summary>
+    public class Agent : ModuleBase
+    {
+        private readonly IZsLogger _logger;// = Logger.GetInstance();
+
+        /// <summary> Объект блокировки для безопасной реализации многопоточности </summary>
+        private readonly object _lockObject = new object();
+
+        /// <summary> Флаг, показывающий состояние автоматической работы </summary>
+        private bool _jobIsActive;
+
+        // Интервал между циклами автоматической работы
+        public int JobCycleInterval { get; set; } = 60000;
+
+
+        private ManualResetEvent _mreJob = new ManualResetEvent(true);
+
+        // Поток
+        private Thread _jobThread;
+
+        /// <summary> Флаг, показывающий состояние джоба </summary>
+        public bool JobIsActive
+        {
+            get
+            {
+                bool wa;
+                lock (_lockObject)
+                    wa = _jobIsActive;
+                return wa;
+            }
+            set
+            {
+                lock (_lockObject)
+                    _jobIsActive = value;
+            }
+        }
+
+        /// <summary> Алгоритм, циклически выполняющийся в режиме автоматической работы </summary>
+        public Action JobStep;
+
+
+        public Agent(IZsLogger logger)
+        {
+            _logger = logger;
+        }
+
+        public override void Start(int delay = 0)
+        {
+            //base.Start(delay);
+
+
+            JobIsActive = true;
+        }
+
+        public override void Stop(int delay = 0)
+        {
+            //base.Stop(delay);
+
+            // Остановка автоматической работы
+            JobIsActive = false;
+        }
+
+        /// <summary> Циклический вызов алгоритма автоматической работы </summary>
+        private void PerformAutomaticWork()
+        {
+            try
+            {
+                while (true)
+                {
+                    _mreJob.WaitOne(Timeout.Infinite); // Поток встанет в режим ожидания, если был вызван Set, и пподолжит работу при вызове Reset
+                    Task.Run(() => JobStep?.Invoke());
+                    JobWaiter(JobCycleInterval);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.SaveException(ex);
+            }
+        }
+
+        /// <summary> Запуск автоматической работы </summary>
+        public void StartJob()
+        {
+            JobIsActive = true;
+
+            if (_jobThread == null)
+            {
+                _jobThread = new Thread(PerformAutomaticWork);
+                _jobThread.Name = "AutomaticWorker";
+                _jobThread.IsBackground = true;
+                _jobThread.Start();
+            }
+            else
+                _mreJob.Set();
+
+            _logger.SaveToDb(LogType.Info, "Запуск службы", "Запущен джоб", default(string));
+        }
+
+        /// <summary> Ожидание с возможностью немедленной отмены автоматической работы </summary>
+        public void JobWaiter(int milliseconds)
+        {
+            try
+            {
+                if (milliseconds < 500)
+                {
+                    Thread.Sleep(milliseconds);
+                    return;
+                }
+
+                int part1 = milliseconds / 500; // количество итераций
+                int part2 = milliseconds % 500; // остаток
+
+                while (part1-- >= 0 && JobIsActive)
+                    Thread.Sleep(500);
+
+                if (JobIsActive)
+                    Thread.Sleep(part2);
+            }
+            catch (Exception ex)
+            {
+                _logger.SaveException(ex);
+                //_logger.SaveToDb("ОШИБКА! Ожидание перед выполнением джоба", ex);
+            }
+        }
+
+
+    }
+}

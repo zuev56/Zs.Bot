@@ -1,0 +1,32 @@
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Microsoft.Extensions.Configuration;
+using Zs.Bot.Model.Db;
+
+namespace Zs.UnitTest.Bot
+{
+    [TestClass]
+    public class TestBase
+    {
+        private static DbContextOptionsBuilder<RobotDbContext> _robotOptionsBuilder;
+
+        static TestBase() => Init(null);
+
+        [ClassInitialize()]
+        public static void Init(TestContext testContext)
+        {
+            var configuration = new ConfigurationBuilder().AddJsonFile("Zs.Bot.Model.json", true, true).Build();
+
+            _robotOptionsBuilder = new DbContextOptionsBuilder<RobotDbContext>();
+            _robotOptionsBuilder.UseNpgsql(configuration["T4_ConnectionString"]);
+            RobotDbContext.Initialize(_robotOptionsBuilder.Options, null);
+        }
+
+        [ClassCleanup]
+        public static void TestCleanup()
+        {
+        }
+
+
+    }
+}

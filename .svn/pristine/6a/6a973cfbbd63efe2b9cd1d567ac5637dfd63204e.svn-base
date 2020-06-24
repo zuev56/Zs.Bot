@@ -1,0 +1,81 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29409.12
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.Bot", "02. Zs.Bot\Zs.Bot.csproj", "{26B4EFEE-4C4A-4EF1-BC18-521671F14AF5}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.ChatAdminService", "03. Zs.ChatAdminService\Zs.ChatAdminService.csproj", "{9B847C34-A8CA-4A0A-A497-5DBE168F541E}"
+EndProject
+Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "10. Docker\docker-compose.dcproj", "{7B004EBD-3C76-4FE6-B09E-76DF1CF47276}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.UnitTest", "10. UnitTest\Zs.UnitTest.csproj", "{186B00E5-63F1-4650-9A2A-735039E287A7}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Telegram.Bot", "01. TelegramBot\Telegram.Bot.csproj", "{1C50CBB4-2A22-4ABB-9E80-9A63ACEC5A9F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SQL", "SQL", "{7EEC88C0-E35E-46A7-A891-D4B0B46598A7}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Commands", "Commands", "{7FA4AD37-BA75-48D4-B4B5-C4D20D8ACCD3}"
+	ProjectSection(SolutionItems) = preProject
+		SQL\Commands\sfCmdGetDailyGroupStatistics.sql = SQL\Commands\sfCmdGetDailyGroupStatistics.sql
+		SQL\Commands\sfCmdGetHelp.sql = SQL\Commands\sfCmdGetHelp.sql
+		SQL\Commands\sfCmdGetStatistics.sql = SQL\Commands\sfCmdGetStatistics.sql
+		SQL\Commands\sfGetGroupStatistics.sql = SQL\Commands\sfGetGroupStatistics.sql
+		SQL\Commands\sfGetWarningsAndBans.sql = SQL\Commands\sfGetWarningsAndBans.sql
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DbStructure", "DbStructure", "{48408483-1134-4D83-9724-B5301B316606}"
+	ProjectSection(SolutionItems) = preProject
+		SQL\DbStructure\Base.sql = SQL\DbStructure\Base.sql
+		SQL\DbStructure\Priveleges.sql = SQL\DbStructure\Priveleges.sql
+		SQL\DbStructure\Tables_bot.sql = SQL\DbStructure\Tables_bot.sql
+		SQL\DbStructure\Tables_cas.sql = SQL\DbStructure\Tables_cas.sql
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zs.Common", "Zs.Common\Zs.Common.csproj", "{65A9A35F-9F8F-4333-9FDF-053C4A976ECB}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{26B4EFEE-4C4A-4EF1-BC18-521671F14AF5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{26B4EFEE-4C4A-4EF1-BC18-521671F14AF5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{26B4EFEE-4C4A-4EF1-BC18-521671F14AF5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{26B4EFEE-4C4A-4EF1-BC18-521671F14AF5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9B847C34-A8CA-4A0A-A497-5DBE168F541E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9B847C34-A8CA-4A0A-A497-5DBE168F541E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9B847C34-A8CA-4A0A-A497-5DBE168F541E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9B847C34-A8CA-4A0A-A497-5DBE168F541E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7B004EBD-3C76-4FE6-B09E-76DF1CF47276}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7B004EBD-3C76-4FE6-B09E-76DF1CF47276}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7B004EBD-3C76-4FE6-B09E-76DF1CF47276}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7B004EBD-3C76-4FE6-B09E-76DF1CF47276}.Release|Any CPU.Build.0 = Release|Any CPU
+		{186B00E5-63F1-4650-9A2A-735039E287A7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{186B00E5-63F1-4650-9A2A-735039E287A7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{186B00E5-63F1-4650-9A2A-735039E287A7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{186B00E5-63F1-4650-9A2A-735039E287A7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1C50CBB4-2A22-4ABB-9E80-9A63ACEC5A9F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1C50CBB4-2A22-4ABB-9E80-9A63ACEC5A9F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1C50CBB4-2A22-4ABB-9E80-9A63ACEC5A9F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1C50CBB4-2A22-4ABB-9E80-9A63ACEC5A9F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{65A9A35F-9F8F-4333-9FDF-053C4A976ECB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{65A9A35F-9F8F-4333-9FDF-053C4A976ECB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{65A9A35F-9F8F-4333-9FDF-053C4A976ECB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{65A9A35F-9F8F-4333-9FDF-053C4A976ECB}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{7FA4AD37-BA75-48D4-B4B5-C4D20D8ACCD3} = {7EEC88C0-E35E-46A7-A891-D4B0B46598A7}
+		{48408483-1134-4D83-9724-B5301B316606} = {7EEC88C0-E35E-46A7-A891-D4B0B46598A7}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F6A9C4CA-DF26-4772-9119-627935D70E7C}
+	EndGlobalSection
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
+	EndGlobalSection
+EndGlobal

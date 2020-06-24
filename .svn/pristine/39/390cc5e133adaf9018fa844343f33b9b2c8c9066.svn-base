@@ -1,0 +1,240 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json.Linq;
+using Zs.Bot.Helpers;
+using Zs.Bot.Model.Db;
+using Zs.Bot.Modules.Command;
+using Zs.Bot.Modules.Messaging;
+using Zs.Common.Enums;
+using Zs.Common.Interfaces;
+using Zs.Common.Modules;
+
+namespace Zs.Bot
+{
+    /// <summary>
+    /// Обёртка над Telegram.Bot
+    /// </summary>
+    public class ZsBot : ModuleBase
+    {
+        private readonly IZsConfiguration _configuration;
+
+        private readonly Logger _logger = Logger.GetInstance();
+
+        /// <summary> Модуль для упарвления командами </summary>
+        public CommandManager CommandManager { get; set; }
+
+        /// <summary> Модуль для упарвления сообщениями </summary>
+        public Modules.Messaging.IMessenger Messenger { get; set; }
+
+
+        public ZsBot(
+              IZsConfiguration configuration
+            , Modules.Messaging.IMessenger messenger)
+        {
+            try
+            {
+                if (configuration == null)
+                    throw new ArgumentNullException(nameof(configuration));
+
+                if (messenger == null)
+                    throw new ArgumentNullException(nameof(messenger));
+
+                _configuration = configuration;
+
+                var optionsBuilder = new DbContextOptionsBuilder<RobotDbContext>();
+                optionsBuilder.UseNpgsql(_configuration.ConnectionString);
+                RobotDbContext.Initialize(optionsBuilder.Options);
+
+                Messenger = messenger;
+                Messenger.MessageReceived += Messenger_MessageReceived;
+                Messenger.MessageSent += Messenger_MessageSent;
+
+                CommandManager = CommandManager.GetInstance();
+                CommandManager.OnCommandCompleted += CommandManager_OnCommandCompleted;
+            }
+            catch (Exception e)
+            {
+                throw new TypeInitializationException(nameof(ZsBot), e);
+            }
+        }
+
+
+        /// <summary> Действие на выполнение команды </summary>
+        private void CommandManager_OnCommandCompleted(CommandResult result)
+        {
+            IChat chat = null;// GetChat(result.ReturnAddress);
+
+            Messenger.AddMessageToOutbox(chat, result.Text);
+        }
+
+
+        private void Messenger_MessageReceived(MessageReceivedEventArgs args)
+        {
+            SaveUser(args.User);
+            SaveChat(args.Chat);
+            args.Message.UserId = args.User.UserId;
+            args.Message.ChatId = args.Chat.ChatId;
+            SaveReceivedMessage(args.Message);
+
+            // 1. Проверка авторизации
+            //if (!Authorization(tgMessage) && session.SessionCurrentStep != IsWaitingForPassword)
+            //    return;
+
+
+            // 2. Обрабатываем в зависимости от того, команда это или данные                           
+            //if (BotCommand.IsCommand(message.ReceivedMessageText))
+            //{
+            //    var botCommand = BotCommand.ParseMessage(returnAddress, message.ReceivedMessageText);
+            //    CommandManager.EnqueueCommand(botCommand);
+            //}
+            //else
+            //{
+            //
+            //}
+        }
+
+        private void Messenger_MessageSent(MessageSentEventArgs args)
+        {
+            SaveSentMessage(args.Message);
+        }
+
+
+        /// <summary> Запуск бота </summary>
+        public override void Start(int delay)
+        {
+            //try
+            //{
+            //    Thread.Sleep(delay);
+            //
+            //    // Инициализация контекста данных
+            //    _zsBotOptionsBuilder.UseNpgsql(_configuration.ConnectionString);
+            //    RobotDbContext.Initialize(_zsBotOptionsBuilder.Options);
+            //
+            //    CommandManager.Start(500);
+            //    //Messenger.Start(500);
+            //}
+            //catch (Exception e)
+            //{
+            //    _logger.LogError(e);
+            //}
+        }
+
+        /// <summary> Остановка бота </summary>
+        public override void Stop(int delay = 0)
+        {
+            try
+            {
+                _logger.LogInfo("Запрос на остановку службы", "Остановка службы");
+                
+                CommandManager.Stop();
+                //Messenger.Stop();
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e);
+            }
+            finally
+            {
+                _logger.LogInfo("Служба успешно завершена", "Остановка службы");
+            }
+        }
+
+
+        /// <summary> Получение списка пользователей заданных ролей </summary>
+        public static List<int> GetUsersIdByRole(params UserRole[] userRoles)
+        {
+            var users = new List<DbUser>();
+
+            if (userRoles != null && userRoles.Length != 0)
+            {
+                using var ctx = new RobotDbContext();
+
+                throw new NotImplementedException("Раскомментировать текст ниже после восстановления модели данных");
+                //var necessaryUsers = ctx.Users
+                //    .Where(u => userRoles.Cast<string>().Contains(u.UserRoleCode));
+                //
+                //foreach (var user in necessaryUsers)
+                //    users.Add(user);
+            }
+            return users.Select(u => u.UserId).ToList();
+        }
+
+
+        /// <summary> Saving user </summary>
+        private void SaveUser(IUser user)
+        {
+            try
+            {
+                using var ctx = new RobotDbContext();
+                if (!ctx.Users.Any(u => u.RawDataHash == user.RawDataHash))
+                {
+                    ctx.Users.Add((DbUser)user);
+                    ctx.SaveChanges();
+                }
+
+                var dbUser = ctx.Users.FirstOrDefault(u => u.RawDataHash == user.RawDataHash);
+                user.UserId = dbUser.UserId;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e);
+            }
+        }
+
+        /// <summary> Saving chat </summary>
+        private void SaveChat(IChat chat)
+        {
+            try
+            {
+                using var ctx = new RobotDbContext();
+                if (!ctx.Chats.Any(c => c.RawDataHash == chat.RawDataHash))
+                {
+                    ctx.Chats.Add((DbChat)chat);
+                    ctx.SaveChanges();
+                }
+
+                var dbChat = ctx.Chats.FirstOrDefault(c => c.RawDataHash == chat.RawDataHash);
+                chat.ChatId = dbChat.ChatId;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e);
+            }
+        }
+
+        /// <summary> Saving received message </summary>
+        private void SaveReceivedMessage(IReceivedMessage message)
+        {
+            try
+            {
+                using var ctx = new RobotDbContext();
+                ctx.ReceivedMessages.Add((DbReceivedMessage)message);
+                ctx.SaveChanges();
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e);
+            }
+        }
+
+        /// <summary> Saving sent message </summary>
+        private void SaveSentMessage(ISentMessage message)
+        {
+            try
+            {
+                using var ctx = new RobotDbContext();
+                ctx.SentMessages.Add((DbSentMessage)message);
+                ctx.SaveChanges();
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e);
+            }
+        }
+
+
+
+    }
+}

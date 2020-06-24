@@ -1,0 +1,82 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace Zs.Common.Enums
+{
+    /// <summary> Роль пользователя при общении с ботом </summary>
+    public enum UserRole
+    {
+        Undefined = -1,
+        Owner = 10,
+        Administrator = 9,
+        Moderator = 8,
+        User = 7,
+        All = 6
+    }
+
+    /// <summary> Тип сообщения </summary>
+    //public enum MessageType
+    //{
+    //    Undefined = -1,
+    //    Text,
+    //    Photo,
+    //    Audio,
+    //    Video,
+    //    Document,
+    //    Contact,
+    //    Location
+    //}
+
+    /// <summary> Статус соединения с сетью </summary>
+    public enum ConnectionStatus
+    {
+        Undefined = -1,
+        Ok,
+        NoProxyConnection,
+        NoInternetConnection
+    }
+
+    /// <summary> Тип записи в лог </summary>
+    public enum LogType
+    {
+        //Undefined = -1,
+        Info = 0,
+        Warning,
+        Error
+    }
+
+    public static class EnumExtentions
+    {
+
+        /// <summary> Получение константы роли из строкового значения </summary>
+        public static TEnum SafeParse<TEnum>(this string stringValue) 
+            where TEnum : struct, IConvertible
+        {
+            if (Enum.TryParse(stringValue, true, out TEnum result))
+                return result;
+            else
+            {
+                var allEnumValues = Enum.GetValues(typeof(TEnum));
+                foreach (var value in allEnumValues)
+                    if ((int)value == -1)
+                        return (TEnum)Enum.Parse(typeof(TEnum), value.ToString(), ignoreCase:true);
+
+                throw new InvalidOperationException($"Тип перечисления {nameof(TEnum)} не содержит стандартного значения Undefined = -1");
+            }
+        }
+
+        /// <summary> Получение массива отдельных флагов из сборного флага </summary>
+        public static List<TEnum> ToSingleFlagList<TEnum>(this Enum flag)
+            where TEnum : struct, IConvertible
+        {
+            return Enum.GetValues(typeof(TEnum))
+                       .Cast<Enum>()
+                       .Where(flag.HasFlag)
+                       .Cast<TEnum>()
+                       .Where(f => f.ToString() != flag.ToString()
+                                && ToSingleFlagList<TEnum>((Enum)(object)f).Count == 0) //((Enum)(object)f & flag) != 0)
+                       .ToList();
+        }
+    }
+}

@@ -1,0 +1,23 @@
+﻿using System;
+using Microsoft.Extensions.Logging;
+using Zs.Common.Enums;
+
+namespace Zs.Common.Interfaces
+{
+
+    public interface IZsLogger //: ILogger // TODO: уйти от майкрософтовского или переделать под него
+    {
+        string EmergencyLogDirrectory { get; set; }
+
+        void LogError(Exception ex, string message = null, string logGroup = null);
+        void LogInfo(string message, string logGroup = null);
+        void LogInfo<T>(string message, T logData, string logGroup = null);
+        void LogWarning(string message = null, string logGroup = null);
+
+        //[Obsolete]
+        //void SaveException(Exception ex, string method = null, string group = null, Exception outerException = null);
+        
+        //[Obsolete]
+        //void SaveToDb(LogType type, string group, string msg, string data = null, int? messageId = null, string method = null);
+    }
+}

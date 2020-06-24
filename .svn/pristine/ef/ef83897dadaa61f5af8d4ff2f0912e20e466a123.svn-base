@@ -1,0 +1,44 @@
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+
+namespace Zs.Bot.Model.Db
+{
+    public partial class RobotDbContext : DbContext
+    {
+        private static DbContextOptions<RobotDbContext> _options;
+        private static ILogger _logger;
+
+        #region ЗАПОЛНЯТЬ ПРИ АВТОГЕНЕРАЦИИ МОДЕЛИ
+        //public virtual DbSet<DbChat> Chats { get; set; }
+        //public virtual DbSet<OLD_DbRole> Roles { get; set; }
+        //public virtual DbSet<DbUser> Users { get; set; }
+        //public virtual DbSet<DbMessageType> MessageTypes { get; set; }
+        //public virtual DbSet<DbReceivedMsg> ReceivedMessages { get; set; }
+        //public virtual DbSet<DbSentMsg> SentMessages { get; set; }
+        //public virtual DbSet<DbSession> Sessions { get; set; }
+        //internal virtual DbSet<DbLog> Log { get; set; }
+        //public virtual DbSet<DbCommand> Commands { get; set; }
+        //public virtual DbSet<DbSqlResult> SqlResults { get; set; }
+        #endregion
+
+        /// <summary> Предоставляет возможность работы с БД, 
+        /// используя статические опции, которые должны были быть ранее определены методом Initialize(...) </summary>
+        public RobotDbContext()
+            : base(_options)
+        {
+        }
+
+        /// <summary> Инициализация </summary>
+        /// <param name="options">Опции, которые будут использоваться при вызове конструктора без параметров</param>
+        public static void Initialize(DbContextOptions<RobotDbContext> options, ILogger logger)
+        {
+            _logger = logger;
+            _options = options;
+        }
+
+        //protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        //{
+        //    optionsBuilder.UseNpgsql(ConnectionString);
+        //}
+    }
+}

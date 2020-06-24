@@ -1,0 +1,32 @@
+-- FUNCTION: rmgr."sfCmdGetHelp"(varchar(50))
+
+-- DROP FUNCTION rmgr."sfCmdGetHelp"(varchar(50))
+
+-- Получение справки по функциям, доступным для данной роли
+CREATE OR REPLACE FUNCTION rmgr."sfCmdGetHelp"(
+	role_name varchar(50)
+	)
+    RETURNS text
+    LANGUAGE 'plpgsql'
+
+    COST 100
+    VOLATILE 
+AS $BODY$
+DECLARE
+    result_text TEXT := ''; 
+BEGIN
+    -- Пока так, по-простому
+    result_text := (select string_agg(("CommandName" || ' - ' || "CommandDesc"), E'\n') 
+					from rmgr."Command"
+				    where LOWER("RoleList") like '%' || LOWER(role_name) || '%');
+					
+  RETURN result_text;
+
+END;
+$BODY$;
+
+ALTER FUNCTION rmgr."sfCmdGetHelp"(varchar(50))
+    OWNER TO postgres;
+
+COMMENT ON FUNCTION rmgr."sfCmdGetHelp"(varchar(50))
+    IS 'Получение справки по функциям, доступным для данной роли';

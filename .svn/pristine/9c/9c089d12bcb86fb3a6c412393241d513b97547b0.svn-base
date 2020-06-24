@@ -1,0 +1,14 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace Zs.ChatAdminService.Enums
+{
+    public enum BanPeriod
+    {
+        Undefined = -1,
+        UntilNextDay,
+        ForThreeHours,
+        ForOneHour
+    }
+}

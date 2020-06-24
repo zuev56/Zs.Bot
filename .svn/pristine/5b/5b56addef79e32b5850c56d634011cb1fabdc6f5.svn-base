@@ -1,0 +1,13 @@
+{
+  // Secrets are passing through arguments
+  "ConnectionString": "Server=localhost;Port=5632;Database=Robot;Uid=robot;Pwd=sqr105203656;",
+  "WorkPath": "C:\\",
+  "BotTocken": "",
+  "ProxySocket": "",
+  "ProxyLogin": "",
+  "ProxyPassword": "",
+
+
+  "_ConnectionString_local_TEST": "Server=localhost;Port=5432;Database=RemoteManagerDb;Uid=robot;Pwd=sqr105203656;",
+  "_ConnectionString_local": "Server=192.168.1.12;Port=5632;Database=RemoteManagerDb;Uid=robot;Pwd=sqr105203656;"
+}

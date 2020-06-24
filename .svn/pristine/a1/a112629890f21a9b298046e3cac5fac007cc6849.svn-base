@@ -1,0 +1,74 @@
+﻿using System;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Zs.Common.T4;
+
+namespace Zs.UnitTest.Tools
+{
+    [TestClass]
+    public class T4GeneratorTest
+    {
+        private const string _connectionString = "Host=localhost;Port=5632;Username=postgres;Password=postgres;Database=Robot";
+
+        public T4GeneratorTest()
+        {
+        }
+
+        [TestMethod]
+        public void GetDbVersion_Test()
+        {
+            try
+            {
+                var version = DbReader.GetVersion(_connectionString);
+
+                Assert.IsNotNull(version);
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+        [TestMethod]
+        public void GetDbSchemas_Test()
+        {
+            try
+            {
+                var dbInfo = DbReader.GetDbInfo(_connectionString);
+
+                Assert.IsNotNull(dbInfo.Count > 0);
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+        [TestMethod]
+        public void ReadJsonConfiguration_Test()
+        {
+            var parameterValue = ModelGenerator.GetConfigurationValue(@"M:\Zs.Bot\Zs.Bot.Model\Zs.Bot.Model.json", "T4_ConnectionString");
+
+            Assert.IsNotNull(parameterValue);
+        }
+
+        [TestMethod]
+        public void UnderscoreToPascalCase_Test()
+        {
+            try
+            {
+                var underscore = new[] { "_Aa_bB_c_", "_a_b_cc", "aa_bbb_c", "a", "aa", "A_bb_cCc", "_a", "a_", " ", "_", "" };
+                var pascaleCase = new[] { "AaBbC", "ABCc", "AaBbbC", "A", "Aa", "ABbCcc", "A", "A", "", "", "" };
+
+                for (int i = 0; i < underscore.Length; i++)
+                    Assert.AreEqual(pascaleCase[i], ModelGenerator.UnderscoreToPascalCase(underscore[i]));
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+
+
+    }
+}

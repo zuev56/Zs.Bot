@@ -1,0 +1,190 @@
+﻿using System;
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Text.Unicode;
+using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
+using Zs.Bot.Model.Db;
+using Zs.Bot.Modules.Messaging;
+using Zs.Common.Extensions;
+
+namespace Zs.Bot.Telegram
+{
+    internal class ItemConverter : IToGenegalItemConverter
+    {
+        public IReceivedMessage ToGeneralReceivedMessage(object specificMessage)
+        {
+            var options = new JsonSerializerOptions
+            {
+                IgnoreNullValues = true,
+                WriteIndented = true,
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.All)
+            };
+
+            if (specificMessage is Message telegramMessage)
+            {
+                var receivedMessage = DbEntityFactory.NewReceivedMessage();
+                var msgText = telegramMessage.Text?.Length > 100 
+                            ? telegramMessage.Text.Substring(0, 100)
+                            : telegramMessage.Text;
+
+                // receivedMessage.ReceivedMessageId -> Auto
+                //sentMessage.ChatId        -> define when saving
+                //sentMessage.UserId        -> define when saving
+                receivedMessage.MessengerCode = "TG";
+                receivedMessage.MessageTypeCode = GetGeneralMessageTypeCode(telegramMessage.Type);
+                receivedMessage.ReceivedMessageText = msgText;
+                receivedMessage.RawData = JsonSerializer.Serialize(telegramMessage, options);
+                
+                return receivedMessage;
+            }
+            else
+                throw new InvalidCastException($"{nameof(specificMessage)} is not a {typeof(Message).FullName}");
+        }
+        
+        public ISentMessage ToGeneralSentMessage(object specificMessage)
+        {
+            var options = new JsonSerializerOptions
+            {
+                IgnoreNullValues = true,
+                WriteIndented = true,
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.All)
+            };
+
+            if (specificMessage is OutMessage telegramMessage)
+            {
+                var sentMessage = DbEntityFactory.NewSentMessage();
+                var msgText = telegramMessage.Text?.Length > 100
+                            ? telegramMessage.Text.Substring(0, 100)
+                            : telegramMessage.Text;
+                //var failDescription = telegramMessage.FailDescription?.Length > 2000
+                //                    ? telegramMessage.FailDescription.Substring(0, 2000)
+                //                    : telegramMessage.FailDescription;
+
+                //sentMessage.SentMessageId -> Auto
+                //sentMessage.ChatId        -> define when saving
+                sentMessage.MessengerCode = "TG";
+                sentMessage.MessageTypeCode = GetGeneralMessageTypeCode(telegramMessage.Type);
+                sentMessage.SentMessageText = msgText;
+                sentMessage.RawData = JsonSerializer.Serialize(telegramMessage, options);
+                sentMessage.IsSentSuccessfully = telegramMessage.IsSentSuccessfully;
+                sentMessage.SendingFails = telegramMessage.SendingFails;
+                sentMessage.FailDescription = telegramMessage.FailDescription;
+                sentMessage.ReplyToMessageId = telegramMessage.ReplyToMessageId;
+                return sentMessage;
+            }
+            else
+                throw new InvalidCastException($"{nameof(specificMessage)} is not a {typeof(Message).FullName}");
+        }
+
+        public IChat ToGeneralChat(object specificChat)
+        {
+            var options = new JsonSerializerOptions
+            {
+                IgnoreNullValues = true,
+                WriteIndented = true,
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.All)
+            };
+
+            if (specificChat is Chat telegramChat)
+            {
+                var chat = DbEntityFactory.NewChat();
+
+                
+                //chat.ChatId -> Auto
+                chat.ChatDescription = telegramChat.Description;
+                chat.ChatTitle = telegramChat.Title ?? telegramChat.Username ?? $"{telegramChat.FirstName} {telegramChat.LastName}";
+                chat.ChatTypeCode = GetGeneralChatTypeCode(telegramChat.Type);
+                chat.RawData = JsonSerializer.Serialize(telegramChat, options);
+                chat.RawDataHash = chat.RawData.GetMD5Hash();
+
+                return chat;
+            }
+            else
+                throw new InvalidCastException($"{nameof(specificChat)} is not a {typeof(Chat).FullName}");
+        }
+
+        public IUser ToGeneralUser(object specificUser)
+        {
+            var options = new JsonSerializerOptions
+            {
+                IgnoreNullValues = true,
+                WriteIndented = true,
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.All)
+            };
+
+            if (specificUser is User telegramUser)
+            {
+                var user = DbEntityFactory.NewUser();
+
+                //user.UserId -> Auto
+                user.UserRoleCode = "USER";
+                user.UserName = telegramUser.Username;
+                user.UserFullName = $"{telegramUser.FirstName} {telegramUser.LastName}";
+                user.UserIsBot = telegramUser.IsBot;
+                user.RawData = JsonSerializer.Serialize(telegramUser, options);
+                user.RawDataHash = user.RawData.GetMD5Hash();
+
+                return user;
+            }
+            else
+                throw new InvalidCastException($"{nameof(specificUser)} is not a {typeof(User).FullName}");
+        }
+
+
+
+        private static string GetGeneralChatTypeCode(ChatType type)
+        {
+            return type switch
+            {
+                ChatType.Channel    => "CHANNEL",
+                ChatType.Group      => "GROUP",
+                ChatType.Private    => "PRIVATE",
+                ChatType.Supergroup => "GROUP",
+                _ => "UKNOWN"
+            };
+        }
+
+        private static string GetGeneralMessageTypeCode(MessageType type)
+        {
+            return type switch
+            {
+                MessageType.Text     => "TXT",
+                MessageType.Photo    => "PHT",
+                MessageType.Audio    => "AUD",
+                MessageType.Video    => "VID",
+                MessageType.Voice    => "VOI",
+                MessageType.Document => "DOC",
+                MessageType.Sticker  => "STK",
+                MessageType.Location => "LOC",
+                MessageType.Contact  => "CNT",
+
+                var o when
+                o == MessageType.Venue ||
+                o == MessageType.Game ||
+                o == MessageType.VideoNote ||
+                o == MessageType.Invoice ||
+                o == MessageType.SuccessfulPayment ||
+                o == MessageType.WebsiteConnected ||
+                o == MessageType.Animation ||
+                o == MessageType.Poll ||
+                o == MessageType.Dice => "OTH",
+
+                var s when
+                s == MessageType.ChatMembersAdded ||
+                s == MessageType.ChatMemberLeft ||
+                s == MessageType.ChatTitleChanged ||
+                s == MessageType.ChatPhotoChanged ||
+                s == MessageType.MessagePinned ||
+                s == MessageType.ChatPhotoDeleted ||
+                s == MessageType.GroupCreated ||
+                s == MessageType.SupergroupCreated ||
+                s == MessageType.ChannelCreated ||
+                s == MessageType.MigratedToSupergroup ||
+                s == MessageType.MigratedFromGroup => "SRV",
+
+                _ => "UKN"
+            };
+        }
+    }
+}
