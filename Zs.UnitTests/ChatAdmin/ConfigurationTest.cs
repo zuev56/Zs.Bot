@@ -11,12 +11,9 @@ namespace Zs.UnitTest.Services.ChatAdmin
         [TestMethod]
         public void PrepareConnectionStringTest()
         {
-            var result = new Configuration(
-                @"M:\PrivateBotConfiguration.json",
-                dbUser: "testUser",
-                dbPassword: "testPassword"
-                );
-        
+            var config = new Configuration(@"M:\PrivateBotConfiguration.json");
+
+            Assert.IsNotNull(config.BotToken);
         }
     }
 }

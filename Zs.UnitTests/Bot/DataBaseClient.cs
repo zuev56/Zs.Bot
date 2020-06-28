@@ -10,11 +10,7 @@ namespace Zs.UnitTest.Bot
     public class DataBaseClient
     {
         private static DbContextOptionsBuilder<ZsBotDbContext> _robotOptionsBuilder;
-        protected static readonly Encoding Utf8Encoder = Encoding.GetEncoding(
-            "UTF-8",
-            new EncoderReplacementFallback(string.Empty),
-            new DecoderExceptionFallback()
-        );
+        
 
         static DataBaseClient() => Init(null);
 
@@ -25,6 +21,8 @@ namespace Zs.UnitTest.Bot
 
             _robotOptionsBuilder = new DbContextOptionsBuilder<ZsBotDbContext>();
             _robotOptionsBuilder.UseNpgsql(configuration["ConnectionString"]);
+            _robotOptionsBuilder.EnableSensitiveDataLogging(true);
+            _robotOptionsBuilder.EnableDetailedErrors(true);
             ZsBotDbContext.Initialize(_robotOptionsBuilder.Options);
         }
 

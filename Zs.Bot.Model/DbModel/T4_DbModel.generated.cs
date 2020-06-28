@@ -122,7 +122,7 @@ namespace Zs.Bot.Model.Db
     {
         public Int32 MessageId { get; set; }
 
-        public Int64? ReplyToMessageId { get; set; }
+        public Int32? ReplyToMessageId { get; set; }
 
         public String MessengerCode { get; set; }
 
@@ -441,8 +441,8 @@ namespace Zs.Bot.Model.Db
         [Column("message_id", TypeName = "integer")]
         public Int32 MessageId { get; set; }
 
-        [Column("reply_to_message_id", TypeName = "bigint")]
-        public Int64? ReplyToMessageId { get; set; }
+        [Column("reply_to_message_id", TypeName = "integer")]
+        public Int32? ReplyToMessageId { get; set; }
 
         [Required(ErrorMessage = "Property 'MessengerCode' is required")]
         [Column("messenger_code", TypeName = "character varying")]

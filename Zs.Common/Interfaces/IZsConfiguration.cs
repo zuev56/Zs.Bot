@@ -2,8 +2,12 @@
 {
     public interface IZsConfiguration
     {
-        string ConnectionString { get; }
-
-        string WorkPath { get; }
+        public string ConnectionString { get; }
+        public string WorkPath         { get; }
+        public string BotToken         { get; }
+        public string ProxySocket      { get; }
+        public string ProxyLogin       { get; }
+        public string ProxyPassword    { get; }
+        public int    DefaultChatId    { get; }
     }
 }

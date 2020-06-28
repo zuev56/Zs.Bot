@@ -168,7 +168,7 @@ INSERT INTO bot.message_types(message_type_code, message_type_name) VALUES('OTH'
 
 CREATE TABLE bot.messages (
     message_id            serial       NOT NULL PRIMARY KEY,
-    reply_to_message_id   bigint           NULL REFERENCES bot.messages(message_id),
+    reply_to_message_id   int              NULL REFERENCES bot.messages(message_id),
     messenger_code        varchar(2)   NOT NULL REFERENCES bot.messengers(messenger_code),
     message_type_code     varchar(3)   NOT NULL REFERENCES bot.message_types(message_type_code),
     user_id               int          NOT NULL REFERENCES bot.users(user_id),
@@ -246,6 +246,8 @@ INSERT INTO bot.commands(command_name, command_script, command_default_args, com
 VALUES('/Help', 'SELECT bot.sf_cmd_get_help({0})', '''User''', 'Получение справки по функциям, доступным для данной роли', 'user');
 INSERT INTO bot.commands(command_name, command_script, command_default_args, command_desc, command_group) 
 VALUES('/SetMessageLimit', 'SELECT bot."sfCmdSetMessageLimit"({0}, {1})', '0; 0', 'Установка лимита сообщений для пользователей', 'moderator');
+INSERT INTO bot.commands(command_name, command_script, command_default_args, command_desc, command_group) 
+VALUES('/SqlQuery', 'select (with userQuery as ({0}) select json_agg(q) from userQuery q)', 'select ''Write your query''', 'SQL-запрос', 'admin');
 
 
 

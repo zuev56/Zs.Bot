@@ -1,11 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Newtonsoft.Json;
 using Zs.Bot.Helpers;
 using Zs.Common.Modules.Connectors;
 using Zs.Service.ChatAdmin.Factories;
@@ -25,12 +23,9 @@ namespace Zs.Service.ChatAdmin
                     throw new ArgumentException("Wrong number of arguments");
 
                 if (!File.Exists(args[0]))
-                    throw new FileNotFoundException("Wrong private configuration path");
+                    throw new FileNotFoundException("Wrong configuration path");
 
-                var configText = File.ReadAllText(args[0]);
-                var configDictionary = JsonConvert.DeserializeObject<Dictionary<string, string>>(configText);
-
-                await ServiceLoader(configDictionary);
+                await ServiceLoader(args[0]).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -43,22 +38,14 @@ namespace Zs.Service.ChatAdmin
         }
 
 
-        public static async Task ServiceLoader(Dictionary<string,string> config)
+        public static async Task ServiceLoader(string configPath)
         {
             try
             {
-                var configuration = new Configuration(
-                    "Zs.Service.ChatAdmin.json",
-                    dbUser:        config["DbUser"],
-                    dbPassword:    config["DbPassword"],
-                    botToken:      config["BotToken"],
-                    proxySocket:   config.ContainsKey("ProxySocket")   ? config["ProxySocket"]   : null,
-                    proxyLogin:    config.ContainsKey("ProxyUser")     ? config["ProxyUser"]     : null,
-                    proxyPassword: config.ContainsKey("ProxyPassword") ? config["ProxyPassword"] : null
-                    );
+                var configuration = new Configuration(configPath);
 
                 var connectionAnalyser = new ConnectionAnalyser(Logger.GetInstance(), "https://vk.com/", "https://yandex.ru/", "https://www.google.ru/");
-                if (config.ContainsKey("ProxySocket"))
+                if (configuration.ProxySocket is {})
                     connectionAnalyser.InitializeProxy(
                         configuration.ProxySocket,
                         configuration.ProxyLogin,
@@ -74,7 +61,7 @@ namespace Zs.Service.ChatAdmin
                             ActivatorUtilities.CreateInstance<ChatAdmin>(x, configuration, messenger, connectionAnalyser));
                 });
 
-                await builder.RunConsoleAsync();
+                await builder.RunConsoleAsync().ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -85,7 +72,7 @@ namespace Zs.Service.ChatAdmin
                 if (_reloadCounter < 3)
                 {
                     Thread.Sleep(1000);
-                    await ServiceLoader(config);
+                    await ServiceLoader(configPath).ConfigureAwait(false);
                 }
 
                 Console.ReadLine();

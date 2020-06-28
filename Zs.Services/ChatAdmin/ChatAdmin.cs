@@ -61,17 +61,19 @@ namespace Zs.Service.ChatAdmin
         {
             _connectionAnalyser.Start(5000, 30000);
             _cycleWorker.Start(3000, 5000);
-            _bot.Messenger.AddMessageToOutbox($"Бот запущен", "ADMIN");
-            _logger.LogInfo("Бот запущен", nameof(ChatAdmin));
+            _bot.Messenger.AddMessageToOutbox($"Bot started", "ADMIN");
+            _logger.LogInfo("Bot started", nameof(ChatAdmin));
 
             return Task.CompletedTask;
         }
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
+            _bot.Messenger.AddMessageToOutbox($"Bot started", "ADMIN");
+            Task.Delay(2000);
             _connectionAnalyser.Stop();
             _cycleWorker.Stop();
-            _logger.LogInfo("Бот остановлен", nameof(ChatAdmin));
+            _logger.LogInfo("Bot stopped", nameof(ChatAdmin));
             return Task.CompletedTask;
         }
 

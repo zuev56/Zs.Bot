@@ -1,5 +1,5 @@
 
--- Получение массива разрешений для заданной роли
+-- READY
 CREATE OR REPLACE FUNCTION bot.sf_get_permission_array(
     user_role_code_ varchar(10))
     RETURNS TEXT[]
@@ -24,11 +24,10 @@ ALTER FUNCTION bot.sf_get_permission_array(character varying)
     OWNER TO postgres;
 
 COMMENT ON FUNCTION bot.sf_get_permission_array(character varying)
-    IS 'Получение массива разрешений для заданной роли';
+    IS 'Returns permission array for the role';
 
 
-
--- Получение справки по функциям, доступным для данной роли
+-- READY
 CREATE OR REPLACE FUNCTION bot.sf_cmd_get_help(
     user_role_code_ varchar(10))
     RETURNS TEXT
@@ -57,87 +56,7 @@ ALTER FUNCTION bot.sf_cmd_get_help(character varying)
     OWNER TO postgres;
 
 COMMENT ON FUNCTION bot.sf_cmd_get_help(character varying)
-    IS 'Получение справки по функциям, доступным для данной роли';
-
-
-
-
-
-
-
-
-
-CREATE OR REPLACE FUNCTION rmgr."TESTsfAdmGetTopUserMsgCount"(
-    bigint chat_id,
-    datetime timestamp with time zone,
-    num integer)
-    RETURNS bigint
-    LANGUAGE 'plpgsql'
-    COST 100
-    VOLATILE 
-AS $BODY$
-BEGIN
--- Получение количества неудалённых сообщений из заданного чата
-    IF (dateTime IS NOT NULL AND num IS NOT NULL) 
-    THEN
-        RETURN (SELECT count(m.*)
-                FROM rmgr."ReceivedMsg" m
-                JOIN rmgr."User" u ON u."UserId" = m."UserId" -- -- ??? Зачем ???
-                WHERE (m."ReceivedMsgDate" + INTERVAL '3 hours')::Date = dateTime::Date -- AND dateTime::Date + INTERVAL '1 DAY' 
-                  AND m."ChatId" = chat_id
-                  AND m."IsDeleted" <> true
-                GROUP BY m."UserId"--, count(m.*) -- ??? Зачем ???
-                ORDER BY count(m.*) DESC -- ??? Зачем ???
-                LIMIT 1
-                OFFSET num-1); -- ??? Зачем ???
-    ELSE
-        RETURN -1;
-    END IF;
-END;
-$BODY$;
-
-ALTER FUNCTION rmgr."TESTsfAdmGetTopUserMsgCount"(timestamp with time zone, integer)
-    OWNER TO postgres;
-
-COMMENT ON FUNCTION rmgr."TESTsfAdmGetTopUserMsgCount"(timestamp with time zone, integer)
-    IS 'Возвращает количество сообщений N-го пользователя из списка самых активных за заданный день';
-
-
-
-
-
-CREATE OR REPLACE FUNCTION bot.sf_get_group_statistics(
-    rows_limit integer,
-    from_date timestamp with time zone,
-    to_date timestamp with time zone DEFAULT now())
-    RETURNS TABLE(chat_id bigint, user_id integer, message_count bigint) 
-    LANGUAGE 'plpgsql'
-    COST 100
-    VOLATILE 
-    ROWS 1000
-AS $BODY$
-BEGIN
-    RETURN QUERY(
-        SELECT m.chat_id
-             , u.user_id
-             , count(m.*) 
-          FROM bot.messages m
-          JOIN bot.users u ON u.user_id = m.user_id
-         WHERE m.insert_date >= from_date AND m.insert_date <= to_date
-           AND m.is_deleted = false
-      GROUP BY m.chat_id, u.user_id
-      ORDER BY count(m.*) DESC
-      LIMIT rows_limit
-    );
-
-END;
-$BODY$;
-
-ALTER FUNCTION bot.sf_get_group_statistics(integer, timestamp with time zone, timestamp with time zone)
-    OWNER TO postgres;
-
-COMMENT ON FUNCTION bot.sf_get_group_statistics(integer, timestamp with time zone, timestamp with time zone)
-    IS 'Возвращает заданное количество строк в заданном временном диапазоне - ИмяПользователя, КоличествоСообщений';
+    IS 'Returns help to features available for the role';
 
 
 
@@ -148,8 +67,6 @@ CREATE OR REPLACE FUNCTION zl.sf_get_most_popular_words(
     min_word_length integer DEFAULT 2)
     RETURNS TABLE(word character varying, count bigint) 
     LANGUAGE 'plpgsql'
-    COST 100
-    VOLATILE 
     ROWS 1000
 AS $BODY$
 DECLARE
@@ -200,11 +117,6 @@ END;
 $BODY$;
 ALTER FUNCTION zl.sf_get_most_popular_words(integer, timestamp with time zone, timestamp with time zone, integer)
     OWNER TO postgres;
-
-    
-
-
-
 
 CREATE OR REPLACE FUNCTION zl.sf_get_most_popular_words(
     msg_text text,
@@ -375,106 +287,147 @@ ALTER FUNCTION zl.sf_process_group_message(integer, integer, timestamp with time
 
 
 
+    
+
+-- READY
+CREATE OR REPLACE FUNCTION bot.sf_get_chat_statistics(
+    _chat_id     integer,
+    _users_limit integer,
+    _from_date   timestamp with time zone,
+    _to_date     timestamp with time zone DEFAULT now()
+    )
+    RETURNS table(chat_id integer, user_id integer, message_count bigint) 
+    LANGUAGE 'plpgsql'
+    ROWS 1000
+AS $BODY$
+BEGIN
+    RETURN QUERY(
+        SELECT _chat_id
+             , u.user_id
+             , count(m.*) 
+          FROM bot.messages m
+          JOIN bot.users u ON u.user_id = m.user_id
+         WHERE m.chat_id = _chat_id
+           AND m.insert_date >= _from_date AND m.insert_date <= _to_date
+           AND m.is_deleted = false
+      GROUP BY u.user_id
+      ORDER BY count(m.*) DESC
+      LIMIT _users_limit);
+END;
+$BODY$;
+ALTER FUNCTION bot.sf_get_chat_statistics(integer, integer, timestamp with time zone, timestamp with time zone)
+    OWNER TO postgres;
+COMMENT ON FUNCTION bot.sf_get_chat_statistics(integer, integer, timestamp with time zone, timestamp with time zone)
+    IS 'Returns a list of users and the number of their messages in the specified time range';
+--select * from bot.sf_get_chat_statistics(1, 10, now()::date - interval '1 day', now())
 
 
-CREATE OR REPLACE FUNCTION zl.sf_cmd_get_statistics(
-    rows_limit integer,
-    from_date timestamp with time zone,
-    to_date timestamp with time zone DEFAULT now()
+
+-- READY
+CREATE OR REPLACE FUNCTION zl.sf_cmd_get_full_statistics(
+    _users_limit integer,
+    _from_date   timestamp with time zone,
+    _to_date     timestamp with time zone DEFAULT now()
     )
     RETURNS text
     LANGUAGE 'plpgsql'
-    COST 100
-    VOLATILE
 AS $BODY$
 DECLARE
-    result_text TEXT := ''; 
-    h_1 TEXT := 'Активных пользователей';   
-    h_2 TEXT := 'Всего сообщений';
-    chat_name TEXT;
+    _result_text text = ''; 
+    _header_1    text = 'Active users:';   
+    _header_2    text = 'Total messages:';
+    _chat_name   text;
+    _chat_id     integer;
+    _notice_item record;
 BEGIN
 
-  -- Получаем статистику для всех чатов во временную таблицу
   CREATE TEMP TABLE statisticsTable AS  
-  SELECT full_query.chat_name
-       , full_query.user_name
+  SELECT full_query.chat_id
+       , full_query.user_id
+       , full_query.chat_name
+       , full_query.row_header
        , full_query.all_message_count
        , full_query.accounted_message_count
     FROM
     (    
-        -- Статитика участников чата
-        (SELECT c.chat_title AS chat_name
-              , COALESCE(u.user_full_name, u.user_name)  AS user_name
-              , sf1.message_count AS all_message_count
-              , sf2.message_count AS accounted_message_count
-           FROM bot.sf_get_group_statistics(rows_limit, from_date, to_date) sf1
-      LEFT JOIN bot.users u ON sf1.user_id = u.user_id
-      LEFT JOIN bot.chats c ON c.chat_id = sf1.chat_id
-      LEFT JOIN bot.sf_get_group_statistics(rows_limit, (SELECT accounting_start_date FROM zl.accountings WHERE accounting_start_date > from_date LIMIT 1)
-                                           , to_date) sf2 ON sf1.user_id = sf2.user_id AND sf1.chat_id = sf2.chat_id
-       ORDER BY sf1.chat_id, sf1.message_count DESC, sf2.message_count DESC 
-          LIMIT rows_limit)
-       
+         -- All chats, all users, theirs all message count and message count from accounting date
+        (SELECT s1.chat_id
+              , s1.user_id
+              , c.chat_name
+              , u.user_name      as row_header
+      		  , s1.message_count as all_message_count
+      		  , s2.message_count as accounted_message_count
+           FROM bot.chats c
+      LEFT JOIN bot.sf_get_chat_statistics(c.chat_id, _users_limit, _from_date, _to_date) s1 ON s1.chat_id = c.chat_id
+      LEFT JOIN bot.sf_get_chat_statistics(c.chat_id, _users_limit, (SELECT accounting_start_date FROM zl.accountings WHERE accounting_start_date > _from_date LIMIT 1)
+                 , _to_date) s2 ON s1.user_id = s2.user_id AND s1.chat_id = s2.chat_id
+      LEFT JOIN bot.users u on u.user_id = s1.user_id
+          WHERE s1.chat_id IS NOT NULL
+       ORDER BY s1.chat_id, s1.message_count DESC, s2.message_count DESC)
+              
     UNION
-        -- Активных пользователей
-         SELECT s.chat_name AS chat_name
-              , h_1         AS user_name
+         -- Number of active users
+         SELECT s.chat_id
+              , null
+              , s.chat_name AS chat_name
+              , _header_1   AS row_header
               , count(*)    AS all_message_count
               , NULL        AS accounted_message_count
-           FROM (SELECT c.chat_title  AS chat_name
-                    FROM bot.messages m
-               LEFT JOIN bot.chats c ON c.chat_id = m.chat_id
-                   WHERE m.insert_date > from_date AND m.insert_date < to_date
-                     AND m.is_deleted = false
-                     AND c.chat_title IS NOT NULL -- Отсекаем личные переписки с ботом
-                GROUP BY m.user_id, c.chat_id ) s
-       GROUP BY s.chat_name
+           FROM (SELECT c.chat_name, c.chat_id
+                   FROM bot.messages m
+              LEFT JOIN bot.chats c ON c.chat_id = m.chat_id
+                  WHERE m.insert_date > _from_date AND m.insert_date < _to_date
+                    AND m.is_deleted = false
+                    AND c.chat_type_code = 'GROUP'
+               GROUP BY m.user_id, c.chat_id) s
+       GROUP BY s.chat_id, s.chat_name
        
     UNION      
         -- Всего сообщений
-         SELECT chat_title       AS chat_name
-              , h_2              AS user_name
+         SELECT c.chat_id
+              , null
+              , c.chat_name
+              , _header_2        AS row_header
               , count(m.user_id) AS all_message_count
               , NULL             AS accounted_message_count
            FROM bot.messages m
       LEFT JOIN bot.chats c ON c.chat_id = m.chat_id
-          WHERE m.insert_date > from_date AND m.insert_date < to_date
+          WHERE m.insert_date > _from_date AND m.insert_date < _to_date
             AND m.is_deleted = false
        GROUP BY c.chat_id
    ) full_query;
    
   -- Для каждого чата формируем сводку
-  FOR c_name IN (select chat_name from statisticsTable group by chat_name)
+  FOR _chat_id IN (SELECT chat_id FROM statisticsTable GROUP BY chat_id)
   LOOP
-      result_text := result_text || '**' || c_name || E'**\n';
-      result_text := result_text || (select chat_name || ' ' || all_message_count from statisticsTable where chat_name = c_name and user_name = h_2);
+      _result_text = _result_text || '**' || (SELECT chat_name FROM bot.chats WHERE chat_id = _chat_id LIMIT 1) || E'**\n';
+      _result_text = _result_text || (SELECT _header_2 || ' ' || all_message_count FROM statisticsTable WHERE chat_id = _chat_id and row_header = _header_2);
       
       -- Для групповых чатов больше информации
-      IF EXISTS (select 1 from statisticsTable where chat_name = c_name and user_name = h_1) 
+      IF EXISTS (SELECT 1 FROM statisticsTable WHERE chat_id = _chat_id and row_header = _header_1) 
       THEN
-          result_text := result_text || E'\n' || (select user_name || ' ' || all_message_count from statisticsTable where chat_name = c_name and user_name = h_1) || E'\n';
-          result_text := result_text || E'---\nСамые активные:\n';
-          result_text := result_text || coalesce((select string_agg(user_name || ' ' || all_message_count || COALESCE(' (' || accounted_message_count || '*)', ''), E'\n'
-                                                                    order by all_message_count desc, coalesce(accounted_message_count, 0) desc) 
-                                                    from statisticsTable
-                                                   where chat_name = c_name and user_name not in (h_1, h_2)), 'exception');
+          _result_text = _result_text || E'\n' || (SELECT row_header || ' ' || all_message_count FROM statisticsTable WHERE chat_id = _chat_id and row_header = _header_1) || E'\n';
+          _result_text = _result_text || E'---\nMost active users:\n';
+          _result_text = _result_text || coalesce((SELECT string_agg(row_header || ' ' || all_message_count || COALESCE(' (' || accounted_message_count || '*)', ''), E'\n'
+                                                                   ORDER BY all_message_count DESC, coalesce(accounted_message_count, 0) DESC) 
+                                                   FROM statisticsTable
+                                                  WHERE chat_id = _chat_id and row_header not in (_header_1, _header_2)), '[exception]');
       END IF;
-      result_text := result_text || E'\n\n================\n\n';
+
+      _result_text = _result_text || E'\n\n================\n\n';
   END LOOP;
   
-  -- Удаляем временную таблицу
-  drop table statisticsTable;
-  
-  RETURN result_text;
+   _result_text = (SELECT trim(trailing E'\n\n================\n\n' from _result_text));
 
+  DROP TABLE statisticsTable;
+  
+  RETURN _result_text;
 END;
 $BODY$;
-
-ALTER FUNCTION rmgr.sf_cmd_get_statistics(integer, timestamp with time zone, timestamp with time zone)
+ALTER FUNCTION zl.sf_cmd_get_full_statistics(integer, timestamp with time zone, timestamp with time zone)
     OWNER TO postgres;
-
-COMMENT ON FUNCTION bot.sf_cmd_get_statistics(integer, timestamp with time zone, timestamp with time zone)
-    IS 'Получение статистики по всем чатам за указанный период времени';
+COMMENT ON FUNCTION zl.sf_cmd_get_full_statistics(integer, timestamp with time zone, timestamp with time zone)
+    IS 'Returns all chats statistics in the specified time range';
     
     
     
