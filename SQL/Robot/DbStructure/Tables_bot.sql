@@ -84,8 +84,8 @@ ON bot.user_roles FOR EACH ROW EXECUTE PROCEDURE helper.reset_update_date();
 COMMENT ON TABLE bot.user_roles IS 'Chat members roles';
 
 INSERT INTO bot.user_roles(user_role_code, user_role_name, user_role_permissions) VALUES('OWNER',     'Owner',         '[ "All" ]');
-INSERT INTO bot.user_roles(user_role_code, user_role_name, user_role_permissions) VALUES('ADMIN',     'Administrator', '[ "All" ]');
-INSERT INTO bot.user_roles(user_role_code, user_role_name, user_role_permissions) VALUES('MODERATOR', 'Moderator',     '[ "userCmdGroup", "Test1CmdGroup" ]');
+INSERT INTO bot.user_roles(user_role_code, user_role_name, user_role_permissions) VALUES('ADMIN',     'Administrator', '[ "adminCmdGroup", "moderatorCmdGroup", "userCmdGroup" ]');
+INSERT INTO bot.user_roles(user_role_code, user_role_name, user_role_permissions) VALUES('MODERATOR', 'Moderator',     '[ "moderatorCmdGroup", "userCmdGroup" ]');
 INSERT INTO bot.user_roles(user_role_code, user_role_name, user_role_permissions) VALUES('USER',      'User',          '[ "userCmdGroup" ]');
 
 
@@ -183,8 +183,6 @@ CREATE TRIGGER commands_reset_update_date BEFORE UPDATE
 ON bot.commands FOR EACH ROW EXECUTE PROCEDURE helper.reset_update_date();
 COMMENT ON TABLE bot.commands IS 'Команды пользователей';
 
-
-
 -- Проверка и правка command_name
 CREATE OR REPLACE FUNCTION bot.commands_new_command_correct()
 RETURNS TRIGGER AS $$
@@ -207,17 +205,17 @@ CREATE TRIGGER commands_new_command_correct BEFORE INSERT OR UPDATE
 ON bot.commands FOR EACH ROW EXECUTE PROCEDURE bot.commands_new_command_correct();
 
 INSERT INTO bot.commands(command_name, command_script, command_default_args, command_desc, command_group) 
-VALUES('/GetUserStatistics', 'SELECT bot."sfCmdGetStatistics"({0}, {1}, {2})', '15; now()::Date; now()', 'Получение статистики по активности участников чата за определённый период', 'user');
+VALUES('/GetUserStatistics', 'SELECT zl.sf_cmd_get_full_statistics({0}, {1}, {2})', '15; now()::Date; now()', 'Получение статистики по активности участников всех чатов за определённый период', 'adminCmdGroup');
 INSERT INTO bot.commands(command_name, command_script, command_default_args, command_desc, command_group) 
-VALUES('/Test', 'SELECT ''Test''', null, 'Тестовый запрос к боту. Возвращает ''Test''', 'moderator');
+VALUES('/Test', 'SELECT ''Test''', null, 'Тестовый запрос к боту. Возвращает ''Test''', 'moderatorCmdGroup');
 INSERT INTO bot.commands(command_name, command_script, command_default_args, command_desc, command_group) 
-VALUES('/NullTest', 'SELECT null', null, 'Тестовый запрос к боту. Возвращает NULL', 'moderator');
+VALUES('/NullTest', 'SELECT null', null, 'Тестовый запрос к боту. Возвращает NULL', 'moderatorCmdGroup');
 INSERT INTO bot.commands(command_name, command_script, command_default_args, command_desc, command_group) 
-VALUES('/Help', 'SELECT bot.sf_cmd_get_help({0})', '''User''', 'Получение справки по функциям, доступным для данной роли', 'user');
+VALUES('/Help', 'SELECT bot.sf_cmd_get_help({0})', '<UserRoleCode>', 'Получение справки по доступным функциям', 'userCmdGroup');
 INSERT INTO bot.commands(command_name, command_script, command_default_args, command_desc, command_group) 
-VALUES('/SetMessageLimit', 'SELECT bot."sfCmdSetMessageLimit"({0}, {1})', '0; 0', 'Установка лимита сообщений для пользователей', 'moderator');
+VALUES('/SetMessageLimit', 'SELECT bot."sfCmdSetMessageLimit"({0}, {1})', '0; 0', 'Установка лимита сообщений для пользователей', 'moderatorCmdGroup');
 INSERT INTO bot.commands(command_name, command_script, command_default_args, command_desc, command_group) 
-VALUES('/SqlQuery', 'select (with userQuery as ({0}) select json_agg(q) from userQuery q)', 'select ''Write your query''', 'SQL-запрос', 'admin');
+VALUES('/SqlQuery', 'select (with userQuery as ({0}) select json_agg(q) from userQuery q)', 'select ''Pass your query as parameter in double quotes''', 'SQL-запрос', 'adminCmdGroup');
 
 
 

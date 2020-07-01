@@ -36,24 +36,24 @@ namespace Zs.Service.ChatAdmin
                 _configuration = configuration;
 
                 _bot = new ZsBot(_configuration, messenger);
+                _bot.Messenger.MessageReceived += Messenger_MessageReceived;
 
                 _connectionAnalyser = connectionAnalyser;
                 _connectionAnalyser.ConnectionStatusChanged += СonnectionAnalyser_StatusChanged;
 
-                if (configuration is Configuration c)
-                    _messageProcessor = new MessageProcessor(c.DefaultChatId);
+                _messageProcessor = new MessageProcessor(_configuration, messenger);
 
                 _cycleWorker = new CycleWorker(_logger);
                 _cycleWorker.Jobs.AddRange(GetJobs());
 
                 var optionsBuilder = new DbContextOptionsBuilder<ChatAdminDbContext>();
-                optionsBuilder.UseNpgsql(_configuration.ConnectionString);
+                optionsBuilder.UseNpgsql(_configuration["ConnectionString"].ToString());
                 ChatAdminDbContext.Initialize(optionsBuilder.Options);
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                var te = new TypeInitializationException(typeof(ChatAdmin).FullName, e);
-                _logger.LogError(te, nameof(ChatAdmin));
+                var tiex = new TypeInitializationException(typeof(ChatAdmin).FullName, ex);
+                _logger.LogError(tiex, nameof(ChatAdmin));
             }
         }
 
@@ -85,6 +85,11 @@ namespace Zs.Service.ChatAdmin
                 _messageProcessor?.SetInternetRepairDate(null);
         }
 
+        private void Messenger_MessageReceived(MessageActionEventArgs e)
+        {
+            _messageProcessor.ProcessGroupMessage(e.Message);
+        }
+
         private IEnumerable<Job> GetJobs()
         {
             //        // Задачи на начало дня
@@ -102,7 +107,7 @@ namespace Zs.Service.ChatAdmin
             var job = new SqlJob(
                 TimeSpan.FromMinutes(1),
                 "SELECT Count(*) FROM bot.logs",
-                _configuration.ConnectionString);
+                _configuration["ConnectionString"].ToString());
 
             yield return job;
         }

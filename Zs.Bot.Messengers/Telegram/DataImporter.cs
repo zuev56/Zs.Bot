@@ -23,6 +23,8 @@ namespace Zs.Bot.Telegram
             new DecoderExceptionFallback()
         );
 
+
+
         public static void LoadUsersFromJson(string filePath)
         {
             try
@@ -45,15 +47,15 @@ namespace Zs.Bot.Telegram
                         ? false
                         : bool.Parse(jItem["IsBot"].ToString());
                     var insertDate = DateTime.Parse(jItem["insertdate"].ToString());
-                    var jObj = JObject.Parse(jItem.ToString());
+                    var jObj = JObject.Parse(jItem.ToString().NormalizeJsonString());
                     jObj.Remove("insertdate");
 
                     var fullName = $"{jItem["FirstName"]} {jItem["LastName"]}".ToString().Trim();
-                    var userName = string.IsNullOrWhiteSpace(jItem["UserName"].ToString()) ? fullName : $"{jItem["UserName"]}";
+                    var userName = string.IsNullOrWhiteSpace(jItem["Username"].ToString()) ? fullName : $"{jItem["Username"]}";
 
                     users.Add(new DbUser
                     {
-                        UserName     = string.IsNullOrWhiteSpace(jItem["UserName"].ToString()) ? fullName : $"{jItem["UserName"]}",
+                        UserName     = string.IsNullOrWhiteSpace(jItem["Username"].ToString()) ? fullName : $"{jItem["Username"]}",
                         UserFullName = (string.IsNullOrWhiteSpace(fullName) || userName == fullName) ? null : fullName,
                         UserRoleCode = "USER",
                         UserIsBot    = isBot,
@@ -96,12 +98,12 @@ namespace Zs.Bot.Telegram
 
                 if (dbChatId is null)
                 {
-                    var jsonChat = "{\n"
+                    var jsonChat = ("{\n"
                              +$"  \"Id\": {telegramChatId},\n"
                              + "  \"Type\": 3,\n"
                              + "  \"Title\": \"ЖК Зима Лето Корпус 6 соседи\",\n"
                              + "  \"AllMembersAreAdministrators\": false\n"
-                             + "}\n";
+                             + "}\n").NormalizeJsonString();
                     var chat = new DbChat()
                     {
                         ChatDescription = "ЖК Зима Лето Корпус 6 соседи",
@@ -250,6 +252,10 @@ namespace Zs.Bot.Telegram
                     dbMessages[i].MessageId = i + 1;
                 }
 
+
+                // TODO: Упростить сохранение - сделать всё, как в последнем блоке
+
+
                 var notReplies = dbMessages.Where(m => m.ReplyToMessageId == null).ToList();
                 var replies = dbMessages.Where(m => m.ReplyToMessageId != null).ToList();
                 var freeReplies = new List<DbMessage>();
@@ -302,8 +308,6 @@ namespace Zs.Bot.Telegram
                 throw;
             }
         }
-
-
 
     }
 }

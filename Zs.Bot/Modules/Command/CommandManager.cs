@@ -2,12 +2,15 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Internal;
 using Newtonsoft.Json.Linq;
 using Npgsql;
 using Zs.Bot.Helpers;
 using Zs.Bot.Model.Db;
+using Zs.Common.Exceptions;
 using Zs.Common.Interfaces;
 
 namespace Zs.Bot.Modules.Command
@@ -69,36 +72,56 @@ namespace Zs.Bot.Modules.Command
                         // (i) SQL-запросы могут быть любые, не только функции.
                         // (i) Должны содержать параметры типа object, иначе будут проблемы при форматировании строки {0}
 
+                        var dbUser = ctx.Users.FirstOrDefault(u => u.UserId == botCommand.FromUserId);
+                        if (dbUser is null)
+                            throw new ItemNotFoundException($"User with Id = {botCommand.FromUserId} not found");
 
-#warning ПРОВЕРКА СООТВЕТСТВИЯ РОЛИ!!!
-                        //if (dbCommand.RoleList.Contains("", StringComparison.OrdinalIgnoreCase)) ;
+                        var userHasRights = DbUserRole.GetPermissionsArray(dbUser.UserRoleCode)
+                            .Any(p => p.ToUpperInvariant() == "ALL" 
+                                   || string.Equals(p, dbCommand.CommandGroup, StringComparison.InvariantCultureIgnoreCase));
 
-                        // Т.о. исключаются проблемы с форматированием строки
-                        var sqlCommandStr = $"{dbCommand.CommandScript} as \"Result\"";
-                        var parameters = botCommand.Parametres.Cast<object>().ToArray();
-                        var queryWithParams = string.Format(sqlCommandStr, parameters);
-                    
-                        var fromSql = ctx.SqlResults.FromSqlRaw($"{queryWithParams}").AsEnumerable();
-                    
-                        try 
-                        { 
-                            cmdExecResult = fromSql.ToList()?[0]?.Result 
-                                         ?? "NULL"; 
-                        }
-                        catch (PostgresException pe)
+
+                        if (userHasRights)
                         {
-                            pe.Data.Add("BotCommand", botCommand);
-                            _logger.LogError(pe, nameof(CommandManager));
-                            cmdExecResult = "Command execution: request processing error!";
+                            // Т.о. исключаются проблемы с форматированием строки
+                            var sqlCommandStr = $"{dbCommand.CommandScript} as \"Result\"";
+                            var parameters = ProcessParameters(botCommand);
+
+                            var queryWithParams = string.Format(sqlCommandStr, parameters);
+
+
+
+                            //Определить спец. синтаксис для дефолтных(и не только) параметров команды,
+                            //который будет расшивровываться в этом блоке и обрабатываться определённым образом
+                            //
+                            //    ProcessSpecifiedParametres(...)
+
+                            var fromSql = ctx.Query.FromSqlRaw($"{queryWithParams}").AsEnumerable();
+
+                            try
+                            {
+                                cmdExecResult = fromSql.ToList()?[0]?.Result
+                                             ?? "NULL";
+                            }
+                            catch (PostgresException pe)
+                            {
+                                pe.Data.Add("BotCommand", botCommand);
+                                _logger.LogError(pe, nameof(CommandManager));
+                                cmdExecResult = "Command execution: request processing error!";
+                            }
+                            catch (Exception e)
+                            {
+                                e.Data.Add("BotCommand", botCommand);
+                                _logger.LogError(e, nameof(CommandManager));
+
+                                cmdExecResult = e.Message == "Column is null"
+                                    ? "NULL"
+                                    : "Command execution: general error!";
+                            }
                         }
-                        catch (Exception e)
+                        else
                         {
-                            e.Data.Add("BotCommand", botCommand);
-                            _logger.LogError(e, nameof(CommandManager));
-                            
-                            cmdExecResult = e.Message == "Column is null"
-                                ? "NULL" 
-                                : "Command execution: general error!";
+                            cmdExecResult = "Sorry, you have no rights for this command";
                         }
                     }
                     else
@@ -112,6 +135,45 @@ namespace Zs.Bot.Modules.Command
             }
 
             return cmdExecResult?.Trim();
+        }
+
+        /// <summary>
+        /// Здесь происходит замена обобщённых параметров на конкретные значения
+        /// </summary>
+        /// <param name="parameters"></param>
+        /// <returns></returns>
+        private object[] ProcessParameters(BotCommand botCommand)
+        {
+            var regex = new Regex(@"<([^\s>]+)\>", RegexOptions.IgnoreCase);
+            var parameters = botCommand.Parametres.Cast<object>().ToArray();
+
+            var genericParams = parameters.Cast<string>().Where(p => regex.IsMatch(p));
+
+            var concreteParams = new Dictionary<string, string>(genericParams.Count());
+
+            using var ctx = new ZsBotDbContext();
+            foreach (var p in genericParams)
+            { 
+                switch (p.ToUpperInvariant())
+                {
+                    case "<USERROLECODE>":
+                        var userRoleCode = ctx.Users.FirstOrDefault(u => u.UserId == botCommand.FromUserId)?.UserRoleCode;
+                        concreteParams.Add(p, $"'{userRoleCode}'");
+                        break;
+                    default: 
+                        concreteParams.Add(p, null);
+                        break;
+                }
+            }
+
+            foreach (var cp in concreteParams)
+            {
+                int index = parameters.IndexOf(cp.Key);
+                if (index >= 0)
+                    parameters[index] = cp.Value;
+            }
+
+            return parameters;
         }
 
         /// <summary> Обработчик очереди команд. Работает в отдельном потоке </summary>

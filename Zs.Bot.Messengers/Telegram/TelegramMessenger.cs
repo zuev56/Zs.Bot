@@ -14,16 +14,18 @@ using Zs.Bot.Helpers;
 using Zs.Bot.Model.Db;
 using Zs.Bot.Modules.Messaging;
 using Zs.Common.Enums;
+using Zs.Common.Interfaces;
 
 namespace Zs.Bot.Telegram
 {
     public class TelegramMessenger : IMessenger
     {
-        private readonly Logger _logger = Logger.GetInstance();
+        private readonly IZsLogger _logger = Logger.GetInstance();
         private readonly int _sendingRetryLimit = 5;
         private readonly TelegramBotClient _botClient;
         private readonly Buffer<TgMessage> _inputMessageBuffer = new Buffer<TgMessage>();
         private readonly Buffer<TgMessage> _outputMessageBuffer = new Buffer<TgMessage>();
+        private readonly object _lock = new object();
 
         public event Action<MessageActionEventArgs> MessageEdited;
         public event Action<MessageActionEventArgs> MessageReceived;
@@ -230,10 +232,18 @@ namespace Zs.Bot.Telegram
                     msgForLog = tgMessage;
                     OperationResult sendingResult;
 
-                    sendingResult = SendMessageFinaly(tgMessage, currentTask);
+                    lock (_lock)
+                    {
+                        sendingResult = SendMessageFinaly(tgMessage, currentTask);
+                    }
 
                     if (sendingResult == OperationResult.Retry)
                         continue;
+
+#warning Make awaitable!
+                    // When an error occured during sending
+                    if (tgMessage.From is null)
+                        tgMessage.From = _botClient.GetMeAsync().GetAwaiter().GetResult();
 
                     var args = new MessageActionEventArgs()
                     {
@@ -294,12 +304,14 @@ namespace Zs.Bot.Telegram
             try
             {
                 using var ctx = new ZsBotDbContext();
-                var users = ctx.Users.Where(u => userRoleCodes.Contains(u.UserRoleCode))
+                var dbUsers = ctx.Users.Where(u => userRoleCodes.Contains(u.UserRoleCode))
                                  .ToList();// Для исключения Npgsql.NpgsqlOperationInProgressException: A command is already in progress
 
-                var chats = ctx.Chats.Where(c => users.Select(u => u.UserId).Contains(c.ChatId)).ToList();
+                var tgUsers = dbUsers.Select(u => System.Text.Json.JsonSerializer.Deserialize<User>(u.RawData));
 
-                var tgChats = chats.Select(c => System.Text.Json.JsonSerializer.Deserialize<Chat>(c.RawData));
+                var tgChats = ctx.Chats.ToList().Select(c => System.Text.Json.JsonSerializer.Deserialize<Chat>(c.RawData))
+                    .Where(c => c.Id >= int.MinValue && c.Id <= int.MaxValue 
+                             && tgUsers.Select(u => u.Id).Contains((int)c.Id)).ToList();
 
                 foreach (var chat in tgChats)
                     _outputMessageBuffer.Enqueue(new TgMessage(chat, messageText));
@@ -311,6 +323,25 @@ namespace Zs.Bot.Telegram
         }
         
         /// <inheritdoc />
+        public bool DeleteMessage(IMessage dbMessage)
+        {
+            if (dbMessage is null)
+                throw new ArgumentNullException(nameof(dbMessage));
+
+            using var ctx = new ZsBotDbContext();
+
+            var dbChat = ctx.Chats.FirstOrDefault(c => c.ChatId == dbMessage.ChatId);
+            if (dbChat == null)
+            {
+                _logger.LogWarning($"Chat with ChatId = {dbMessage.ChatId} not found in database", nameof(TelegramMessenger));
+                return false;
+            }
+
+            return DeleteMessage(dbChat, dbMessage) == OperationResult.Success
+                 ? true
+                 : false;
+        }
+
         public OperationResult DeleteMessage(IChat chat, IMessage message)
         {
             try
@@ -331,7 +362,7 @@ namespace Zs.Bot.Telegram
                 {
                     Chat = chat,
                     Message = message,
-                    ChatType = ItemConverter.ToGeneralChatType(tgMessage.Chat.Type),
+                    ChatType = ItemConverter.ToGeneralChatType(tgChat.Type),
                     Action = MessageAction.Deleted
                 };
 
@@ -348,7 +379,7 @@ namespace Zs.Bot.Telegram
 
         private OperationResult SendMessageFinaly(TgMessage message, Task currentTask)
         {
-            // Telegram.Bot.API не позволяет отправлять сообщения, содержащие вида */command@botName*
+            // Telegram.Bot.API не позволяет отправлять сообщения, содержащие текст вида */command@botName*
             try
             {
                 Message tgMessage = null;
@@ -358,7 +389,7 @@ namespace Zs.Bot.Telegram
                     case MessageType.Text:
                         if (string.IsNullOrWhiteSpace(message.Text))
                             throw new Exception("Text message have no text");
-
+#warning Make awaitable!
                         Message tmp = message.ReplyToMessage is null
                                 ? _botClient.SendTextMessageAsync(
                                     message.Chat.Id,

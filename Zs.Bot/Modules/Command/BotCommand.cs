@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Zs.Bot.Helpers;
 using Zs.Bot.Model.Db;
 
 namespace Zs.Bot.Modules.Command
@@ -13,42 +12,24 @@ namespace Zs.Bot.Modules.Command
     /// </summary>
     public class BotCommand
     {
-        private readonly Logger _logger = Logger.GetInstance();
-
+        public int FromUserId { get; private set; }
         public int ChatIdForAnswer { get; private set; }
-        public string Name { get; set; }
+        public string Name { get; private set; }
         public List<object> Parametres { get; set; }
 
 
-        public BotCommand(int chatIdForAnswer, string name)
+        private BotCommand()
         {
-            Name = CorrectName(name);
-            ChatIdForAnswer = chatIdForAnswer;
-        }
-
-        public BotCommand(int chatIdForAnswer, string name, List<object> parametres)
-            : this(chatIdForAnswer, name)
-        {
-            Parametres = parametres;
         }
 
 
-        /// <summary> Правка имени команды </summary>
-        private string CorrectName(string name)
-        {
-            if (name == null)
-                throw new ArgumentException("Имя команды не может быть равным null");
-
-            return "/" + name.Trim().ToLower().Replace("/", "");
-        }
-
-        /// <summary> Создание объекта BotCommand из сообщения </summary>
+        /// <summary> Create <see cref="BotCommand"/> from <see cref="IMessage"/> </summary>
         public static async Task<BotCommand> ParseMessageAsync(IMessage message)
         {
             return await Task.Run(() => ParseMessage(message));
         }
 
-        /// <summary> Создание объекта BotCommand из сообщения </summary>
+        /// <summary> Create <see cref="BotCommand"/> from <see cref="IMessage"/> </summary>
         public static BotCommand ParseMessage(IMessage message)
         {
             try
@@ -95,8 +76,11 @@ namespace Zs.Bot.Modules.Command
                                     defaultArgs.ForEach(a => parameters.Add(a.Trim()));
                             }
 
-                            botCommand = new BotCommand(message.ChatId, commandName)
+                            botCommand = new BotCommand()
                             {
+                                Name = "/" + commandName.Trim().ToLower().Replace("/", ""),
+                                FromUserId = message.UserId,
+                                ChatIdForAnswer = message.ChatId,
                                 Parametres = parameters
                             };
                         }
@@ -107,10 +91,17 @@ namespace Zs.Bot.Modules.Command
                 else
                     throw new ArgumentException("Сообщение не является командой для бота");
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
                 throw;
             }
+        }
+
+        /// <summary> Check if message is <see cref="BotCommand"/> </summary>
+        public static bool IsCommand(string message)
+        {
+            var text = message?.Trim();
+            return text?[0] == '/' && text?.Length > 1;
         }
 
         private static List<string> MessageSplitter(string argumentsLine)
@@ -178,13 +169,6 @@ namespace Zs.Bot.Modules.Command
             }
 
             return words;
-        }
-
-        /// <summary> Проверка, является ли строка командой для бота </summary>
-        public static bool IsCommand(string message)
-        {
-            var text = message?.Trim();
-            return text?[0] == '/' && text?.Length > 1;
         }
     }
 }

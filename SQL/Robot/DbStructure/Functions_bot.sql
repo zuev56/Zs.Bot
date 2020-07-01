@@ -171,23 +171,22 @@ ALTER FUNCTION zl.sf_get_most_popular_words(text, integer)
 
 
 
+
 CREATE OR REPLACE FUNCTION zl.sf_process_group_message(
     _chat_id integer,
     _message_id integer,
     _accounting_start_date timestamp with time zone, -- важно переопределять во время выполнения
     _msg_limit_hi integer,                           -- важно переопределять во время выполнения
     _msg_limit_hihi integer,                         -- важно переопределять во время выполнения
-    _start_account_after integer default 100)
+    _msg_limit_after_ban integer = 5,
+    _start_account_after integer default 100)        -- важно переопределять во время выполнения
     RETURNS json 
     LANGUAGE 'plpgsql'
-    COST 100
-    VOLATILE
 AS $BODY$
 DECLARE
-   _result text = '{ "Answer" : "Not initialized" }';
    _user_id integer;
-   _user_msg_count integer;
-   _msg_limit_after_ban integer = 5;
+   _accounted_user_msg_count integer;
+   _daily_chat_msg_count integer;
    _ban_id integer;
 BEGIN
  -- При достижении лимита пользователь банится на 3 часа. 
@@ -200,94 +199,123 @@ BEGIN
  --     переопределение лимитов для того, чтобы не перетереть 
  --     только что полученные сообщения
     
+    select user_id into _user_id from bot.messages where message_id = _message_id;
+
     select ban_id into _ban_id from zl.bans 
          where user_id = _user_id and chat_id = _chat_id
            and insert_date > now()::date 
       order by insert_date desc limit 1;
-
+      
     -- Если для пользователя есть активный бан, то удаляем сообщение. Учитываем бан с предыдущего дня
     if exists (select 1 from zl.bans 
                 where ban_id = _ban_id
-                  and ban_finish_date + interval '3 hours' < now() 
+                  and ban_finish_date > now() 
              order by insert_date desc)
     then
-        return '{ "Answer" : "Banned" }';
+        return '{ "Action": "DeleteMessage" }';
     end if;
  
-    -- Начало индивидуального учёта после 100 сообщений в чате 
+    -- Начало индивидуального учёта после _start_account_after сообщений в чате 
     -- от любых пользователей с 00:00 текущего дня
-    if ((select count(*) from bot.messages where insert_date > now()::date) < _start_account_after)
+    _daily_chat_msg_count = (select count(*) from bot.messages where chat_id = _chat_id and insert_date > now()::date);
+    if (_accounting_start_date is not null and _daily_chat_msg_count < _start_account_after)
     then
-        return '{ "Answer" : "Ok", "AccountingStartDate" : null }';
+        return '{ 
+                    "Action": "SetAccountingStartDate", 
+                    "AccountingStartDate": null 
+                }';
     end if;
  
     -- Дата начала учёта хранится в пямяти программы и передаётся в этот метод
     -- Переопределяется после перезагрузки или восстановления соединения с сетью
-    if (_accounting_start_date is null)
+    if (_accounting_start_date is null and _daily_chat_msg_count >= _start_account_after)
     then
-        return '{ "Answer" : "Ok", "AccountingStartDate" : ' || now() || ' }';
+        return '{ 
+                    "Action": "SetAccountingStartDate",
+                    "AccountingStartDate": "' || now()::text || E'"\n' ||',
+                    "MessageText" : "В чате уже ' || _daily_chat_msg_count::text || ' сообщений. Начинаю персональный учёт." 
+               }';
     end if;
- 
+
     select user_id into _user_id from bot.messages where message_id = _message_id;
      
-    select count(*) into _user_msg_count from bot.messages where insert_date > now()::date and user_id = _user_id;
+    select count(*) into _accounted_user_msg_count from bot.messages 
+    where insert_date > _accounting_start_date 
+      and user_id = _user_id
+      and is_deleted = false;
   
- 
-    -- С начала учёта каждому доступно максимум 30 сообщений.
-    -- После 25-го сообщения с начала учёта выдать пользователю 
+
+    -- С начала учёта каждому доступно максимум _msg_limit_hihi сообщений.
+    -- После _msg_limit_hi сообщения с начала учёта надо выдать пользователю 
     --     предупреждение о приближении к лимиту. При этом создаётся запись
-    --     в таблице Ban и ставится пометка о том, что пользователь предупреждён
-    if (_user_msg_count < _msg_limit_hi) then
-        return '{ "Status" : "Ok" }';
-    elsif (_user_msg_count > _msg_limit_hi and _user_msg_count < _msg_limit_hihi) then
+    --     в таблице zl.bans и ставится пометка о том, что пользователь предупреждён
+    if (_accounted_user_msg_count < _msg_limit_hi) then
+        return '{ "Action": "Continue" }';
+    elsif (_accounted_user_msg_count >= _msg_limit_hi and _accounted_user_msg_count < _msg_limit_hihi) then
+
         -- Создаём неактивную запись в таблице банов (без даты окончания), 
         -- выдаём предупреждение и фиксируем это, чтоб не повторяться
         if (_ban_id is null) then        
             insert into zl.bans (user_id, chat_id)
             select _user_id, _chat_id;
             return '{
-                        "Status" : "BanWarning", 
-                        "MessageText" : "количеcтво сообщений, отправленных Вами с начала учёта: _user_msg_count\\n
-                                         Осталось сообщений до трёхчасового бана: _msg_limit_hihi - _user_msg_count" 
+                        "Action": "SendMessageToGroup", 
+                        "MessageText": "<UserName>, количеcтво сообщений, отправленных Вами с начала учёта: ' || _accounted_user_msg_count::text || '.\nОсталось сообщений до бана: ' || (_msg_limit_hihi - _accounted_user_msg_count)::text || '" 
                     }';
+        else
+            return '{ "Action": "Continue" }';
         end if;
-    elsif (_user_msg_count >= _msg_limit_hihi) then
+    elsif (_accounted_user_msg_count >= _msg_limit_hihi) then
         if (_ban_id is null) then
-            return '{ "Status" : "Error", "MessageText" : "Пользователь превысил лимит, но запись о бане ещё не создана!" }';
+            return '{ 
+                        "Action": "SendMessageToOwner", 
+                        "MessageText": "Error! The user has exceeded the limit and I don''t know what to do!" 
+                    }';
  
         -- Если бан не активен, активируем его (задаём дату окончания)
         -- Отправляем сообщение пользователю
-        elsif (select ban_finish_date from zl.ban where ban_id = _ban_id) is null then
+        elsif (select ban_finish_date from zl.bans where ban_id = _ban_id) is null then
             update zl.bans set ban_finish_date = now() + interval '3 hours'
             where ban_id = _ban_id;
-            
-        -- Иначе, если бан активен, этот код выполняется, значит бан отработал 
+            return '{
+                        "Action": "SendMessageToGroup", 
+                        "MessageText": "<UserName>, Вы превысили лимит сообщений (' || _msg_limit_hihi::text || '). Все последующие сообщения в течение 3-х часов будут удаляться.\nПотом до конца дня у Вас будет ' || _msg_limit_after_ban::text || ' сообщений."
+                    }';
+
+        -- Иначе, если бан активен и функция всё ещё выполняется, значит бан отработал 
         -- и у пользователя осталось _msg_limit_after_ban сообщений.
-        -- после выхода за второй предел, шлём сообщение и блочим всё остальное
-        elsif (_user_msg_count > _msg_limit_hihi 
-              and ban_finish_date < now()::date + interval '1 day' - interval '1 second') then
+        elsif (_accounted_user_msg_count >= _msg_limit_hihi and _accounted_user_msg_count < _msg_limit_hihi + _msg_limit_after_ban) then
+            return '{ "Action": "Continue" }';
+
+        -- При достижении второго предела отодвигаем время бана на конец дня и шлём предупреждающее сообщение
+        elsif (_accounted_user_msg_count >= _msg_limit_hihi + _msg_limit_after_ban) then
             update zl.bans set ban_finish_date = now()::date + interval '1 day' - interval '1 second'
             where ban_id = _ban_id;
             return '{
-                        "Status" : "BanWarning", 
-                        "MessageText" : "вы израсходовали свой лимит сообщений до конца дня" 
+                        "Action": "SendMessageToGroup", 
+                        "MessageText" : "<UserName>, вы израсходовали свой лимит сообщений до конца дня" 
                     }';
-        -- иначе баним до конца дня
-        elsif (_user_msg_count > _msg_limit_hihi + _msg_limit_after_ban) then
-            return '{ "Answer" : "Banned" }';
+        ---- иначе баним до конца дня
+        --elsif (_accounted_user_msg_count > _msg_limit_hihi + _msg_limit_after_ban) then
+        --    return '{ "Answer" : "Banned" }';
         else
-            return '{ "Status" : "Error", "MessageText" : "Пользователь превысил лимит, но ни одно условие не выполнилось!" }';
+            return '{ 
+                        "Action": "SendMessageToOwner",
+                        "MessageText" : "Error! The user has exceeded the limit but no condition has been met!" 
+                    }';
         end if;
     end if;
-    return _result;
+    return '{
+                "Action": "SendMessageToOwner",
+                "MessageText" : "Error! End of function has been reached!" 
+            }';
 END;
 $BODY$;
-ALTER FUNCTION zl.sf_process_group_message(integer, integer, timestamp with time zone, integer, integer, integer)
+ALTER FUNCTION zl.sf_process_group_message(integer, integer, timestamp with time zone, integer, integer, integer, integer)
     OWNER TO postgres;
 
 
 
-    
 
 -- READY
 CREATE OR REPLACE FUNCTION bot.sf_get_chat_statistics(
@@ -320,6 +348,7 @@ ALTER FUNCTION bot.sf_get_chat_statistics(integer, integer, timestamp with time 
 COMMENT ON FUNCTION bot.sf_get_chat_statistics(integer, integer, timestamp with time zone, timestamp with time zone)
     IS 'Returns a list of users and the number of their messages in the specified time range';
 --select * from bot.sf_get_chat_statistics(1, 10, now()::date - interval '1 day', now())
+
 
 
 

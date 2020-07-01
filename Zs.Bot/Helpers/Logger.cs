@@ -65,5 +65,10 @@ namespace Zs.Bot.Helpers
             DbLog.SaveToDb(LogType.Warning, message, logGroup);
         }
 
+        public void LogWarning<T>(string message, T logData, string logGroup = null)
+        {
+            var jsonData = JsonConvert.SerializeObject(logData, Formatting.Indented);
+            DbLog.SaveToDb(LogType.Warning, message, logGroup, jsonData);
+        }
     }
 }

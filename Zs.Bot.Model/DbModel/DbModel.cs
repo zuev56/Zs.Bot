@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Text.Json;
 using Zs.Common.Enums;
 using Zs.Common.Exceptions;
 
@@ -23,7 +24,7 @@ namespace Zs.Bot.Model.Db
                 });
                 ctx.SaveChanges();
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
                 // TODO: Saving to local file
             }
@@ -64,11 +65,8 @@ namespace Zs.Bot.Model.Db
                 throw new ArgumentNullException(nameof(chat));
 
             using var ctx = new ZsBotDbContext();
-            if (!ctx.Chats.Any(u => u.RawDataHash == chat.RawDataHash))
-            {
+            if (!ctx.Chats.Any(c => c.RawDataHash == chat.RawDataHash))
                 ctx.Chats.Add((DbChat)chat);
-                ctx.SaveChanges();
-            }
 
             return ctx.SaveChanges() == 1;
         }
@@ -138,7 +136,23 @@ namespace Zs.Bot.Model.Db
 
     public partial class DbUserRole
     {
-        //public static string[] GetPermissionsArray
+        public static string[] GetPermissionsArray(string userRoleCode)
+        {
+            if (userRoleCode == null)
+                throw new ArgumentNullException(nameof(userRoleCode));
+
+            using var ctx = new ZsBotDbContext();
+            var permissions = ctx.UserRoles.FirstOrDefault(r => r.UserRoleCode == userRoleCode)?.UserRolePermissions;
+
+            try
+            {
+                return JsonSerializer.Deserialize<string[]>(permissions);
+            }
+            catch (JsonException jex)
+            {
+                return null;
+            }
+        }
     }
 
     /// <summary> Cодержит результат SQL-запроса </summary>

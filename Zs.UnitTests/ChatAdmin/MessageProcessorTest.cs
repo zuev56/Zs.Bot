@@ -1,6 +1,7 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using Zs.Bot.Model.Db;
+using Zs.Common.Interfaces;
 using Zs.Service.ChatAdmin;
 
 namespace Zs.UnitTest.Services.ChatAdmin
@@ -10,22 +11,24 @@ namespace Zs.UnitTest.Services.ChatAdmin
     {
 
 
-        [TestMethod]
-        public void ProcessGroupMessageTest()
-        {
-            try
-            {
-                var messageProcessor = new MessageProcessor(0);
-                messageProcessor.TestInit();
-
-                messageProcessor.ProcessGroupMessage(GetTestMessage());
-            }
-            catch (Exception ex)
-            {
-                throw;
-            }
-
-        }
+        //[TestMethod]
+        //public void ProcessGroupMessageTest()
+        //{
+        //    try
+        //    {
+        //        var config = new Configuration(@"M:\PrivateBotConfiguration.json");
+        //        var messenger = 
+        //
+        //        var messageProcessor = new MessageProcessor(config, messenger);
+        //
+        //        messageProcessor.ProcessGroupMessage(GetTestMessage());
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        throw;
+        //    }
+        //
+        //}
 
 
 

@@ -11,5 +11,6 @@ namespace Zs.Common.Interfaces
         void LogInfo(string message, string logGroup = null);
         void LogInfo<T>(string message, T logData, string logGroup = null);
         void LogWarning(string message = null, string logGroup = null);
+        void LogWarning<T>(string message, T logData, string logGroup = null);
     }
 }

@@ -40,11 +40,11 @@ namespace Zs.UnitTest.Bot
                 await Task.Run(async() =>
                 {
                     await Task.Delay(10000);
-                    for (int i = 0; i < 10; i++)
+                    for (int i = 0; i < 20; i++)
                     {
                         _messenger.AddMessageToOutbox(GetChat(), $"TestMessage_{i}_q");
                     }
-                    await Task.Delay(15000);
+                    await Task.Delay(30000);
                 }).ContinueWith(task => exception = task.Exception);
 
                 if (exception != null)

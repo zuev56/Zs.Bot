@@ -1,5 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using Zs.Bot.Helpers;
 using Zs.Bot.Model.Db;
+using Zs.Bot.Modules.Messaging;
 using Zs.Common.Interfaces;
 
 namespace Zs.Service.ChatAdmin
@@ -10,144 +14,150 @@ namespace Zs.Service.ChatAdmin
         private int       _limitHi               = -1;    // Верхняя предупредительная уставка
         private int       _limitHiHi             = -1;    // Верхняя аварийная уставка
         private int       _limitAfterBan         =  5;    // Количество сообщений, доступное пользователю после бана до конца дня
-        private long      _accauntingStartsAfter = -1;    // Общее количество сообщений в чате, после которого включается ограничитель
+        private int       _accauntingStartsAfter = -1;    // Общее количество сообщений в чате, после которого включается ограничитель
         private bool      _doNotBanAdmins        = true;  // Банить или не банить админов
-        private bool      _limitsAreDefined      = false; // Нужен для понимания, были ли уже переопределены лимиты после восстановления интернета
-        private DateTime? _accountingStartDate   = null;  // Время начала учёта сообщений и включения ограничений
-        private DateTime? _internetRepairDate    = null;  // Время восстановления соединения с интернетом
-        private IZsLogger _logger;
+        private bool      _limitsAreDefined;              // Нужен для понимания, были ли уже переопределены лимиты после восстановления интернета
+        private DateTime? _accountingStartDate;           // Время начала учёта сообщений и включения ограничений
+        private DateTime? _internetRepairDate;            // Время восстановления соединения с интернетом
+        private IMessenger _messenger;
+        private IZsLogger _logger = Logger.GetInstance();
 
 
-        public MessageProcessor(int defaultChatId)
+        internal MessageProcessor(IZsConfiguration configuration, IMessenger messenger)
         {
-            _defaultChatId = defaultChatId;
-        }
+            try
+            {
+                if (configuration is null)
+                    throw new ArgumentNullException(nameof(configuration));
 
+                if (messenger is null)
+                    throw new ArgumentNullException(nameof(messenger));
 
-        /// <summary> Инициализация </summary>
-        private void Initialize()
-        {
-            //string logData = $"_messageLimitHiHi        = {_messageLimitHiHi}"
-            //               + $"\n_messageLimitHi        = {_messageLimitHi}"
-            //               + $"\n_doNotBanAdmins        = {_doNotBanAdmins}"
-            //               + $"\n_msgsBeforeRestriction = {_msgsBeforeRestriction}"
-            //               + $"\n_accountingStartDate   = {_accountingStartDate}"
-            //               + $"\n_banPeriod             = {_banPeriod}";
-            //
-            //_logger.LogInfo($"Начало определения лимитов\n{logData}", "Установка лимитов");
-            //
-            //
-            //using (var rCtx = new RobotDbContext())
-            //using (var caCtx = new ChatAdminDbContext())
-            //{
-            //    _messageLimitHiHi      = int.Parse(rCtx.Options.FirstOrDefault(p => p.OptionName == "ChatUserMessageCountHiHi").OptionValue);
-            //    _messageLimitHi        = int.Parse(rCtx.Options.FirstOrDefault(p => p.OptionName == "ChatUserMessageCountHi").OptionValue);
-            //    _doNotBanAdmins        = bool.Parse(rCtx.Options.FirstOrDefault(p => p.OptionName == "DoNotBanAdmins").OptionValue);
-            //    _msgsBeforeRestriction = int.Parse(rCtx.Options.FirstOrDefault(p => p.OptionName == "ActivateLimiterAfterMsgCount").OptionValue ?? "-1");
-            //    _banPeriod             = (BanPeriod)Enum.Parse(typeof(BanPeriod), rCtx.Options.FirstOrDefault(p => p.OptionName == "BanPeriod").OptionValue);
-            //    _accountingStartDate   = caCtx.Accountings.FirstOrDefault(a => a.AccountingStartDate.Date == DateTime.Now.Date)?.AccountingStartDate ?? DateTime.MinValue;
-            //}
-            //
-            //// Находим максимальное количество УЧТЁННЫХ сообщений за сутки от одного пользователя
-            //var mostActiveUsersAccounted = GetTopTenAccountedForChat(_defaultChatId);
-            //
-            //// Если админов нельзя банить, то не учитываем их сообщения
-            //if (_doNotBanAdmins)
-            //{
-            //    var adminIds = ZsBot.GetUsersIdByRole(UserRole.Owner, UserRole.Administrator);
-            //    foreach (var i in adminIds)
-            //        if (mostActiveUsersAccounted.ContainsKey(i))
-            //            mostActiveUsersAccounted.Remove(i);
-            //}
-            //
-            //int userMaxMsgCountAccounted = mostActiveUsersAccounted.Count() > 0
-            //                    ? mostActiveUsersAccounted.Max(i => i.Value)
-            //                    : 0;
-            //
-            //// Если максимальное количество уже имеющихся сообщений больше уставок из базы - корректируем уставки
-            //if (_messageLimitHi < userMaxMsgCountAccounted || _messageLimitHiHi < userMaxMsgCountAccounted)
-            //{
-            //    _messageLimitHi = _messageLimitHi > 0 ? userMaxMsgCountAccounted + 1 : 0;    // Только если ограничение было задано
-            //    _messageLimitHiHi = _messageLimitHi > 0 ? _messageLimitHi + 5 : 0;    // Только если ограничение было задано
-            //}
-            //
-            //
-            //var dayBeginDateTime = DateTime.Today - TimeSpan.FromHours(3); // Без этого ругается :(
-            //using (var ctx = new RobotDbContext())
-            //{
-            //    int dailyMsgCount = ctx.ReceivedMessages
-            //                    .Where(m => m.ReceivedMsgDate >= dayBeginDateTime
-            //                             && m.ChatId == _defaultChatId
-            //                             && m.IsDeleted == false).Count();
-            //    _msgsBeforeRestriction = dailyMsgCount > _msgsBeforeRestriction
-            //                           ? dailyMsgCount + 2
-            //                           : _msgsBeforeRestriction;
-            //}
-            //
-            //logData = $"userMaxMsgCount          = {userMaxMsgCountAccounted}"
-            //        + $"\n_messageLimitHiHi      = {_messageLimitHiHi}"
-            //        + $"\n_messageLimitHi        = {_messageLimitHi}"
-            //        + $"\n_doNotBanAdmins        = {_doNotBanAdmins}"
-            //        + $"\n_msgsBeforeRestriction = {_msgsBeforeRestriction}"
-            //        + $"\n_accountingStartDate   = {_accountingStartDate}"
-            //        + $"\n_banPeriod             = {_banPeriod}";
-            
+                _messenger = messenger;
+                _defaultChatId = configuration.Contains("DefaultChatId") ? checked((int)(long)configuration["DefaultChatId"]) : -1;
+                _limitHi = configuration.Contains("MessageLimitHi") ? checked((int)(long)configuration["MessageLimitHi"]) : 25;
+                _limitHiHi = configuration.Contains("MessageLimitHiHi") ? checked((int)(long)configuration["MessageLimitHiHi"]) : 30;
+                _limitAfterBan = configuration.Contains("MessageLimitAfterBan") ? checked((int)(long)configuration["MessageLimitAfterBan"]) : 5;
+                _accauntingStartsAfter = configuration.Contains("AccountingStartsAfter") ? checked((int)(long)configuration["AccountingStartsAfter"]) : 100;
 
-            // Оповещение владельцев и администраторов о переопределении лимитов
-            //Initialized?.Invoke(GetBotConfiguration());
-            
-            //_logger.LogInfo($"Конец определения лимитов\n{logData}", "Установка лимитов");
-        }
-
-        internal void TestInit()
-        {
-            _defaultChatId = 0;
-            _limitHi = 25;
-            _limitHiHi = 30;
-            _limitAfterBan = 5;
-            _accauntingStartsAfter = 100;
-            _doNotBanAdmins = false;
-            _limitsAreDefined = false;
-            _accountingStartDate = null;
-            _internetRepairDate = null;
+            }
+            catch (Exception ex)
+            {
+                throw new TypeInitializationException(typeof(MessageProcessor).FullName, ex);
+            }        
         }
 
         internal void ProcessGroupMessage(IMessage message)
         {
-           // _chat_id               integer,
-           // _message_id            integer,
-           // _accounting_start_date timestamp with time zone, -- важно переопределять во время выполнения
-           // _msg_limit_hi          integer,                           -- важно переопределять во время выполнения
-           // _msg_limit_hihi        integer,                         -- важно переопределять во время выполнения
-           // _start_account_after   integer default 100)
+            try
+            {
+                if (message is null)
+                    throw new ArgumentNullException(nameof(message));
 
-            var query = "select zl.sf_process_group_message(\n" +
+                if (message.ChatId != _defaultChatId)
+                    return;
+
+                // _chat_id               integer,
+                // _message_id            integer,
+                // _accounting_start_date timestamp with time zone, -- важно переопределять во время выполнения
+                // _msg_limit_hi          integer,                           -- важно переопределять во время выполнения
+                // _msg_limit_hihi        integer,                         -- важно переопределять во время выполнения
+                // _start_account_after   integer default 100)
+
+                var accountingStartDate = _accountingStartDate is null
+                    ? "null"
+                    : $"'{_accountingStartDate}'";
+
+                var query = "select zl.sf_process_group_message(\n" +
                                      $"_chat_id => {message.ChatId},\n" +
                                      $"_message_id => {message.MessageId},\n" +
-                                     $"_accounting_start_date => {_accountingStartDate?.ToString() ?? "null"},\n" +
+                                     $"_accounting_start_date => {accountingStartDate},\n" +
                                      $"_msg_limit_hi => {_limitHi},\n" +
                                      $"_msg_limit_hihi => {_limitHiHi},\n" +
+                                     $"_msg_limit_after_ban => {_limitAfterBan},\n" +
                                      $"_start_account_after => {_accauntingStartsAfter}\n" +
-                        ")";
-            var result = ZsBotDbContext.GetStringQueryResult(query);
+                            ")";
 
-            // Начало индивидуального учёта после 100 сообщений в чате 
-            // от любых пользователей с 00:00 текущего дня
-            //       С начала учёта каждому доступно максимум 30 сообщений.
-            //       После 25-го сообщения с начала учёта выдать пользователю 
-            //           предупреждение о приближении к лимиту. При этом создаётся запись
-            //           в таблице Ban и ставится пометка о том, что пользователь предупреждён
-            //       При достижении лимита пользователь банится на 3 часа. 
-            //           Если лимит достигнут ближе к концу дня, бан продолжает своё действие 
-            //           до окончания трёхчасового периода. Если 3 часа бана прошло, 
-            //           а день не закончился, позволяем пользователю отправку 5-ти сообщений 
-            //           до начала следующего дня
-            //       
-            //       После восстановления интернета через 1 минуту происходит 
-            //           переопределение лимитов для того, чтобы не перетереть 
-            //           только что полученные сообщения
-            //     
+                var jsonResult = ZsBotDbContext.GetStringQueryResult(query);
 
+
+                var dictResult = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string,string>>(jsonResult);
+
+
+                if (dictResult.ContainsKey("Action"))
+                {
+                    using var ctx = new ZsBotDbContext();
+                    var chat = ctx.Chats.First(c => c.ChatId == message.ChatId);
+
+                    if (dictResult.ContainsKey("MessageText"))
+                    {
+                        if (dictResult["MessageText"].Contains("<UserName>", StringComparison.InvariantCultureIgnoreCase))
+                        {
+                            var userName = ctx.Users.FirstOrDefault(u => u.UserId == message.UserId)?.UserName;
+                            dictResult["MessageText"] = dictResult["MessageText"].Replace("<UserName>", userName, StringComparison.InvariantCultureIgnoreCase);
+                        }
+                    }
+
+                    //СДЕЛАТЬ РЕТЮРНЫ В ХРАНИМКЕ ЧЕРЕЗ КАЖДЫЕ НЕСКОЛЬКО СТРОК чтобы локализовать проблему
+
+                    // if (_doNotBanAdmins)
+                    switch (dictResult["Action"])
+                    {
+                        case "Continue": return;
+                        case "DeleteMessage":
+                            if (!_messenger.DeleteMessage(message))
+                            {
+                                _messenger.AddMessageToOutbox("Message deleting failed", "OWNER", "ADMIN");
+                                _logger.LogWarning("Message deleting failed", message, nameof(MessageProcessor));
+                            }
+                            return;
+                        case "SetAccountingStartDate":
+                            _messenger.AddMessageToOutbox(chat, dictResult["MessageText"]);
+                            _accountingStartDate = DateTime.Parse(dictResult["AccountingStartDate"]) + TimeSpan.FromSeconds(2);
+                            //_accauntingStartsAfter = int.Parse(dictResult["AccountingStartAfter"]);
+                            return;
+                        case "SendMessageToGroup":
+                            _messenger.AddMessageToOutbox(chat, dictResult["MessageText"], message);
+                            return;
+                        case "SendMessageToOwner":
+                            _messenger.AddMessageToOutbox(dictResult["MessageText"], "OWNER", "ADMIN");
+                            return;
+                        default:
+                            _messenger.AddMessageToOutbox("Unknown action", "OWNER", "ADMIN"); 
+                            break;
+                    }
+                }
+                else
+                {
+                    _messenger.AddMessageToOutbox("Unknown message process result", "OWNER", "ADMIN");
+                }
+                
+                // Начало индивидуального учёта после 100 сообщений в чате 
+                // от любых пользователей с 00:00 текущего дня
+                //       С начала учёта каждому доступно максимум 30 сообщений.
+                //       После 25-го сообщения с начала учёта выдать пользователю 
+                //           предупреждение о приближении к лимиту. При этом создаётся запись
+                //           в таблице Ban и ставится пометка о том, что пользователь предупреждён
+                //       При достижении лимита пользователь банится на 3 часа. 
+                //           Если лимит достигнут ближе к концу дня, бан продолжает своё действие 
+                //           до окончания трёхчасового периода. Если 3 часа бана прошло, 
+                //           а день не закончился, позволяем пользователю отправку 5-ти сообщений 
+                //           до начала следующего дня
+                //       
+                //       После восстановления интернета через 1 минуту происходит 
+                //           переопределение лимитов для того, чтобы не перетереть 
+                //           только что полученные сообщения
+                //     
+
+            }
+            //catch (PostgresException pex)
+            //{
+            //    
+            //}
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, nameof(MessageProcessor));
+            }
         }
 
         /// <summary> Обработка сообщений из группы </summary>
@@ -417,166 +427,6 @@ namespace Zs.Service.ChatAdmin
 
 
 
-
-
-        /// <summary> Возвращает активный бан для пользователя, написавшего сообщение или null, если бана нет </summary>
-        // private static DbBan GetActiveBanForUser(InMessage tgMessage)
-        // {
-        //     try
-        //     {
-        //         DbBan ban = null;
-        //         using (var casCtx = new ChatAdminDbContext())
-        //             ban = casCtx.Bans.OrderByDescending(b => b.InsertDate)
-        //                              .FirstOrDefault(b => b.UserId == tgMessage.From.Id
-        //                                                && b.ChatId == tgMessage.Chat.Id
-        //                                                && b.BanIsActive
-        //                                                && b.InsertDate > DateTime.Today);
-        //         return ban;
-        //
-        //     }
-        //     catch
-        //     {
-        //         throw;
-        //         //return null;
-        //     }
-        // }
-
-
-
-
-
-
-
-        // /// <summary> Выбор самых активны с начала учёта </summary>
-        // private Dictionary<int, int> GetTopTenAccountedForChat(long chatId)
-        // {
-        //     var dict = new Dictionary<int, int>();
-        //
-        //     // Если время учёта ещё не началось (порог свободного количества сообщений (100) не преодолён
-        //     if (_accountingStartDate == DateTime.MinValue)
-        //         return dict;
-        //
-        //
-        //     DbChat chat;
-        //     IQueryable<DbReceivedMessage> accountedChatMessages;
-        //     using (var ctx = new RobotDbContext())
-        //     {
-        //         chat = ctx.Chats.FirstOrDefault(c => c.ChatId == chatId);
-        //         
-        //         // Если дата не была задана, берём отчет от начала дня
-        //         var shiftedAccountingDate = _accountingStartDate == DateTime.MinValue
-        //                                   ? DateTime.Now.Date - TimeSpan.FromHours(3)
-        //                                   : _accountingStartDate - TimeSpan.FromHours(3);
-        //         
-        //         accountedChatMessages = ctx.ReceivedMessages
-        //                                    .Where(m => m.ReceivedMsgDate >= shiftedAccountingDate
-        //                                             && m.ChatId == chat.ChatId
-        //                                             && m.IsDeleted == false);
-        //     
-        //
-        //         if (accountedChatMessages.Count() == 0)
-        //             return dict;
-        //         
-        //         if (chat.ChatType != ChatType.Private.ToString())
-        //         {
-        //             var userId_msgCount_Pair = from m in accountedChatMessages.GroupBy(msg => msg.UserId)
-        //                                        .OrderByDescending(msg => msg.Where(ms => ms.IsDeleted == false).Count())
-        //                                        join u in ctx.Users on m.Key equals u.UserId
-        //                                        select new
-        //                                        {
-        //                                            u.UserId,
-        //                                            MessageCount = m.Where(msg => msg.IsDeleted == false).Count()
-        //                                        };
-        //             userId_msgCount_Pair = userId_msgCount_Pair.Take(10);
-        //         
-        //             foreach (var item in userId_msgCount_Pair)
-        //                 dict.Add(item.UserId, item.MessageCount);
-        //         }
-        //     }
-        //     return dict;
-        // }
-
-
-
-
-
-
-
-
-
-        // /// <summary> Проверяем, начался ли уже учёт и надо ли его начать </summary>
-        // private bool AccountingHasBegan(DateTime messageDateMsk)
-        // {
-        //     using (var ctx = new RobotDbContext())
-        //     {
-        //         // 1. Если порог общего кол-ва сообщений задан, ограничение будет включено при достижении этого порога
-        //         if (_msgsBeforeRestriction > 0)
-        //         {
-        //             // Подсчёт всех сообщений в этой группе за день
-        //             int chatMsgCount = ctx.ReceivedMessages
-        //                 .Count(m => m.ChatId == _defaultChatId
-        //                          && m.ReceivedMsgDate > DateTime.Today - TimeSpan.FromHours(3));
-        //
-        //             // Если ещё не активирован режим ограничения - активируем
-        //             // это условие будто не всегда выполняется
-        //             if (chatMsgCount == _msgsBeforeRestriction
-        //                 || (chatMsgCount > _msgsBeforeRestriction && _accountingStartDate == DateTime.MinValue)) // Когда каким-то образом пропустили момент с равенством
-        //             {
-        //                 // Посылаем предупреждение в чат
-        //                 var chat = ctx.Chats.FirstOrDefault(c => c.ChatId == _defaultChatId);
-        //                 _bot.Messenger.AddMessageToOutbox(chat.GetTelegramType(), $"В чате уже {chatMsgCount} сообщений. Начинаю персональный учёт.");
-        //                 _accountingStartDate = messageDateMsk + TimeSpan.FromSeconds(1);
-        //
-        //                 // Запись в БД
-        //                 using (var casCtx = new ChatAdminDbContext())
-        //                 {
-        //                     casCtx.Accountings.Add(new DbAccounting() { StartDate = _accountingStartDate, UpdateDate = DateTime.Now });
-        //                     casCtx.SaveChanges();
-        //                 }
-        //             }
-        //
-        //             // Преодолён порог общего количества сообщений?
-        //             if (chatMsgCount > _msgsBeforeRestriction)
-        //                 return true;
-        //             else
-        //                 return false;
-        //         }
-        //         // 2. Если порог общего кол-ва сообщений НЕ был задан, ограничение будет работать постоянно
-        //         else
-        //         {
-        //             _accountingStartDate = DateTime.Now.Date; // С начала дня
-        //
-        //             // Запись в БД
-        //             using (var casCtx = new ChatAdminDbContext())
-        //             {
-        //                 casCtx.Accountings.Add(new DbAccounting() { StartDate = _accountingStartDate, UpdateDate = DateTime.Now });
-        //                 casCtx.SaveChanges();
-        //             }
-        //
-        //             return true;
-        //         }
-        //     }
-        // }
-
-
-
-
-
-
-
-
-
-        // /// <summary> В зависимости от настроек бота рассчитывает время, когда пользователь будет разлочен </summary>
-        // private DateTime GetBanFinishTime()
-        // {
-        //     switch (_banPeriod)
-        //     {
-        //         case BanPeriod.ForOneHour:    return DateTime.Now + TimeSpan.FromHours(1);
-        //         case BanPeriod.ForThreeHours: return DateTime.Now + TimeSpan.FromHours(3);
-        //         case BanPeriod.UntilNextDay:  return DateTime.Now.Date + TimeSpan.FromDays(1);
-        //         default:                      return DateTime.Now; // Бан как бы заканчивается прямо щас
-        //     }
-        // }
 
 
 

@@ -36,7 +36,7 @@ namespace Zs.Bot.Telegram
                 message.MessengerCode = "TG";
                 message.MessageTypeCode = GetGeneralMessageTypeCode(telegramMessage.Type);
                 message.MessageText = msgText;
-                message.RawData = JsonSerializer.Serialize(telegramMessage, options);
+                message.RawData = JsonSerializer.Serialize(telegramMessage, options).NormalizeJsonString();
                 message.IsSucceed = telegramMessage.IsSucceed;
                 message.FailsCount = telegramMessage.SendingFails;
                 message.FailDescription = telegramMessage.FailDescription;
@@ -66,7 +66,7 @@ namespace Zs.Bot.Telegram
                 chat.ChatDescription = telegramChat.Description;
                 chat.ChatName = telegramChat.Title ?? telegramChat.Username ?? $"{telegramChat.FirstName} {telegramChat.LastName}";
                 chat.ChatTypeCode = ToGeneralChatType(telegramChat.Type).ToString().ToUpperInvariant();
-                chat.RawData = JsonSerializer.Serialize(telegramChat, options);
+                chat.RawData = JsonSerializer.Serialize(telegramChat, options).NormalizeJsonString();
                 chat.RawDataHash = chat.RawData.GetMD5Hash();
 
                 return chat;
@@ -94,7 +94,7 @@ namespace Zs.Bot.Telegram
                 user.UserName = telegramUser.Username;
                 user.UserFullName = $"{telegramUser.FirstName} {telegramUser.LastName}";
                 user.UserIsBot = telegramUser.IsBot;
-                user.RawData = JsonSerializer.Serialize(telegramUser, options);
+                user.RawData = JsonSerializer.Serialize(telegramUser, options).NormalizeJsonString();
                 user.RawDataHash = user.RawData.GetMD5Hash();
 
                 return user;

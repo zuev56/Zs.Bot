@@ -13,7 +13,7 @@ namespace Zs.UnitTest.Services.ChatAdmin
         {
             var config = new Configuration(@"M:\PrivateBotConfiguration.json");
 
-            Assert.IsNotNull(config.BotToken);
+            Assert.IsNotNull(config["BotToken"]);
         }
     }
 }

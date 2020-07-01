@@ -45,14 +45,14 @@ namespace Zs.Service.ChatAdmin
                 var configuration = new Configuration(configPath);
 
                 var connectionAnalyser = new ConnectionAnalyser(Logger.GetInstance(), "https://vk.com/", "https://yandex.ru/", "https://www.google.ru/");
-                if (configuration.ProxySocket is {})
+                if (configuration["ProxySocket"] is {})
                     connectionAnalyser.InitializeProxy(
-                        configuration.ProxySocket,
-                        configuration.ProxyLogin,
-                        configuration.ProxyPassword
+                        (string)configuration["ProxySocket"],
+                        (string)configuration["ProxyLogin"],
+                        (string)configuration["ProxyPassword"]
                         );
 
-                var messenger = MessengerFactory.ProvideMessenger("Telegram", configuration.BotToken, connectionAnalyser.WebProxy);
+                var messenger = MessengerFactory.ProvideMessenger("Telegram", (string)configuration["BotToken"], connectionAnalyser.WebProxy);
 
                 var builder = new HostBuilder()
                     .ConfigureServices((hostContext, services) =>

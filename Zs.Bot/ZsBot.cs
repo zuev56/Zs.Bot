@@ -24,7 +24,9 @@ namespace Zs.Bot
                 _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
 
                 var optionsBuilder = new DbContextOptionsBuilder<ZsBotDbContext>();
-                optionsBuilder.UseNpgsql(_configuration.ConnectionString);
+                optionsBuilder.UseNpgsql(_configuration["ConnectionString"].ToString());
+                optionsBuilder.EnableSensitiveDataLogging(true);
+                optionsBuilder.EnableDetailedErrors(true);
                 ZsBotDbContext.Initialize(optionsBuilder.Options);
 
                 Messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
@@ -95,22 +97,26 @@ namespace Zs.Bot
         {
             try
             {
-                if (args.User.UserName == null)
-                    args.User.UserName = args.User.UserFullName ?? "noName";
+                if (args.User != null)
+                {
+                    if(args.User.UserName == null)
+                        args.User.UserName = args.User.UserFullName ?? "NoName";
 
-                DbUser.SaveToDb(args.User);
+                    DbUser.SaveToDb(args.User);
+                    args.Message.UserId = DbUser.GetId(args.User);
+                }
+
                 DbChat.SaveToDb(args.Chat);
                 args.Message.ChatId = DbChat.GetId(args.Chat);
-                args.Message.UserId = DbUser.GetId(args.User);
                 if (args.Message.MessageText == null)
                     args.Message.MessageText = "Empty/service message";
                 DbMessage.SaveToDb(args.Message);
             }
             catch (Exception e)
             {
-                e.Data.Add("User", args.User);
-                e.Data.Add("Chat", args.Chat);
-                e.Data.Add("Message", args.Message);
+                e.Data.Add("User", args?.User);
+                e.Data.Add("Chat", args?.Chat);
+                e.Data.Add("Message", args?.Message);
                 _logger.LogError(e, nameof(ZsBot));
             }
         }

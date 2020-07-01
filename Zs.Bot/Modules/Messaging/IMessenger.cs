@@ -1,5 +1,6 @@
 ﻿using System;
 using Zs.Bot.Model.Db;
+using Zs.Common.Enums;
 
 namespace Zs.Bot.Modules.Messaging
 {
@@ -28,6 +29,9 @@ namespace Zs.Bot.Modules.Messaging
 
         /// <summary> Add a text message to the queue for sending </summary>
         void AddMessageToOutbox(string messageText, params string[] userRoleCodes);
+
+        /// <summary> Delete message from chat </summary>
+        bool DeleteMessage(IMessage message);
 
 
     }
