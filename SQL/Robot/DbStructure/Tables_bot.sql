@@ -29,8 +29,8 @@ CREATE TABLE bot.bots (
     bot_name        varchar(20)  NOT NULL,
     bot_token       varchar(100) NOT NULL,
     bot_description varchar(300)     NULL,
-    update_date    timestamptz   NOT NULL DEFAULT now(),
-    insert_date    timestamptz   NOT NULL DEFAULT now()
+    update_date     timestamptz  NOT NULL DEFAULT now(),
+    insert_date     timestamptz  NOT NULL DEFAULT now()
 );
 CREATE TRIGGER bots_reset_update_date BEFORE UPDATE
 ON bot.bots FOR EACH ROW EXECUTE PROCEDURE helper.reset_update_date();
@@ -70,6 +70,9 @@ CREATE TRIGGER chats_reset_update_date BEFORE UPDATE
 ON bot.chats FOR EACH ROW EXECUTE PROCEDURE helper.reset_update_date();
 COMMENT ON TABLE bot.chats IS 'Chats info';
 
+insert into bot.chats (chat_id, chat_name, chat_description, chat_type_code, raw_data, raw_data_hash, raw_data_history, update_date, insert_date)
+values(0, 'UnitTestChat', 'UnitTestChat', 'PRIVATE', '{ "test": "test" }', '123', null, now(), now())
+
 
 
 CREATE TABLE bot.user_roles (
@@ -92,7 +95,7 @@ INSERT INTO bot.user_roles(user_role_code, user_role_name, user_role_permissions
 
 CREATE TABLE bot.users (
     user_id          serial        NOT NULL PRIMARY KEY,
-    user_name        varchar(50)   NOT NULL,
+    user_name        varchar(50)       NULL,
     user_full_name   varchar(50)       NULL,
     user_role_code   varchar(10)   NOT NULL REFERENCES bot.user_roles(user_role_code),
     user_is_bot      bool          NOT NULL DEFAULT false,
@@ -108,6 +111,8 @@ COMMENT ON TABLE bot.user_roles IS 'Chat members';
 
 INSERT INTO bot.users(user_id, user_name, user_full_name, user_role_code, user_is_bot, raw_data, raw_data_hash, update_date, insert_date) 
 VALUES(-10, 'Unknown', 'for exported message reading', 'USER', false, '{"test":"test"}', -1063294487, now(), now());
+INSERT INTO bot.users(user_id, user_name, user_full_name, user_role_code, user_is_bot, raw_data, raw_data_hash, update_date, insert_date) 
+VALUES(0, 'UnitTestUser', 'UnitTest', 'USER', false, '{"test":"test"}', -1063294487, now(), now());
 
 
 
@@ -159,12 +164,12 @@ COMMENT ON TABLE bot.messages IS 'Принятые и отрпавленные �
 
 
 CREATE TABLE bot.logs (
-    log_id       bigserial     NOT NULL PRIMARY KEY,
-    log_type     varchar(7)    NOT NULL,            -- Info, warning, error
-    log_group    varchar(50)       NULL,            -- Джоб, обработка сообщения, инициализация и т.д.
-    log_message  varchar(200)  NOT NULL,            -- Краткое описание
-    log_data     json              NULL,            -- Вся инфа о записи
-    insert_date  timestamptz   NOT NULL DEFAULT now()
+    log_id        bigserial     NOT NULL PRIMARY KEY,
+    log_type      varchar(7)    NOT NULL,            -- Info, warning, error
+    log_initiator varchar(50)       NULL,            -- Джоб, обработка сообщения, инициализация и т.д.
+    log_message   varchar(200)  NOT NULL,            -- Краткое описание
+    log_data      json              NULL,            -- Вся инфа о записи
+    insert_date   timestamptz   NOT NULL DEFAULT now()
 );
 COMMENT ON TABLE bot.logs IS 'Журнал';
 

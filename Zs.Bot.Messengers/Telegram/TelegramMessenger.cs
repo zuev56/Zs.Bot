@@ -61,18 +61,18 @@ namespace Zs.Bot.Telegram
 
                 _botClient.StartReceiving(new UpdateType[]
                 {
-                UpdateType.Unknown,
-                UpdateType.Message,
-                UpdateType.InlineQuery,
-                UpdateType.ChosenInlineResult,
-                UpdateType.CallbackQuery,
-                UpdateType.EditedMessage,
-                UpdateType.ChannelPost,
-                UpdateType.EditedChannelPost,
-                UpdateType.ShippingQuery,
-                UpdateType.PreCheckoutQuery,
-                UpdateType.Poll,
-                UpdateType.PollAnswer
+                    UpdateType.Unknown,
+                    UpdateType.Message,
+                    UpdateType.InlineQuery,
+                    UpdateType.ChosenInlineResult,
+                    UpdateType.CallbackQuery,
+                    UpdateType.EditedMessage,
+                    UpdateType.ChannelPost,
+                    UpdateType.EditedChannelPost,
+                    UpdateType.ShippingQuery,
+                    UpdateType.PreCheckoutQuery,
+                    UpdateType.Poll,
+                    UpdateType.PollAnswer
                 });
 #if DEBUG
                 ApiLogIsEnabled = false;

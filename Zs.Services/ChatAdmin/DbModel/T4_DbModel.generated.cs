@@ -100,8 +100,9 @@ namespace Zs.Service.ChatAdmin.DbModel
     public partial class DbAuxiliaryWord : IAuxiliaryWord
     {
         [Key]
+        [StringLength(100)]
         [Required(ErrorMessage = "Property 'TheWord' is required")]
-        [Column("the_word", TypeName = "character varying")]
+        [Column("the_word", TypeName = "character varying(100)")]
         public String TheWord { get; set; }
 
         [Required(ErrorMessage = "Property 'InsertDate' is required")]
@@ -155,8 +156,9 @@ namespace Zs.Service.ChatAdmin.DbModel
         [Column("notification_is_active", TypeName = "boolean")]
         public Boolean NotificationIsActive { get; set; }
 
+        [StringLength(2000)]
         [Required(ErrorMessage = "Property 'NotificationMessage' is required")]
-        [Column("notification_message", TypeName = "character varying")]
+        [Column("notification_message", TypeName = "character varying(2000)")]
         public String NotificationMessage { get; set; }
 
         [Column("notification_month", TypeName = "integer")]

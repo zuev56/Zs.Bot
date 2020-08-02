@@ -18,6 +18,11 @@ namespace Zs.Bot.Model.Db
         {
         }
 
+        public ZsBotDbContext(DbContextOptions<ZsBotDbContext> options)
+            : base(options)
+        {
+        }
+
         public static void Initialize(DbContextOptions<ZsBotDbContext> options)
         {
             if (_options != null)

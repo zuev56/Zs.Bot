@@ -1,7 +1,12 @@
 --DROP USER IF EXISTS zuev56;
 --DROP USER IF EXISTS app;
 --CREATE USER zuev56 WITH PASSWORD 'xxx';
---CREATE USER app WITH PASSWORD 'app';
+
+DO $$ BEGIN
+    IF NOT EXISTS (select 1 from pg_user where usename='app') THEN
+        CREATE USER app WITH PASSWORD 'app';
+    END IF;
+END $$;
 \c postgres postgres;
 set timezone = 'Europe/Moscow';
 DROP DATABASE IF EXISTS "ZsBot";

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Runtime.CompilerServices;
 using Newtonsoft.Json;
 using Zs.Bot.Model.Db;
 using Zs.Common.Enums;
@@ -11,6 +12,7 @@ namespace Zs.Bot.Helpers
     {
         private static Logger _instance;
         private string _emergencyLogDirrectory = AppDomain.CurrentDomain.BaseDirectory;
+        private readonly object _locker = new object();
 
         public string EmergencyLogDirrectory
         {
@@ -43,32 +45,63 @@ namespace Zs.Bot.Helpers
             return _instance;
         }
 
-        public void LogError(Exception e, string logGroup = null)
+        public void LogError(Exception e, [CallerMemberName] string initiator = null)
         {
             var jsonData = JsonConvert.SerializeObject(e, Formatting.Indented);
-            DbLog.SaveToDb(LogType.Error, e.Message, logGroup, jsonData);
+            TrySave(LogType.Error, e.Message, initiator, jsonData);
         }
 
-        public void LogInfo(string message, string logGroup = null)
+        public void LogInfo(string message, [CallerMemberName] string initiator = null)
         {
-            DbLog.SaveToDb(LogType.Info, message, logGroup);
+            TrySave(LogType.Info, message, initiator);
         }
 
-        public void LogInfo<T>(string message, T logData, string logGroup = null)
+        public void LogInfo<T>(string message, T data, [CallerMemberName] string initiator = null)
         {
-            var jsonData = JsonConvert.SerializeObject(logData, Formatting.Indented);
-            DbLog.SaveToDb(LogType.Info, message, logGroup, jsonData);
+            var jsonData = JsonConvert.SerializeObject(data, Formatting.Indented);
+            TrySave(LogType.Info, message, initiator, jsonData);
         }
 
-        public void LogWarning(string message = null, string logGroup = null)
+        public void LogWarning(string message = null, [CallerMemberName] string initiator = null)
         {
-            DbLog.SaveToDb(LogType.Warning, message, logGroup);
+            TrySave(LogType.Warning, message, initiator);
         }
 
-        public void LogWarning<T>(string message, T logData, string logGroup = null)
+        public void LogWarning<T>(string message, T data, [CallerMemberName] string initiator = null)
         {
-            var jsonData = JsonConvert.SerializeObject(logData, Formatting.Indented);
-            DbLog.SaveToDb(LogType.Warning, message, logGroup, jsonData);
+            var jsonData = JsonConvert.SerializeObject(data, Formatting.Indented);
+            TrySave(LogType.Warning, message, initiator, jsonData);
+        }
+
+        private void TrySave(LogType type, string message, string initiator = null, string data = null)
+        {
+            try
+            {
+                var isSaved = DbLog.SaveToDb(type, message, initiator, data);
+
+                if (!isSaved)
+                {
+                    var formattedType = type switch
+                    {
+                        LogType.Warning => "Warning",
+                        LogType.Error   => "ERROR  ",
+                        _               => "Info   "
+                    };
+
+                    var text = $"{formattedType}  {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}  {initiator}   {message}"
+                             + $"{(data is {} ? $"\n{data}" : "")}\n";
+
+                    var fileName = $"log_{DateTime.Now.Date:yyyy-MM-dd}.log";
+
+                    lock (_locker)
+                    {
+                        File.AppendAllText(fileName, text);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+            }
         }
     }
 }

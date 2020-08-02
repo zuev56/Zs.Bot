@@ -19,7 +19,7 @@
         sb.Append(divider);
         sb.Append(File.ReadAllText($@"{projectDir}\DbStructure\Priveleges.sql"));
         sb.Append(divider);
-        sb.Append(File.ReadAllText($@"{projectDir}\DbStructure\Functions_bot.sql"));
+        sb.Append(File.ReadAllText($@"{projectDir}\DbStructure\Functions_ready.sql"));
        // sb.Append(divider);
        // sb.Append(File.ReadAllText($@"{projectDir}\DbStructure\Functions_zl.sql"));
         sb.Append(divider);

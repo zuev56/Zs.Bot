@@ -3,6 +3,7 @@ using System.Linq;
 using System.Net;
 using System.Reflection;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Telegram.Bot.Types;
 using Zs.Bot.Helpers;
@@ -16,17 +17,22 @@ namespace Zs.UnitTest.Bot
     {
         private Zs.Bot.Modules.Messaging.IMessenger _messenger;
 
-        private string _botToken = "538442633:AAGvZgtmWSxB7oHgRCL1zqZFP8Wb5OEq1Y0";
-        private string _proxySocket = "185.166.216.44:65233";
-        private string _proxyUserName = "veranda56";
-        private string _proxyPassword = "T5p5EfB";
+        private string _botToken;
+        //private string _proxySocket;
+        //private string _proxyUserName;
+        //private string _proxyPassword;
 
         public TelegramMessengerTest()
         {
-            IWebProxy webProxy = new WebProxy(_proxySocket, true);
-            webProxy.Credentials = new NetworkCredential(_proxyUserName, _proxyPassword);
+            var configuration = new ConfigurationBuilder().AddJsonFile(@"M:\PrivateBotConfiguration.json", true, true).Build();
 
-            _messenger = new TelegramMessenger(_botToken, webProxy);
+            _botToken = configuration["BotToken"];
+
+
+            //IWebProxy webProxy = new WebProxy(_proxySocket, true);
+            //webProxy.Credentials = new NetworkCredential(_proxyUserName, _proxyPassword);
+
+            _messenger = new TelegramMessenger(_botToken);
             _messenger.MessageReceived += (_) => HeavyMethod(10);
         }
 

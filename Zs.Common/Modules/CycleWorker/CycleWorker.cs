@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Zs.Common.Interfaces;
@@ -11,6 +12,7 @@ namespace Zs.Common.Modules.CycleWorker
     {
         private readonly IZsLogger _logger;
         private Timer _timer;
+        private readonly object _locker = new object();
 
         public long Counter { get; private set; }
         public List<Job> Jobs { get;}
@@ -65,8 +67,8 @@ namespace Zs.Common.Modules.CycleWorker
 #endif
                 foreach (var job in Jobs)
                 {
-                    if (job.NextRunDate == null
-                        || (job.NextRunDate < DateTime.Now && !job.IsRunning))
+                    if (!job.IsRunning 
+                        && (job.NextRunDate == null || job.NextRunDate < DateTime.Now))
                     {
                         Task.Run(() => job.Execute());
                     }

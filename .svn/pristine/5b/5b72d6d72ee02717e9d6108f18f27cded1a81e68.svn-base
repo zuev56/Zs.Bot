@@ -1,4 +1,0 @@
-{
-  "T4_ConnectionString": "Host=localhost;Port=5632;Username=postgres;Password=postgres;Database=Robot;",
- // "WorkPath": "C:\\"
-}

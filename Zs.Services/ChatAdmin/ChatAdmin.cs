@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -15,6 +14,16 @@ using Zs.Service.ChatAdmin.DbModel;
 
 namespace Zs.Service.ChatAdmin
 {
+    // Корректировать время (GMT+3) при загрузке сообщений из JSON
+    // Разобраться, почему при загрузке пользователей из JSON и при добавлении пользователя в процессе работы программы генерируются разные хеш-коды для идентичных строк
+    // При смене имени чата или пользователя исправлять прошлую запись и сохранять историю
+    // Подробное логгирование
+    // Проверить устойчивасть к перебоям со связью
+    // Исправить двойную отправку сообщений в релизной версии
+    // После бана удалять старое предупреждение от бота, чтобы не захламлять чат
+    // Если при обработке группового сообщения приходит Action: Continue - указать конкретную причину для детального логгирования
+
+
     internal class ChatAdmin : IHostedService
     {
         private readonly IZsConfiguration _configuration;
@@ -23,6 +32,7 @@ namespace Zs.Service.ChatAdmin
         private readonly CycleWorker _cycleWorker;
         private readonly MessageProcessor _messageProcessor;
         private readonly ConnectionAnalyser _connectionAnalyser;
+        private readonly bool _detailedLogging;
 
 
         public ChatAdmin(
@@ -35,6 +45,9 @@ namespace Zs.Service.ChatAdmin
                 _logger = Logger.GetInstance();
                 _configuration = configuration;
 
+                if (_configuration.Contains("DetailedLogging"))
+                    bool.TryParse(_configuration["DetailedLogging"].ToString(), out _detailedLogging);
+
                 _bot = new ZsBot(_configuration, messenger);
                 _bot.Messenger.MessageReceived += Messenger_MessageReceived;
 
@@ -42,10 +55,12 @@ namespace Zs.Service.ChatAdmin
                 _connectionAnalyser.ConnectionStatusChanged += СonnectionAnalyser_StatusChanged;
 
                 _messageProcessor = new MessageProcessor(_configuration, messenger);
+                _messageProcessor.LimitsDefined += MessageProcessor_LimitsDefined;
 
                 _cycleWorker = new CycleWorker(_logger);
-                _cycleWorker.Jobs.AddRange(GetJobs());
+                CreateJobs();
 
+#warning Переделать инициализацию из Program.cs
                 var optionsBuilder = new DbContextOptionsBuilder<ChatAdminDbContext>();
                 optionsBuilder.UseNpgsql(_configuration["ConnectionString"].ToString());
                 ChatAdminDbContext.Initialize(optionsBuilder.Options);
@@ -55,6 +70,12 @@ namespace Zs.Service.ChatAdmin
                 var tiex = new TypeInitializationException(typeof(ChatAdmin).FullName, ex);
                 _logger.LogError(tiex, nameof(ChatAdmin));
             }
+        }
+
+        private void MessageProcessor_LimitsDefined(string messageText)
+        {
+            if (DateTime.Now.Hour > 9)
+                _bot.Messenger.AddMessageToOutbox(messageText, "ADMIN");
         }
 
         public Task StartAsync(CancellationToken cancellationToken)
@@ -82,7 +103,15 @@ namespace Zs.Service.ChatAdmin
             if (status == ConnectionStatus.Ok)
                 _messageProcessor?.SetInternetRepairDate(DateTime.Now);
             else
+            {
                 _messageProcessor?.SetInternetRepairDate(null);
+
+                var logMessage = status == ConnectionStatus.NoProxyConnection
+                    ? "No proxy connection"
+                    : "No internet connection";
+
+                _logger.LogWarning(logMessage, nameof(ConnectionAnalyser));
+            }
         }
 
         private void Messenger_MessageReceived(MessageActionEventArgs e)
@@ -90,26 +119,67 @@ namespace Zs.Service.ChatAdmin
             _messageProcessor.ProcessGroupMessage(e.Message);
         }
 
-        private IEnumerable<Job> GetJobs()
+        private void Job_ExecutionCompleted(IJobExecutionResult result)
         {
-            //        // Задачи на начало дня
-            //            // 2. Сбрасываем дату учёта сообщений
-            //            // 3. Задаём значения для ограничений из БД (важно, когда заданные админом значения были сдвинуты, чтобы не перетереть данные)
-            //            // 4. Сбрасываем флаг отправки статистики за день
-            //        // Проверка наличия интернета 
-            //        //     Переопределение лимитов, если интернет был восстановлен после обрыва
-            //        //     Запись в ЛОГ, если имеютя проблемы с доступом к серверу Telegram
-            //        // Оповещение о сбоях Каждый час
-            //        // После 23:55 высылаем статистику
-            //                // Формирование сообщения
-            //                // Рассылка админам
-            //        // Оповещение о событиях календаря
-            var job = new SqlJob(
-                TimeSpan.FromMinutes(1),
-                "SELECT Count(*) FROM bot.logs",
-                _configuration["ConnectionString"].ToString());
+            _logger.LogInfo("Job execution completed", result, nameof(ChatAdmin));
 
-            yield return job;
+            if (result != null && DateTime.Now.Hour > 9)
+                _bot.Messenger.AddMessageToOutbox(result.Show(), "ADMIN");
         }
+
+        /// <summary> Creating <see cref="Job"/> list for <see cref="CycleWorker"/> instance </summary>
+        private void CreateJobs()
+        {
+            // Задачи на начало дня
+                // 2. Сбрасываем дату учёта сообщений
+                // 3. Задаём значения для ограничений из БД/конфигурации (важно, когда заданные админом значения были сдвинуты ботом, чтобы не перетереть данные)
+            // Проверка наличия интернета 
+            // Оповещение о сбоях Каждый час
+            // После 23:55 высылаем статистику
+            // Оповещение о событиях календаря
+
+            var sendYesterdaysStatistics = new SqlJob(
+                TimeSpan.FromDays(1),
+                QueryResultType.String,
+                $"select zl.sf_cmd_get_full_statistics(10, '{DateTime.Today - TimeSpan.FromDays(1)}', '{DateTime.Today - TimeSpan.FromSeconds(1)}')",
+                _configuration["ConnectionString"].ToString(),
+                startDate: DateTime.Now.Date + TimeSpan.FromHours(33));
+
+            var resetLimits = new ProgramJob(
+                TimeSpan.FromDays(1),
+                _messageProcessor.ResetLimits,
+                startDate: DateTime.Now.Date + TimeSpan.FromDays(1));
+
+            var sendErrorsAndWarnings = new SqlJob(
+                TimeSpan.FromHours(1),
+                QueryResultType.String,
+                 @"select string_agg('**' || log_type || '**  ' || to_char(insert_date, 'HH24:MI:SS') || E'\n' || log_group || ':  ' || log_message, E'\n\n' order by insert_date desc)"
+                + "\nfrom bot.logs"
+                + "\nwhere log_type in ('Warning', 'Error')"
+                + "\n  and insert_date > now() - interval '1 hour'",
+                _configuration["ConnectionString"].ToString(),
+                startDate: NextHour()
+                );
+
+            sendYesterdaysStatistics.ExecutionCompleted += Job_ExecutionCompleted;
+            sendErrorsAndWarnings.ExecutionCompleted += Job_ExecutionCompleted;
+
+            _cycleWorker.Jobs.Add(sendYesterdaysStatistics);
+            _cycleWorker.Jobs.Add(resetLimits);
+            _cycleWorker.Jobs.Add(sendErrorsAndWarnings);
+        }
+
+        private DateTime NextHour()
+        {
+            var nextHour = DateTime.Now.Hour < 23
+                ? DateTime.Today + TimeSpan.FromHours(1)
+                : DateTime.Today + TimeSpan.FromDays(1);
+
+            while (DateTime.Now > nextHour)
+                nextHour += TimeSpan.FromHours(1);
+
+            return nextHour;
+        }
+
     }
 }

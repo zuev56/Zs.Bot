@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Zs.Common.Enums;
 using Zs.Common.Modules.CycleWorker;
 
 namespace Zs.UnitTest.Bot
@@ -50,15 +51,18 @@ namespace Zs.UnitTest.Bot
             var job2 = new ProgramJob(TimeSpan.FromSeconds(3), () => HeavyMethod(6));
 
             var job3 = new SqlJob(
-                TimeSpan.FromSeconds(1), 
+                TimeSpan.FromSeconds(1),
+                QueryResultType.Double,
                 "SELECT Count(*) FROM bot.logs", 
                 _connectionString);
             var job4 = new SqlJob(
-                TimeSpan.FromSeconds(2), 
+                TimeSpan.FromSeconds(2),
+                QueryResultType.Double,
                 "SELECT Count(*) FROM bot.messages", 
                 _connectionString);
             var job5 = new SqlJob(
-                TimeSpan.FromSeconds(3), 
+                TimeSpan.FromSeconds(3),
+                QueryResultType.Double,
                 "SELECT Count(*) FROM bot.options", 
                 _connectionString);
 

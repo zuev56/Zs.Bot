@@ -93,13 +93,15 @@ namespace Zs.Common.T4
     {
         public string SqlDataType { get; }
         public Type DataType { get; }
+        //public DataType AnnotationDataType { get; }
         public bool IsNullable { get; }
         public int Position { get; }
         public string ConstraintName { get; }
         public ConstraintType ConstraintType { get; }
+        public int? StringLength { get; }
 
 
-        public DbColumn(string name, string sqlDataType, bool isNullable = true, int position = -1, string constraintName = null, string constraintType = null)
+        public DbColumn(string name, string sqlDataType, bool isNullable = true, int position = -1, string constraintName = null, string constraintType = null, int? stringLength = null)
             : base(name)
         {   
             SqlDataType    = sqlDataType;
@@ -108,6 +110,7 @@ namespace Zs.Common.T4
             Position       = position;
             ConstraintName = constraintName;
             ConstraintType = FromSqlConstraintType(constraintType);
+            StringLength   = stringLength;
         }
 
         private Type FromSqlDataType(string sqlDataType)
@@ -136,7 +139,15 @@ namespace Zs.Common.T4
                 default: return ConstraintType.Unknown;
             }
         }
-
+        //private DataType FromSqlDataType(string sqlDataType)
+        //{
+        //    switch (sqlDataType)
+        //    {
+        //        case "": return System.ComponentModel.DataAnnotations.DataTypeю;
+        //        case "": return DataType.;
+        //        default: return System.ComponentModel.DataAnnotations.DataType.
+        //    }
+        //}
     }
 
     internal sealed class Comment

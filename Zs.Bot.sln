@@ -35,8 +35,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zs.Common.T4", "Zs.Common.T
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.Bot.Database", "SQL\Robot\Zs.Bot.Database.csproj", "{86E0D68B-0525-4AE9-8976-5F8737A1FBC5}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebApplication1", "WebApplication1\WebApplication1.csproj", "{773BA817-9400-43D2-A817-233BD216BD3D}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{18CCC3CE-1498-4B8C-BB6C-136A3A839EEC}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
@@ -89,10 +87,6 @@ Global
 		{86E0D68B-0525-4AE9-8976-5F8737A1FBC5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{86E0D68B-0525-4AE9-8976-5F8737A1FBC5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{86E0D68B-0525-4AE9-8976-5F8737A1FBC5}.Release|Any CPU.Build.0 = Release|Any CPU
-		{773BA817-9400-43D2-A817-233BD216BD3D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{773BA817-9400-43D2-A817-233BD216BD3D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{773BA817-9400-43D2-A817-233BD216BD3D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{773BA817-9400-43D2-A817-233BD216BD3D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -109,7 +103,6 @@ Global
 		{B047D3FF-44B7-4507-AA36-FD8306D27AE6} = {3FAF192A-78FD-454E-A32D-0AE923DB24D1}
 		{8BDDC286-6BE0-488F-9DCD-84050C5AF16F} = {3FAF192A-78FD-454E-A32D-0AE923DB24D1}
 		{86E0D68B-0525-4AE9-8976-5F8737A1FBC5} = {7EEC88C0-E35E-46A7-A891-D4B0B46598A7}
-		{773BA817-9400-43D2-A817-233BD216BD3D} = {6ABB3FF5-110B-42CA-A78E-1414529F472D}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {F6A9C4CA-DF26-4772-9119-627935D70E7C}

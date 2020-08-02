@@ -49,7 +49,7 @@ namespace Zs.UnitTest.Bot
             }
             catch (Exception ex)
             {
-                throw ex;
+                throw;
             }
         }
 
@@ -68,7 +68,7 @@ namespace Zs.UnitTest.Bot
             }
             catch (Exception ex)
             {
-                throw ex;
+                throw;
             }
         }
 
@@ -87,7 +87,7 @@ namespace Zs.UnitTest.Bot
             }
             catch (Exception ex)
             {
-                throw ex;
+                throw;
             }
         }
         
@@ -106,7 +106,7 @@ namespace Zs.UnitTest.Bot
             }
             catch (Exception ex)
             {
-                throw ex;
+                throw;
             }
         }
     }

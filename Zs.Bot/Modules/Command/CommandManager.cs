@@ -42,7 +42,7 @@ namespace Zs.Bot.Modules.Command
         {
             try
             {
-                _logger.LogInfo("Добавление команды в очередь на выполнение", nameof(CommandManager));
+                _logger.LogInfo("Получена команда", nameof(CommandManager));
                 _commandBuffer.Enqueue(command);
 
                 return true;
@@ -128,9 +128,9 @@ namespace Zs.Bot.Modules.Command
                         throw new ArgumentException($"Command '{botCommand.Name}' not found");
                 }
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                _logger.LogError(e, nameof(CommandManager));
+                _logger.LogError(ex, nameof(CommandManager));
                 return $"Command '{botCommand.Name}' running failed!";
             }
 

@@ -1,9 +1,0 @@
-{
-  // Secrets are passing through arguments
-  "ConnectionString": "Server=localhost;Port=5632;Database=Robot;",
-  "WorkPath": "C:\\",
-  "BotTocken": "",
-  "ProxySocket": "",
-  "ProxyLogin": "",
-  "ProxyPassword": ""
-}

@@ -2,7 +2,12 @@
 --DROP USER IF EXISTS zuev56;
 --DROP USER IF EXISTS app;
 --CREATE USER zuev56 WITH PASSWORD 'xxx';
---CREATE USER app WITH PASSWORD 'app';
+
+DO $$ BEGIN
+    IF NOT EXISTS (select 1 from pg_user where usename='app') THEN
+        CREATE USER app WITH PASSWORD 'app';
+    END IF;
+END $$;
 \c postgres postgres;
 set timezone = 'Europe/Moscow';
 DROP DATABASE IF EXISTS "ZsBot";
@@ -59,8 +64,8 @@ CREATE TABLE bot.bots (
     bot_name        varchar(20)  NOT NULL,
     bot_token       varchar(100) NOT NULL,
     bot_description varchar(300)     NULL,
-    update_date    timestamptz   NOT NULL DEFAULT now(),
-    insert_date    timestamptz   NOT NULL DEFAULT now()
+    update_date     timestamptz  NOT NULL DEFAULT now(),
+    insert_date     timestamptz  NOT NULL DEFAULT now()
 );
 CREATE TRIGGER bots_reset_update_date BEFORE UPDATE
 ON bot.bots FOR EACH ROW EXECUTE PROCEDURE helper.reset_update_date();
@@ -114,15 +119,15 @@ ON bot.user_roles FOR EACH ROW EXECUTE PROCEDURE helper.reset_update_date();
 COMMENT ON TABLE bot.user_roles IS 'Chat members roles';
 
 INSERT INTO bot.user_roles(user_role_code, user_role_name, user_role_permissions) VALUES('OWNER',     'Owner',         '[ "All" ]');
-INSERT INTO bot.user_roles(user_role_code, user_role_name, user_role_permissions) VALUES('ADMIN',     'Administrator', '[ "All" ]');
-INSERT INTO bot.user_roles(user_role_code, user_role_name, user_role_permissions) VALUES('MODERATOR', 'Moderator',     '[ "userCmdGroup", "moderatorCmdGroup" ]');
+INSERT INTO bot.user_roles(user_role_code, user_role_name, user_role_permissions) VALUES('ADMIN',     'Administrator', '[ "adminCmdGroup", "moderatorCmdGroup", "userCmdGroup" ]');
+INSERT INTO bot.user_roles(user_role_code, user_role_name, user_role_permissions) VALUES('MODERATOR', 'Moderator',     '[ "moderatorCmdGroup", "userCmdGroup" ]');
 INSERT INTO bot.user_roles(user_role_code, user_role_name, user_role_permissions) VALUES('USER',      'User',          '[ "userCmdGroup" ]');
 
 
 
 CREATE TABLE bot.users (
     user_id          serial        NOT NULL PRIMARY KEY,
-    user_name        varchar(50)   NOT NULL,
+    user_name        varchar(50)       NULL,
     user_full_name   varchar(50)       NULL,
     user_role_code   varchar(10)   NOT NULL REFERENCES bot.user_roles(user_role_code),
     user_is_bot      bool          NOT NULL DEFAULT false,
@@ -189,12 +194,12 @@ COMMENT ON TABLE bot.messages IS 'Принятые и отрпавленные сообщения';
 
 
 CREATE TABLE bot.logs (
-    log_id       bigserial     NOT NULL PRIMARY KEY,
-    log_type     varchar(7)    NOT NULL,            -- Info, warning, error
-    log_group    varchar(50)       NULL,            -- Джоб, обработка сообщения, инициализация и т.д.
-    log_message  varchar(200)  NOT NULL,            -- Краткое описание
-    log_data     json              NULL,            -- Вся инфа о записи
-    insert_date  timestamptz   NOT NULL DEFAULT now()
+    log_id        bigserial     NOT NULL PRIMARY KEY,
+    log_type      varchar(7)    NOT NULL,            -- Info, warning, error
+    log_initiator varchar(50)       NULL,            -- Джоб, обработка сообщения, инициализация и т.д.
+    log_message   varchar(200)  NOT NULL,            -- Краткое описание
+    log_data      json              NULL,            -- Вся инфа о записи
+    insert_date   timestamptz   NOT NULL DEFAULT now()
 );
 COMMENT ON TABLE bot.logs IS 'Журнал';
 
@@ -409,6 +414,8 @@ COMMENT ON FUNCTION bot.sf_get_permission_array(character varying)
     IS 'Returns permission array for the role';
 
 
+
+
 -- READY
 CREATE OR REPLACE FUNCTION bot.sf_cmd_get_help(
     user_role_code_ varchar(10))
@@ -442,132 +449,23 @@ COMMENT ON FUNCTION bot.sf_cmd_get_help(character varying)
 
 
 
-CREATE OR REPLACE FUNCTION zl.sf_get_most_popular_words(
-    _chat_id integer,
-    from_date timestamp with time zone,
-    to_date timestamp with time zone DEFAULT now(),
-    min_word_length integer DEFAULT 2)
-    RETURNS TABLE(word character varying, count bigint) 
-    LANGUAGE 'plpgsql'
-    ROWS 1000
-AS $BODY$
-DECLARE
-   msg_text text;
-   words text[];
-BEGIN
-   msg_text = (select string_agg(m.raw_data ->> 'text', ' ')
-                from bot.messages m
-                where m.insert_date > from_date and m.insert_date < to_date
-                  and m.chat_id = _chat_id);
-                              
-   msg_text = REPLACE(msg_text, chr(10), ' ' );  
-   msg_text = REPLACE(msg_text, '\\', ' ' );
-   msg_text = REPLACE(msg_text, '\n', ' ' );
-   msg_text = REPLACE(msg_text, '/', ' ' );
-   msg_text = REPLACE(msg_text, ',', ' ' );
-   msg_text = REPLACE(msg_text, '.', ' ' );
-   msg_text = REPLACE(msg_text, '(', ' ' );
-   msg_text = REPLACE(msg_text, ')', ' ' );
-   msg_text = REPLACE(msg_text, '[', ' ' );
-   msg_text = REPLACE(msg_text, ']', ' ' );
-   msg_text = REPLACE(msg_text, '{', ' ' );
-   msg_text = REPLACE(msg_text, '}', ' ' );
-   msg_text = REPLACE(msg_text, '?', ' ' );
-   msg_text = REPLACE(msg_text, '!', ' ' );
-   msg_text = REPLACE(msg_text, '"', ' ' );
-   msg_text = REPLACE(msg_text, '«', ' ' );
-   msg_text = REPLACE(msg_text, '»', ' ' );
-   msg_text = REPLACE(msg_text, '  ', ' ' );
-   msg_text = REPLACE(msg_text, '  ', ' ' );
-   msg_text = REPLACE(msg_text, '  ', ' ' ); 
-   msg_text = REPLACE(msg_text, ' - ', ' ' );
-   msg_text = REPLACE(msg_text, '"
-"', ' ' );
-   
-   words = string_to_array(LOWER(msg_text), ' ');
-
-    RETURN QUERY(
-        SELECT REPLACE(REPLACE(w::varchar(100), '(', '' ), ')', '')::varchar(100) as word, count(*) as word_count
-        FROM (select unnest(words)) as w
-        where Length(w::varchar(100)) >= min_word_length + 2
-          and w::varchar(100) not in (SELECT ('(' || the_word || ')') FROM zl.auxiliary_words)
-        group by w
-        having count(*) > 1
-        order by word_count desc
-    );
-END;
-$BODY$;
-ALTER FUNCTION zl.sf_get_most_popular_words(integer, timestamp with time zone, timestamp with time zone, integer)
-    OWNER TO postgres;
-
-CREATE OR REPLACE FUNCTION zl.sf_get_most_popular_words(
-    msg_text text,
-    min_word_length integer DEFAULT 2)
-    RETURNS TABLE(word text) 
-    LANGUAGE 'plpgsql'
-    COST 100
-    VOLATILE 
-    ROWS 1000
-AS $BODY$
-DECLARE
-   words text[];
-BEGIN
-   msg_text = REPLACE(msg_text, chr(10), ' ' );  
-   msg_text = REPLACE(msg_text, '\\', ' ' );
-   msg_text = REPLACE(msg_text, '\n', ' ' );
-   msg_text = REPLACE(msg_text, '/', ' ' );
-   msg_text = REPLACE(msg_text, ',', ' ' );
-   msg_text = REPLACE(msg_text, '.', ' ' );
-   msg_text = REPLACE(msg_text, '(', ' ' );
-   msg_text = REPLACE(msg_text, ')', ' ' );
-   msg_text = REPLACE(msg_text, '[', ' ' );
-   msg_text = REPLACE(msg_text, ']', ' ' );
-   msg_text = REPLACE(msg_text, '{', ' ' );
-   msg_text = REPLACE(msg_text, '}', ' ' );
-   msg_text = REPLACE(msg_text, '?', ' ' );
-   msg_text = REPLACE(msg_text, '!', ' ' );
-   msg_text = REPLACE(msg_text, '"', ' ' );
-   msg_text = REPLACE(msg_text, '«', ' ' );
-   msg_text = REPLACE(msg_text, '»', ' ' );
-   msg_text = REPLACE(msg_text, '  ', ' ' );
-   msg_text = REPLACE(msg_text, '  ', ' ' );
-   msg_text = REPLACE(msg_text, '  ', ' ' ); 
-   msg_text = REPLACE(msg_text, ' - ', ' ' );
-   
-   words = string_to_array(LOWER(msg_text), ' ');
-
-    RETURN QUERY(
-        SELECT REPLACE(REPLACE(w::varchar(100), '(', '' ), ')', '')::varchar(100) || ' (' || count(*) || ')' as word
-        FROM (select unnest(words)) as w
-        where Length(w::varchar(100)) >= min_word_length + 2
-          and w::varchar(100) not in (SELECT ('(' || the_word || ')') FROM zl.auxiliary_words)
-        group by w
-        having count(*) > 1
-        order by count(*) desc
-    );
-END;
-$BODY$;
-ALTER FUNCTION zl.sf_get_most_popular_words(text, integer)
-    OWNER TO postgres;
-
-
-
-
+    
+-- READY
 CREATE OR REPLACE FUNCTION zl.sf_process_group_message(
     _chat_id integer,
     _message_id integer,
     _accounting_start_date timestamp with time zone, -- важно переопределять во время выполнения
     _msg_limit_hi integer,                           -- важно переопределять во время выполнения
     _msg_limit_hihi integer,                         -- важно переопределять во время выполнения
+    _msg_limit_after_ban integer = 5,
     _start_account_after integer default 100)        -- важно переопределять во время выполнения
     RETURNS json 
     LANGUAGE 'plpgsql'
 AS $BODY$
 DECLARE
-   _result text = '{ "Status" : "Not initialized" }';
    _user_id integer;
-   _user_msg_count integer;
-   _msg_limit_after_ban integer = 5;
+   _accounted_user_msg_count integer;
+   _daily_chat_msg_count integer;
    _ban_id integer;
 BEGIN
  -- При достижении лимита пользователь банится на 3 часа. 
@@ -580,100 +478,123 @@ BEGIN
  --     переопределение лимитов для того, чтобы не перетереть 
  --     только что полученные сообщения
     
+    select user_id into _user_id from bot.messages where message_id = _message_id;
+
     select ban_id into _ban_id from zl.bans 
          where user_id = _user_id and chat_id = _chat_id
            and insert_date > now()::date 
       order by insert_date desc limit 1;
-
+      
     -- Если для пользователя есть активный бан, то удаляем сообщение. Учитываем бан с предыдущего дня
     if exists (select 1 from zl.bans 
                 where ban_id = _ban_id
-                  and ban_finish_date + interval '3 hours' < now() 
+                  and ban_finish_date > now() 
              order by insert_date desc)
     then
-        return '{ "Status" : "Banned" }';
+        return '{ "Action": "DeleteMessage" }';
     end if;
  
-    -- Начало индивидуального учёта после 100 сообщений в чате 
+    -- Начало индивидуального учёта после _start_account_after сообщений в чате 
     -- от любых пользователей с 00:00 текущего дня
-    if ((select count(*) from bot.messages where insert_date > now()::date) < _start_account_after)
+    _daily_chat_msg_count = (select count(*) from bot.messages where chat_id = _chat_id and insert_date > now()::date);
+    if (_accounting_start_date is not null and _daily_chat_msg_count < _start_account_after)
     then
-        return '{ "Status" : "Ok", "AccountingStartDate" : null }';
+        return '{ 
+                    "Action": "SetAccountingStartDate", 
+                    "AccountingStartDate": null 
+                }';
     end if;
  
     -- Дата начала учёта хранится в пямяти программы и передаётся в этот метод
     -- Переопределяется после перезагрузки или восстановления соединения с сетью
-    if (_accounting_start_date is null)
+    if (_accounting_start_date is null and _daily_chat_msg_count >= _start_account_after)
     then
-        return '{ "Status" : "Ok", "AccountingStartDate" : ' || now() || ' }';
+        return '{ 
+                    "Action": "SetAccountingStartDate",
+                    "AccountingStartDate": "' || now()::text || E'"\n' ||',
+                    "MessageText" : "В чате уже ' || _daily_chat_msg_count::text || ' сообщений. Начинаю персональный учёт." 
+               }';
     end if;
- 
+
     select user_id into _user_id from bot.messages where message_id = _message_id;
      
-    select count(*) into _user_msg_count from bot.messages where insert_date > now()::date and user_id = _user_id;
+    select count(*) into _accounted_user_msg_count from bot.messages 
+    where insert_date > _accounting_start_date 
+      and user_id = _user_id
+      and is_deleted = false;
   
- 
+
     -- С начала учёта каждому доступно максимум _msg_limit_hihi сообщений.
     -- После _msg_limit_hi сообщения с начала учёта надо выдать пользователю 
     --     предупреждение о приближении к лимиту. При этом создаётся запись
-    --     в таблице zl.ban и ставится пометка о том, что пользователь предупреждён
-    if (_user_msg_count < _msg_limit_hi) then
-        return '{ "Status" : "Ok" }';
-    elsif (_user_msg_count >= _msg_limit_hi and _user_msg_count < _msg_limit_hihi) then
+    --     в таблице zl.bans и ставится пометка о том, что пользователь предупреждён
+    if (_accounted_user_msg_count < _msg_limit_hi) then
+        return '{ "Action": "Continue" }';
+    elsif (_accounted_user_msg_count >= _msg_limit_hi and _accounted_user_msg_count < _msg_limit_hihi) then
+
         -- Создаём неактивную запись в таблице банов (без даты окончания), 
         -- выдаём предупреждение и фиксируем это, чтоб не повторяться
         if (_ban_id is null) then        
             insert into zl.bans (user_id, chat_id)
             select _user_id, _chat_id;
             return '{
-                        "Status" : "BanWarning", 
-                        "MessageText" : "количеcтво сообщений, отправленных Вами с начала учёта: _user_msg_count\\n
-                                         Осталось сообщений до трёхчасового бана: _msg_limit_hihi - _user_msg_count" 
+                        "Action": "SendMessageToGroup", 
+                        "MessageText": "<UserName>, количеcтво сообщений, отправленных Вами с начала учёта: ' || _accounted_user_msg_count::text || '.\nОсталось сообщений до бана: ' || (_msg_limit_hihi - _accounted_user_msg_count)::text || '" 
                     }';
+        else
+            return '{ "Action": "Continue" }';
         end if;
-    elsif (_user_msg_count >= _msg_limit_hihi) then
+    elsif (_accounted_user_msg_count >= _msg_limit_hihi) then
         if (_ban_id is null) then
             return '{ 
-                        "Status" : "Error", 
-                        "MessageText" : "Пользователь превысил лимит, но запись о бане ещё не создана!" 
+                        "Action": "SendMessageToOwner", 
+                        "MessageText": "Error! The user has exceeded the limit and I don''t know what to do!" 
                     }';
  
         -- Если бан не активен, активируем его (задаём дату окончания)
         -- Отправляем сообщение пользователю
-        elsif (select ban_finish_date from zl.ban where ban_id = _ban_id) is null then
+        elsif (select ban_finish_date from zl.bans where ban_id = _ban_id) is null then
             update zl.bans set ban_finish_date = now() + interval '3 hours'
             where ban_id = _ban_id;
-            
+            return '{
+                        "Action": "SendMessageToGroup", 
+                        "MessageText": "<UserName>, Вы превысили лимит сообщений (' || _msg_limit_hihi::text || '). Все последующие сообщения в течение 3-х часов будут удаляться.\nПотом до конца дня у Вас будет ' || _msg_limit_after_ban::text || ' сообщений."
+                    }';
+
         -- Иначе, если бан активен и функция всё ещё выполняется, значит бан отработал 
         -- и у пользователя осталось _msg_limit_after_ban сообщений.
+        elsif (_accounted_user_msg_count >= _msg_limit_hihi and _accounted_user_msg_count < _msg_limit_hihi + _msg_limit_after_ban) then
+            return '{ "Action": "Continue" }';
 
         -- При достижении второго предела отодвигаем время бана на конец дня и шлём предупреждающее сообщение
-        elsif (_user_msg_count = _msg_limit_hihi + _msg_limit_after_ban) then
+        elsif (_accounted_user_msg_count >= _msg_limit_hihi + _msg_limit_after_ban) then
             update zl.bans set ban_finish_date = now()::date + interval '1 day' - interval '1 second'
             where ban_id = _ban_id;
             return '{
-                        "Status" : "BanWarning", 
-                        "MessageText" : "вы израсходовали свой лимит сообщений до конца дня" 
+                        "Action": "SendMessageToGroup", 
+                        "MessageText" : "<UserName>, вы израсходовали свой лимит сообщений до конца дня" 
                     }';
         ---- иначе баним до конца дня
-        --elsif (_user_msg_count > _msg_limit_hihi + _msg_limit_after_ban) then
+        --elsif (_accounted_user_msg_count > _msg_limit_hihi + _msg_limit_after_ban) then
         --    return '{ "Answer" : "Banned" }';
         else
             return '{ 
-                        "Status" : "Error", 
-                        "MessageText" : "Пользователь превысил лимит, но ни одно условие не выполнилось!" 
+                        "Action": "SendMessageToOwner",
+                        "MessageText" : "Error! The user has exceeded the limit but no condition has been met!" 
                     }';
         end if;
     end if;
-    return _result;
+    return '{
+                "Action": "SendMessageToOwner",
+                "MessageText" : "Error! End of function has been reached!" 
+            }';
 END;
 $BODY$;
-ALTER FUNCTION zl.sf_process_group_message(integer, integer, timestamp with time zone, integer, integer, integer)
+ALTER FUNCTION zl.sf_process_group_message(integer, integer, timestamp with time zone, integer, integer, integer, integer)
     OWNER TO postgres;
 
 
 
-    
 
 -- READY
 CREATE OR REPLACE FUNCTION bot.sf_get_chat_statistics(
@@ -709,6 +630,7 @@ COMMENT ON FUNCTION bot.sf_get_chat_statistics(integer, integer, timestamp with 
 
 
 
+
 -- READY
 CREATE OR REPLACE FUNCTION zl.sf_cmd_get_full_statistics(
     _users_limit integer,
@@ -740,7 +662,7 @@ BEGIN
         (SELECT s1.chat_id
               , s1.user_id
               , c.chat_name
-              , u.user_name      as row_header
+              , coalesce(u.user_name, u.user_full_name) as row_header
       		  , s1.message_count as all_message_count
       		  , s2.message_count as accounted_message_count
            FROM bot.chats c
@@ -789,6 +711,8 @@ BEGIN
       _result_text = _result_text || '**' || (SELECT chat_name FROM bot.chats WHERE chat_id = _chat_id LIMIT 1) || E'**\n';
       _result_text = _result_text || (SELECT _header_2 || ' ' || all_message_count FROM statisticsTable WHERE chat_id = _chat_id and row_header = _header_2);
       
+      --RAISE NOTICE '1. _result_text: %', _result_text;
+   
       -- Для групповых чатов больше информации
       IF EXISTS (SELECT 1 FROM statisticsTable WHERE chat_id = _chat_id and row_header = _header_1) 
       THEN
@@ -800,12 +724,19 @@ BEGIN
                                                   WHERE chat_id = _chat_id and row_header not in (_header_1, _header_2)), '[exception]');
       END IF;
 
+      --RAISE NOTICE '2. _result_text: %', _result_text;
+
       _result_text = _result_text || E'\n\n================\n\n';
   END LOOP;
   
    _result_text = (SELECT trim(trailing E'\n\n================\n\n' from _result_text));
 
   DROP TABLE statisticsTable;
+  --RAISE NOTICE '3. _result_text: %', _result_text;
+  
+  IF (_result_text is null or length(trim(_result_text)) = 0) THEN
+      RETURN 'There are no messages in the specified time range';
+  END IF;
   
   RETURN _result_text;
 END;
@@ -814,7 +745,6 @@ ALTER FUNCTION zl.sf_cmd_get_full_statistics(integer, timestamp with time zone, 
     OWNER TO postgres;
 COMMENT ON FUNCTION zl.sf_cmd_get_full_statistics(integer, timestamp with time zone, timestamp with time zone)
     IS 'Returns all chats statistics in the specified time range';
-    
     
     
     

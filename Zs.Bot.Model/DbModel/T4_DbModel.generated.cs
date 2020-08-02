@@ -92,7 +92,7 @@ namespace Zs.Bot.Model.Db
 
         public String LogType { get; set; }
 
-        public String LogGroup { get; set; }
+        public String LogInitiator { get; set; }
 
         public String LogMessage { get; set; }
 
@@ -252,19 +252,23 @@ namespace Zs.Bot.Model.Db
         [Column("bot_id", TypeName = "integer")]
         public Int32 BotId { get; set; }
 
+        [StringLength(2)]
         [Required(ErrorMessage = "Property 'MessengerCode' is required")]
-        [Column("messenger_code", TypeName = "character varying")]
+        [Column("messenger_code", TypeName = "character varying(2)")]
         public String MessengerCode { get; set; }
 
+        [StringLength(20)]
         [Required(ErrorMessage = "Property 'BotName' is required")]
-        [Column("bot_name", TypeName = "character varying")]
+        [Column("bot_name", TypeName = "character varying(20)")]
         public String BotName { get; set; }
 
+        [StringLength(100)]
         [Required(ErrorMessage = "Property 'BotToken' is required")]
-        [Column("bot_token", TypeName = "character varying")]
+        [Column("bot_token", TypeName = "character varying(100)")]
         public String BotToken { get; set; }
 
-        [Column("bot_description", TypeName = "character varying")]
+        [StringLength(300)]
+        [Column("bot_description", TypeName = "character varying(300)")]
         public String BotDescription { get; set; }
 
         [Required(ErrorMessage = "Property 'UpdateDate' is required")]
@@ -283,12 +287,14 @@ namespace Zs.Bot.Model.Db
     public partial class DbChatType : IChatType
     {
         [Key]
+        [StringLength(10)]
         [Required(ErrorMessage = "Property 'ChatTypeCode' is required")]
-        [Column("chat_type_code", TypeName = "character varying")]
+        [Column("chat_type_code", TypeName = "character varying(10)")]
         public String ChatTypeCode { get; set; }
 
+        [StringLength(10)]
         [Required(ErrorMessage = "Property 'ChatTypeName' is required")]
-        [Column("chat_type_name", TypeName = "character varying")]
+        [Column("chat_type_name", TypeName = "character varying(10)")]
         public String ChatTypeName { get; set; }
 
         [Required(ErrorMessage = "Property 'UpdateDate' is required")]
@@ -311,23 +317,27 @@ namespace Zs.Bot.Model.Db
         [Column("chat_id", TypeName = "integer")]
         public Int32 ChatId { get; set; }
 
+        [StringLength(50)]
         [Required(ErrorMessage = "Property 'ChatName' is required")]
-        [Column("chat_name", TypeName = "character varying")]
+        [Column("chat_name", TypeName = "character varying(50)")]
         public String ChatName { get; set; }
 
-        [Column("chat_description", TypeName = "character varying")]
+        [StringLength(100)]
+        [Column("chat_description", TypeName = "character varying(100)")]
         public String ChatDescription { get; set; }
 
+        [StringLength(10)]
         [Required(ErrorMessage = "Property 'ChatTypeCode' is required")]
-        [Column("chat_type_code", TypeName = "character varying")]
+        [Column("chat_type_code", TypeName = "character varying(10)")]
         public String ChatTypeCode { get; set; }
 
         [Required(ErrorMessage = "Property 'RawData' is required")]
         [Column("raw_data", TypeName = "json")]
         public String RawData { get; set; }
 
+        [StringLength(50)]
         [Required(ErrorMessage = "Property 'RawDataHash' is required")]
-        [Column("raw_data_hash", TypeName = "character varying")]
+        [Column("raw_data_hash", TypeName = "character varying(50)")]
         public String RawDataHash { get; set; }
 
         [Column("raw_data_history", TypeName = "json")]
@@ -349,22 +359,27 @@ namespace Zs.Bot.Model.Db
     public partial class DbCommand : ICommand
     {
         [Key]
+        [StringLength(50)]
         [Required(ErrorMessage = "Property 'CommandName' is required")]
-        [Column("command_name", TypeName = "character varying")]
+        [Column("command_name", TypeName = "character varying(50)")]
         public String CommandName { get; set; }
 
+        [StringLength(5000)]
         [Required(ErrorMessage = "Property 'CommandScript' is required")]
-        [Column("command_script", TypeName = "character varying")]
+        [Column("command_script", TypeName = "character varying(5000)")]
         public String CommandScript { get; set; }
 
-        [Column("command_default_args", TypeName = "character varying")]
+        [StringLength(100)]
+        [Column("command_default_args", TypeName = "character varying(100)")]
         public String CommandDefaultArgs { get; set; }
 
-        [Column("command_desc", TypeName = "character varying")]
+        [StringLength(100)]
+        [Column("command_desc", TypeName = "character varying(100)")]
         public String CommandDesc { get; set; }
 
+        [StringLength(50)]
         [Required(ErrorMessage = "Property 'CommandGroup' is required")]
-        [Column("command_group", TypeName = "character varying")]
+        [Column("command_group", TypeName = "character varying(50)")]
         public String CommandGroup { get; set; }
 
         [Required(ErrorMessage = "Property 'UpdateDate' is required")]
@@ -387,15 +402,18 @@ namespace Zs.Bot.Model.Db
         [Column("log_id", TypeName = "bigint")]
         public Int64 LogId { get; set; }
 
+        [StringLength(7)]
         [Required(ErrorMessage = "Property 'LogType' is required")]
-        [Column("log_type", TypeName = "character varying")]
+        [Column("log_type", TypeName = "character varying(7)")]
         public String LogType { get; set; }
 
-        [Column("log_group", TypeName = "character varying")]
-        public String LogGroup { get; set; }
+        [StringLength(50)]
+        [Column("log_initiator", TypeName = "character varying(50)")]
+        public String LogInitiator { get; set; }
 
+        [StringLength(200)]
         [Required(ErrorMessage = "Property 'LogMessage' is required")]
-        [Column("log_message", TypeName = "character varying")]
+        [Column("log_message", TypeName = "character varying(200)")]
         public String LogMessage { get; set; }
 
         [Column("log_data", TypeName = "json")]
@@ -413,12 +431,14 @@ namespace Zs.Bot.Model.Db
     public partial class DbMessageType : IMessageType
     {
         [Key]
+        [StringLength(3)]
         [Required(ErrorMessage = "Property 'MessageTypeCode' is required")]
-        [Column("message_type_code", TypeName = "character varying")]
+        [Column("message_type_code", TypeName = "character varying(3)")]
         public String MessageTypeCode { get; set; }
 
+        [StringLength(50)]
         [Required(ErrorMessage = "Property 'MessageTypeName' is required")]
-        [Column("message_type_name", TypeName = "character varying")]
+        [Column("message_type_name", TypeName = "character varying(50)")]
         public String MessageTypeName { get; set; }
 
         [Required(ErrorMessage = "Property 'UpdateDate' is required")]
@@ -444,12 +464,14 @@ namespace Zs.Bot.Model.Db
         [Column("reply_to_message_id", TypeName = "integer")]
         public Int32? ReplyToMessageId { get; set; }
 
+        [StringLength(2)]
         [Required(ErrorMessage = "Property 'MessengerCode' is required")]
-        [Column("messenger_code", TypeName = "character varying")]
+        [Column("messenger_code", TypeName = "character varying(2)")]
         public String MessengerCode { get; set; }
 
+        [StringLength(3)]
         [Required(ErrorMessage = "Property 'MessageTypeCode' is required")]
-        [Column("message_type_code", TypeName = "character varying")]
+        [Column("message_type_code", TypeName = "character varying(3)")]
         public String MessageTypeCode { get; set; }
 
         [Required(ErrorMessage = "Property 'UserId' is required")]
@@ -460,7 +482,8 @@ namespace Zs.Bot.Model.Db
         [Column("chat_id", TypeName = "integer")]
         public Int32 ChatId { get; set; }
 
-        [Column("message_text", TypeName = "character varying")]
+        [StringLength(100)]
+        [Column("message_text", TypeName = "character varying(100)")]
         public String MessageText { get; set; }
 
         [Required(ErrorMessage = "Property 'RawData' is required")]
@@ -498,12 +521,14 @@ namespace Zs.Bot.Model.Db
     public partial class DbMessengerInfo : IMessengerInfo
     {
         [Key]
+        [StringLength(2)]
         [Required(ErrorMessage = "Property 'MessengerCode' is required")]
-        [Column("messenger_code", TypeName = "character varying")]
+        [Column("messenger_code", TypeName = "character varying(2)")]
         public String MessengerCode { get; set; }
 
+        [StringLength(20)]
         [Required(ErrorMessage = "Property 'MessengerName' is required")]
-        [Column("messenger_name", TypeName = "character varying")]
+        [Column("messenger_name", TypeName = "character varying(20)")]
         public String MessengerName { get; set; }
 
         [Required(ErrorMessage = "Property 'UpdateDate' is required")]
@@ -521,18 +546,22 @@ namespace Zs.Bot.Model.Db
     public partial class DbOption : IOption
     {
         [Key]
+        [StringLength(50)]
         [Required(ErrorMessage = "Property 'OptionName' is required")]
-        [Column("option_name", TypeName = "character varying")]
+        [Column("option_name", TypeName = "character varying(50)")]
         public String OptionName { get; set; }
 
-        [Column("option_value", TypeName = "character varying")]
+        [StringLength(5000)]
+        [Column("option_value", TypeName = "character varying(5000)")]
         public String OptionValue { get; set; }
 
+        [StringLength(50)]
         [Required(ErrorMessage = "Property 'OptionGroup' is required")]
-        [Column("option_group", TypeName = "character varying")]
+        [Column("option_group", TypeName = "character varying(50)")]
         public String OptionGroup { get; set; }
 
-        [Column("option_description", TypeName = "character varying")]
+        [StringLength(500)]
+        [Column("option_description", TypeName = "character varying(500)")]
         public String OptionDescription { get; set; }
 
         [Required(ErrorMessage = "Property 'UpdateDate' is required")]
@@ -583,12 +612,14 @@ namespace Zs.Bot.Model.Db
     public partial class DbUserRole : IUserRole
     {
         [Key]
+        [StringLength(10)]
         [Required(ErrorMessage = "Property 'UserRoleCode' is required")]
-        [Column("user_role_code", TypeName = "character varying")]
+        [Column("user_role_code", TypeName = "character varying(10)")]
         public String UserRoleCode { get; set; }
 
+        [StringLength(50)]
         [Required(ErrorMessage = "Property 'UserRoleName' is required")]
-        [Column("user_role_name", TypeName = "character varying")]
+        [Column("user_role_name", TypeName = "character varying(50)")]
         public String UserRoleName { get; set; }
 
         [Required(ErrorMessage = "Property 'UserRolePermissions' is required")]
@@ -614,15 +645,17 @@ namespace Zs.Bot.Model.Db
         [Column("user_id", TypeName = "integer")]
         public Int32 UserId { get; set; }
 
-        [Required(ErrorMessage = "Property 'UserName' is required")]
-        [Column("user_name", TypeName = "character varying")]
+        [StringLength(50)]
+        [Column("user_name", TypeName = "character varying(50)")]
         public String UserName { get; set; }
 
-        [Column("user_full_name", TypeName = "character varying")]
+        [StringLength(50)]
+        [Column("user_full_name", TypeName = "character varying(50)")]
         public String UserFullName { get; set; }
 
+        [StringLength(10)]
         [Required(ErrorMessage = "Property 'UserRoleCode' is required")]
-        [Column("user_role_code", TypeName = "character varying")]
+        [Column("user_role_code", TypeName = "character varying(10)")]
         public String UserRoleCode { get; set; }
 
         [Required(ErrorMessage = "Property 'UserIsBot' is required")]
@@ -633,8 +666,9 @@ namespace Zs.Bot.Model.Db
         [Column("raw_data", TypeName = "json")]
         public String RawData { get; set; }
 
+        [StringLength(50)]
         [Required(ErrorMessage = "Property 'RawDataHash' is required")]
-        [Column("raw_data_hash", TypeName = "character varying")]
+        [Column("raw_data_hash", TypeName = "character varying(50)")]
         public String RawDataHash { get; set; }
 
         [Column("raw_data_history", TypeName = "json")]

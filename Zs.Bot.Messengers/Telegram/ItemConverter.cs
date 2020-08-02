@@ -92,7 +92,7 @@ namespace Zs.Bot.Telegram
                 //user.UserId -> Auto
                 user.UserRoleCode = "USER";
                 user.UserName = telegramUser.Username;
-                user.UserFullName = $"{telegramUser.FirstName} {telegramUser.LastName}";
+                user.UserFullName = $"{telegramUser.FirstName} {telegramUser.LastName}".Trim();
                 user.UserIsBot = telegramUser.IsBot;
                 user.RawData = JsonSerializer.Serialize(telegramUser, options).NormalizeJsonString();
                 user.RawDataHash = user.RawData.GetMD5Hash();

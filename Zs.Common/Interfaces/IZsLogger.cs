@@ -7,10 +7,10 @@ namespace Zs.Common.Interfaces
     {
         string EmergencyLogDirrectory { get; set; }
 
-        void LogError(Exception ex, string logGroup = null);
-        void LogInfo(string message, string logGroup = null);
-        void LogInfo<T>(string message, T logData, string logGroup = null);
-        void LogWarning(string message = null, string logGroup = null);
-        void LogWarning<T>(string message, T logData, string logGroup = null);
+        void LogError(Exception ex, string initiator = null);
+        void LogInfo(string message, string initiator = null);
+        void LogInfo<T>(string message, T data, string initiator = null);
+        void LogWarning(string message = null, string initiator = null);
+        void LogWarning<T>(string message, T data, string initiator = null);
     }
 }

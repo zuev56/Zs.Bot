@@ -118,10 +118,20 @@ namespace Zs.Common.T4
                         if (column.ConstraintType == ConstraintType.PrimaryKey)
                             tt.WriteLine("[Key]");
 
+                        if (column.StringLength != null) //StringLength(30)
+                            tt.WriteLine($"[StringLength({column.StringLength})]");
+
                         if (!column.IsNullable)
                             tt.WriteLine($"[Required(ErrorMessage = \"Property '{UnderscoreToPascalCase(column.Name)}' is required\")]");
 
-                        tt.WriteLine($"[Column(\"{column.Name}\", TypeName = \"{column.SqlDataType}\")]");
+                        var columnTypeName = column.SqlDataType.Equals("character varying", StringComparison.InvariantCultureIgnoreCase) 
+                                          && column.StringLength != null
+                            ? $"{column.SqlDataType}({column.StringLength})"
+                            : column.SqlDataType;
+
+                        tt.WriteLine($"[Column(\"{column.Name}\", TypeName = \"{columnTypeName}\")]");
+
+                        //tt.WriteLine($"[DataType(DataType.{column.AnnotationDataType}]");
 
                         string nullableMarker = "";
                         if (column.DataType.IsValueType && column.IsNullable)

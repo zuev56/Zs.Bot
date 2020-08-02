@@ -303,7 +303,7 @@ namespace Zs.UnitTest.Bot
         {
             try
             {
-                var filePath = @"C:\Users\zuev56\Documents\users_backup_20200613_1332.json";
+                var filePath = @"C:\Users\zuev56\Documents\users_backup_20200730_1939.json";
 
                 DataImporter.LoadUsersFromJson(filePath);
             }

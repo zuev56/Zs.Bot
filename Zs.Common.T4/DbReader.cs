@@ -82,7 +82,7 @@ namespace Zs.Common.T4
             }
 
             var structureQuery = "select c.table_schema, c.table_name, c.column_name, c.ordinal_position, c.is_nullable, c.data_type\n"
-                               + "	  , kc.constraint_name, tc.constraint_type\n"
+                               + "	  , kc.constraint_name, tc.constraint_type, c.character_maximum_length\n"
                                + "from information_schema.columns c\n"
                                + "left outer join information_schema.key_column_usage kc on kc.table_schema = c.table_schema\n"
                                + "                                                      and kc.table_name   = c.table_name\n"
@@ -109,6 +109,7 @@ namespace Zs.Common.T4
                     var dataType       = reader.GetString(5);
                     var constraintName = !reader.IsDBNull(6) ? reader.GetString(6) : null;
                     var constraintType = !reader.IsDBNull(7) ? reader.GetString(7) : null;
+                    var stringLength   = !reader.IsDBNull(8) ? (int?)reader.GetInt32(8) : null;
 
                     DbSchema dbSchema;
                     if (dataBase.Any(s => s.Name == schema))
@@ -128,7 +129,15 @@ namespace Zs.Common.T4
                         dbSchema.Add(dbTable);
                     }
 
-                    DbColumn dbColumn = new DbColumn(column, dataType, isNullable, position, constraintName, constraintType);
+                    var dbColumn = new DbColumn(
+                        column,
+                        dataType,
+                        isNullable,
+                        position,
+                        constraintName,
+                        constraintType,
+                        stringLength);
+      
                     dbTable.Add(dbColumn);
                 }
             }

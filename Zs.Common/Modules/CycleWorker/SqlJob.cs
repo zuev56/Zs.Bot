@@ -2,39 +2,80 @@
 using System.Diagnostics;
 using System.Threading;
 using Npgsql;
+using Zs.Common.Enums;
+using Zs.Common.Extensions;
 
 namespace Zs.Common.Modules.CycleWorker
 {
     /// <summary>
     /// <see cref="Job"/> based on SQL script
     /// </summary>
+    // SQL NON QUERY JOB
+    // SQL READER JOB
     public sealed class SqlJob : Job
     {
+        // Надо определять тип возвращаемого значения при создании  джоба
+        // Это может быть пустой тип
+        // Дженерик не подходит, т.к. список джобов должен в конечном счёте иметь один тип
+        // Вероятно, стоит вернуть JobExecutionResult
         private readonly string _connectionString;
         private readonly string _sqlQuery;
+        private QueryResultType _resultType;
 
-        public SqlJob(TimeSpan period, string sqlQuery, string connectionString)
+
+        public SqlJob(TimeSpan period, QueryResultType resultType, string sqlQuery, string connectionString, DateTime? startDate = null)
+            : base(period, startDate)
         {
             Period = period != default ? period : throw new ArgumentException($"{nameof(period)} can't have default value");
 
             _connectionString = connectionString ?? throw new ArgumentNullException(nameof(sqlQuery));
+            _resultType = resultType;
             _sqlQuery = sqlQuery ?? throw new ArgumentNullException(nameof(sqlQuery));
         }
 
-        protected override void JobBody()
+        protected override IJobExecutionResult GetExecutionResult()
         {
-#if DEBUG
-            Trace.WriteLine($"SqlJobBody: {_sqlQuery} [{Counter}], ThreadId: {Thread.CurrentThread.ManagedThreadId}");
-#endif
-            using var connection = new NpgsqlConnection(_connectionString);
-            connection.Open();
-
-            if (!string.IsNullOrWhiteSpace(_sqlQuery))
+            try
             {
-                using var command = new NpgsqlCommand(_sqlQuery, connection);
-                //command.Parameters.AddWithValue("p", "some_value");
-                LastResult = command.ExecuteNonQuery();
+
+#if DEBUG
+                Trace.WriteLine($"SqlJobBody: {_sqlQuery} [{Counter}], ThreadId: {Thread.CurrentThread.ManagedThreadId}");
+#endif
+                using var connection = new NpgsqlConnection(_connectionString);
+                connection.Open();
+
+                if (!string.IsNullOrWhiteSpace(_sqlQuery))
+                {
+                    using var command = new NpgsqlCommand(_sqlQuery, connection);
+                    //command.Parameters.AddWithValue("p", "some_value");
+                    using var reader = command.ExecuteReader();
+                    
+                    switch (_resultType)
+                    {
+                        case QueryResultType.Double:
+                            reader.Read();
+                            if (!reader.IsDBNull(0))
+                                LastResult = new JobExecutionResult<double>(reader.GetDouble(0));
+                            break;
+                        case QueryResultType.Json:
+                            LastResult = new JobExecutionResult<string>(reader.ReadToJson());
+                            break;
+                        case QueryResultType.String:
+                            reader.Read();
+                            if (!reader.IsDBNull(0))
+                                LastResult = new JobExecutionResult<string>(reader.GetString(0));
+                            break;
+                    }
+                }
+
+                return LastResult;
+            }
+            catch (Exception ex)
+            {
+                throw;
             }
         }
+
+        
     }
 }

@@ -9,12 +9,10 @@ using Zs.Common.Interfaces;
 namespace Zs.Common.Modules.Connectors
 {
     /// <summary>
-    /// Объект, анализирующий подключение к сети
+    /// Analyzes internet connection
     /// </summary>
     public class ConnectionAnalyser
     {
-        // TODO: вести учёт 100 последних разрывов связи  
-
         private readonly object _locker = new object();
         private readonly IZsLogger _logger;      
         private readonly string[] _internetServers;
@@ -24,11 +22,10 @@ namespace Zs.Common.Modules.Connectors
 
         public DateTime? InternetRepairDate { get; private set; }
 
-        /// <summary> Событие на изменение состояния соединения с интернетом </summary>
-        public event Action<ConnectionStatus> ConnectionStatusChanged;
+        public ConnectionStatus CurrentStatus { get; private set; } = ConnectionStatus.Undefined;
 
-        /// <summary> Текущий статус соединения </summary>
-        public ConnectionStatus CurrentStatus = ConnectionStatus.Undefined;
+
+        public event Action<ConnectionStatus> ConnectionStatusChanged;
 
 
         public ConnectionAnalyser(params string[] testHosts)
@@ -49,11 +46,11 @@ namespace Zs.Common.Modules.Connectors
                 _timer = new Timer(new TimerCallback(AnalyzeConnection));
                 _timer.Change(dueTime, period);
 
-                _logger?.LogInfo($"{nameof(ConnectionAnalyser)} запущен", nameof(ConnectionAnalyser));
+                _logger?.LogInfo($"{nameof(ConnectionAnalyser)} started", nameof(ConnectionAnalyser));
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex);
+                _logger?.LogError(ex, nameof(ConnectionAnalyser));
             }
         }
 
@@ -62,11 +59,11 @@ namespace Zs.Common.Modules.Connectors
             try
             {
                 _timer.Dispose();
-                _logger?.LogInfo($"{nameof(ConnectionAnalyser)} остановлен", nameof(ConnectionAnalyser));
+                _logger?.LogInfo($"{nameof(ConnectionAnalyser)} stopped", nameof(ConnectionAnalyser));
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex);
+                _logger?.LogError(ex, nameof(ConnectionAnalyser));
             }
         }
 
@@ -78,18 +75,25 @@ namespace Zs.Common.Modules.Connectors
             {
                 var credentials = new NetworkCredential(userName, password);
                 WebProxy.Credentials = credentials;
-                //_logger?.LogInfo("Задействован прокси-сервер", $"{nameof(ConnectionAnalyser)}");
+                _logger?.LogInfo("Proxy used", nameof(ConnectionAnalyser));
             }
         }
 
         public static bool PingHost(string hostAddress)
         {
-            hostAddress = GetClearHostAddress(hostAddress ?? throw new ArgumentNullException(nameof(hostAddress)));
+            try
+            {
+                hostAddress = GetClearHostAddress(hostAddress ?? throw new ArgumentNullException(nameof(hostAddress)));
 
-            using var pinger = new Ping();
+                using var ping = new Ping();
 
-            var pingReply = pinger.Send(hostAddress);
-            return pingReply.Status == IPStatus.Success;
+                return ping.Send(hostAddress)
+                           .Status == IPStatus.Success;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         public static bool ValidateIPv4(string ipString)
@@ -97,13 +101,11 @@ namespace Zs.Common.Modules.Connectors
             if (string.IsNullOrWhiteSpace(ipString))
                 return false;
 
-            string[] splitValues = ipString.Split('.');
+            var splitValues = ipString.Split('.');
             if (splitValues.Length != 4)
                 return false;
 
-            byte tempForParsing;
-
-            return splitValues.All(r => byte.TryParse(r, out tempForParsing));
+            return splitValues.All(r => byte.TryParse(r, out byte tempForParsing));
         }
 
         private void AnalyzeConnection(object timerState)
@@ -111,7 +113,7 @@ namespace Zs.Common.Modules.Connectors
             try
             {
                 if (_internetServers == null || _internetServers.Length == 0)
-                    throw new ArgumentException("Должен быть задан адрес сервера для проверки соединения с интернетом!");
+                    throw new ArgumentException("At least one server address must be set");
 
                 var analyzeResult = ConnectionStatus.Undefined;
 
@@ -137,31 +139,33 @@ namespace Zs.Common.Modules.Connectors
                     else if (analyzeResult != ConnectionStatus.Ok)
                         InternetRepairDate = null;
                     
-                    
                     if (analyzeResult != CurrentStatus)
                     {
                         CurrentStatus = analyzeResult;
+                        _logger?.LogInfo($"Connection status changed: {CurrentStatus}", nameof(ConnectionAnalyser));
+
                         ConnectionStatusChanged?.Invoke(CurrentStatus);
                     }
                 }
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex);
+                _logger?.LogError(ex, nameof(ConnectionAnalyser));
             }
         }
 
-        /// <summary> Получение адреса хоста без протокола и порта </summary>
+        /// <summary> Getting host address without protocol and port </summary>
         private static string GetClearHostAddress(string hostAddress)
         {
             if (hostAddress?.Length > 0)
             {
-                hostAddress = hostAddress.Contains("://")
-                              ? hostAddress.Substring(hostAddress.IndexOf("://") + 3)
+                hostAddress = hostAddress.Contains("://", StringComparison.InvariantCulture)
+                              ? hostAddress.Substring(hostAddress.IndexOf("://", StringComparison.InvariantCulture) + 3)
                               : hostAddress;
 
-                hostAddress = hostAddress.Contains(":") && !hostAddress.Contains("://")
-                              ? hostAddress.Substring(0, hostAddress.IndexOf(":"))
+                hostAddress = hostAddress.Contains(":", StringComparison.InvariantCulture) 
+                                && !hostAddress.Contains("://", StringComparison.InvariantCulture)
+                              ? hostAddress.Substring(0, hostAddress.IndexOf(":", StringComparison.InvariantCulture))
                               : hostAddress;
 
                 hostAddress = hostAddress.Trim('/');
@@ -169,6 +173,5 @@ namespace Zs.Common.Modules.Connectors
 
             return hostAddress;
         }
-
     }
 }

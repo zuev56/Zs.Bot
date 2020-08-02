@@ -13,7 +13,8 @@ namespace Zs.Common.Modules.CycleWorker
         private readonly object _parameter;
 
 
-        public ProgramJob(TimeSpan period, Action method, object parameter = null)
+        public ProgramJob(TimeSpan period, Action method, object parameter = null, DateTime? startDate = null)
+            : base(period, startDate)
         {
             Period = period != default ? period : throw new ArgumentException($"{nameof(period)} can't have default value");
 
@@ -21,12 +22,13 @@ namespace Zs.Common.Modules.CycleWorker
             _parameter = parameter;
         }
 
-        protected override void JobBody()
+        protected override IJobExecutionResult GetExecutionResult()
         {
 #if DEBUG
             Trace.WriteLine($"ProgramJobBody: [{Counter}], ThreadId: {Thread.CurrentThread.ManagedThreadId}");
 #endif
-            _method.Invoke();
+             _method.Invoke();
+            return default;
         }
     }
 }

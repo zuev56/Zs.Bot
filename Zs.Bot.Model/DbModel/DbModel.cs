@@ -9,24 +9,36 @@ namespace Zs.Bot.Model.Db
 {
     public partial class DbLog
     {
-        public static void SaveToDb(LogType logType, string message, string logGroup = null, string logData = null)
+        private static int _logMessageMaxLength = -1;
+
+        public static bool SaveToDb(LogType type, string message, string initiator = null, string data = null)
         {
             try
             {
+                if (_logMessageMaxLength == -1)
+                {
+                    var attribute = (StringLengthAttribute)typeof(DbLog).GetProperty(nameof(LogMessage)).GetCustomAttributes(true)
+                        .FirstOrDefault(a => a is StringLengthAttribute);
+                    _logMessageMaxLength = attribute?.MaximumLength ?? 100;
+                }
+
+                if (message.Length > _logMessageMaxLength)
+                    message = message.Substring(0, _logMessageMaxLength-3) + "...";
+                
                 using var ctx = new ZsBotDbContext();
                 ctx.Logs.Add(new DbLog
                 {
-                    LogType    = logType.ToString(),
-                    LogMessage = message,
-                    LogGroup   = logGroup,
-                    LogData    = logData,
-                    InsertDate = DateTime.Now
+                    LogType      = type.ToString(),
+                    LogMessage   = message,
+                    LogInitiator = initiator,
+                    LogData      = data,
+                    InsertDate   = DateTime.Now
                 });
-                ctx.SaveChanges();
+                return ctx.SaveChanges() == 1;
             }
-            catch (Exception ex)
+            catch
             {
-                // TODO: Saving to local file
+                return false;
             }
         }
     }
@@ -156,10 +168,10 @@ namespace Zs.Bot.Model.Db
     }
 
     /// <summary> Cодержит результат SQL-запроса </summary>
-    //[KeylessAttribute]
     public partial class DbQuery
     {
-        [Key] // Чтоб не ругался
+        [Key]
+        //[Column("QueryResult")]
         public string Result { get; set; }
     }
 

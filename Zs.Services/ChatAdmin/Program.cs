@@ -7,6 +7,8 @@ using Microsoft.Extensions.Hosting;
 using Zs.Bot.Helpers;
 using Zs.Common.Modules.Connectors;
 using Zs.Service.ChatAdmin.Factories;
+using Zs.Bot.Model.Db;
+using Microsoft.EntityFrameworkCore;
 
 namespace Zs.Service.ChatAdmin
 {
@@ -19,11 +21,18 @@ namespace Zs.Service.ChatAdmin
         {
             try
             {
-                if (args?.Length  != 1)
+                if (args?.Length == 0)
+                {
+                    var localConfig = Path.Combine(Directory.GetCurrentDirectory(), "configuration.json");
+                    //if (File.Exists(localConfig))
+                        args = new[] { localConfig };
+                }
+
+                if (args?.Length != 1)
                     throw new ArgumentException("Wrong number of arguments");
 
                 if (!File.Exists(args[0]))
-                    throw new FileNotFoundException("Wrong configuration path");
+                    throw new FileNotFoundException($"Wrong configuration path:\n{args[0]}");
 
                 await ServiceLoader(args[0]).ConfigureAwait(false);
             }
@@ -54,9 +63,12 @@ namespace Zs.Service.ChatAdmin
 
                 var messenger = MessengerFactory.ProvideMessenger("Telegram", (string)configuration["BotToken"], connectionAnalyser.WebProxy);
 
+#warning Убрать инициализацию в ChatAdmin.cs
                 var builder = new HostBuilder()
                     .ConfigureServices((hostContext, services) =>
                     {
+                        services.AddDbContext<ZsBotDbContext>(options =>
+                            options.UseNpgsql((string)configuration["ConnectionString"]));
                         services.AddSingleton<IHostedService, ChatAdmin>(x =>
                             ActivatorUtilities.CreateInstance<ChatAdmin>(x, configuration, messenger, connectionAnalyser));
                 });

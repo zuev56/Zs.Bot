@@ -46,9 +46,9 @@ namespace Zs.Bot.Telegram
                     var isBot  = string.IsNullOrWhiteSpace(jItem["IsBot"]?.ToString())
                         ? false
                         : bool.Parse(jItem["IsBot"].ToString());
-                    var insertDate = DateTime.Parse(jItem["insertdate"].ToString());
+                    var insertDate = DateTime.Parse(jItem["InsertDate"].ToString());
                     var jObj = JObject.Parse(jItem.ToString().NormalizeJsonString());
-                    jObj.Remove("insertdate");
+                    jObj.Remove("InsertDate");
 
                     var fullName = $"{jItem["FirstName"]} {jItem["LastName"]}".ToString().Trim();
                     var userName = string.IsNullOrWhiteSpace(jItem["Username"].ToString()) ? fullName : $"{jItem["Username"]}";
@@ -233,7 +233,7 @@ namespace Zs.Bot.Telegram
                             FailDescription  = null,
                             IsDeleted        = false,
                             RawData          = jsonMessage.ToString(),
-                            InsertDate       = date,
+                            InsertDate       = date + TimeSpan.FromHours(3),
                             UpdateDate       = DateTime.Now
                         };
 

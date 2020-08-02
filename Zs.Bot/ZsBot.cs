@@ -12,6 +12,7 @@ namespace Zs.Bot
     {
         private readonly IZsConfiguration _configuration;
         private readonly Logger _logger = Logger.GetInstance();
+        private readonly bool _detailedLogging;
 
         public CommandManager CommandManager { get; set; }
         public IMessenger Messenger { get; set; }
@@ -22,6 +23,9 @@ namespace Zs.Bot
             try
             {
                 _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+                
+                if (_configuration.Contains("DetailedLogging"))
+                    bool.TryParse(_configuration["DetailedLogging"].ToString(), out _detailedLogging);
 
                 var optionsBuilder = new DbContextOptionsBuilder<ZsBotDbContext>();
                 optionsBuilder.UseNpgsql(_configuration["ConnectionString"].ToString());
@@ -99,8 +103,8 @@ namespace Zs.Bot
             {
                 if (args.User != null)
                 {
-                    if(args.User.UserName == null)
-                        args.User.UserName = args.User.UserFullName ?? "NoName";
+                    //if(args.User.UserName == null)
+                    //    args.User.UserName = args.User.UserFullName ?? "NoName";
 
                     DbUser.SaveToDb(args.User);
                     args.Message.UserId = DbUser.GetId(args.User);
