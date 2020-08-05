@@ -319,7 +319,7 @@ namespace Zs.UnitTest.Bot
             try
             {
                 var zlTelegramChatId = -1001364555739;
-                var filePath = @"C:\Users\zuev56\Documents\ExportedMessages.json";
+                var filePath = @"C:\Users\zuev56\Documents\result.json";
 
                 DataImporter.LoadMessagesFromJson(filePath, zlTelegramChatId);
 

@@ -1,6 +1,5 @@
 ﻿using System;
 using Zs.Bot.Model.Db;
-using Zs.Common.Enums;
 
 namespace Zs.Bot.Modules.Messaging
 {
@@ -33,6 +32,19 @@ namespace Zs.Bot.Modules.Messaging
         /// <summary> Delete message from chat </summary>
         bool DeleteMessage(IMessage message);
 
+        /// <summary>
+        /// Get an identical user ID in the database by comparing RawData fields
+        /// </summary>
+        /// <param name="user"></param>
+        /// <returns>UserId if it is found. Otherwise null</returns>
+        int? GetIdenticalUserId(IUser user);
 
+        /// <summary>
+        /// Get an identical chat ID in the database by comparing RawData fields
+        /// </summary>
+        /// <param name="chat"></param>
+        /// <returns>ChatId if it is found. Otherwise null</returns>
+        int? GetIdenticalChatId(IChat chat);
+        
     }
 }

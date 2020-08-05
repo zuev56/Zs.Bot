@@ -61,12 +61,15 @@ namespace Zs.Bot.Telegram
                         UserIsBot    = isBot,
                         RawData      = jObj.ToString(),
                         RawDataHash  = jObj.ToString().GetMD5Hash(),
-                        InsertDate   = insertDate,
+                        InsertDate   = insertDate - TimeSpan.FromHours(3),
                         UpdateDate   = DateTime.Now
                     });
                 }
                 ctx.Users.AddRange(users);
                 int saved = ctx.SaveChanges();
+
+                // Сдвиг SEQUENCE
+                ctx.Database.ExecuteSqlRaw($"SELECT setval('bot.users_user_id_seq', COALESCE((SELECT MAX(user_id)+1 FROM bot.users), 1), false);");
             }
             catch (Exception ex)
             {
@@ -233,7 +236,7 @@ namespace Zs.Bot.Telegram
                             FailDescription  = null,
                             IsDeleted        = false,
                             RawData          = jsonMessage.ToString(),
-                            InsertDate       = date + TimeSpan.FromHours(3),
+                            InsertDate       = date - TimeSpan.FromHours(3),
                             UpdateDate       = DateTime.Now
                         };
 
@@ -297,6 +300,9 @@ namespace Zs.Bot.Telegram
                         savedMessageIds.AddRange(part.Select(m => m.MessageId));
                         part.Clear();
                     }
+
+                    // Сдвиг SEQUENCE
+                    ctx.Database.ExecuteSqlRaw("SELECT setval('bot.messages_message_id_seq', COALESCE((SELECT MAX(message_id)+1 FROM bot.messages), 1), false);");
                 }
                 catch (Exception ex)
                 {

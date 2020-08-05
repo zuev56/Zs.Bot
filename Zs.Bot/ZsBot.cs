@@ -103,25 +103,38 @@ namespace Zs.Bot
             {
                 if (args.User != null)
                 {
-                    //if(args.User.UserName == null)
-                    //    args.User.UserName = args.User.UserFullName ?? "NoName";
+                    int? identicalUserId = Messenger.GetIdenticalUserId(args.User);
+                    
+                    if (identicalUserId != null)
+                        DbUser.UpdateRawData((int)identicalUserId, args.User);
+                    else
+                        DbUser.SaveToDb(args.User);
 
-                    DbUser.SaveToDb(args.User);
-                    args.Message.UserId = DbUser.GetId(args.User);
+                    args.Message.UserId = identicalUserId ?? DbUser.GetId(args.User);
                 }
 
-                DbChat.SaveToDb(args.Chat);
-                args.Message.ChatId = DbChat.GetId(args.Chat);
-                if (args.Message.MessageText == null)
-                    args.Message.MessageText = "Empty/service message";
-                DbMessage.SaveToDb(args.Message);
+                {
+                    int? identicalChatId = Messenger.GetIdenticalChatId(args.Chat);
+                    if (identicalChatId != null)
+                        DbChat.UpdateRawData((int)identicalChatId, args.Chat);
+                    else
+                        DbChat.SaveToDb(args.Chat);
+                    
+                    args.Message.ChatId = DbChat.GetId(args.Chat);
+                }
+
+                {
+                    if (args.Message.MessageText == null)
+                        args.Message.MessageText = "Empty/service message";
+                    DbMessage.SaveToDb(args.Message);
+                }
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                e.Data.Add("User", args?.User);
-                e.Data.Add("Chat", args?.Chat);
-                e.Data.Add("Message", args?.Message);
-                _logger.LogError(e, nameof(ZsBot));
+                ex.Data.Add("User", args?.User);
+                ex.Data.Add("Chat", args?.Chat);
+                ex.Data.Add("Message", args?.Message);
+                _logger.LogError(ex, nameof(ZsBot));
             }
         }
 

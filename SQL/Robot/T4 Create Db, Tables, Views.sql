@@ -105,6 +105,9 @@ CREATE TRIGGER chats_reset_update_date BEFORE UPDATE
 ON bot.chats FOR EACH ROW EXECUTE PROCEDURE helper.reset_update_date();
 COMMENT ON TABLE bot.chats IS 'Chats info';
 
+insert into bot.chats (chat_id, chat_name, chat_description, chat_type_code, raw_data, raw_data_hash, raw_data_history, update_date, insert_date)
+values(0, 'UnitTestChat', 'UnitTestChat', 'PRIVATE', '{ "test": "test" }', '123', null, now(), now());
+
 
 
 CREATE TABLE bot.user_roles (
@@ -143,6 +146,8 @@ COMMENT ON TABLE bot.user_roles IS 'Chat members';
 
 INSERT INTO bot.users(user_id, user_name, user_full_name, user_role_code, user_is_bot, raw_data, raw_data_hash, update_date, insert_date) 
 VALUES(-10, 'Unknown', 'for exported message reading', 'USER', false, '{"test":"test"}', -1063294487, now(), now());
+INSERT INTO bot.users(user_id, user_name, user_full_name, user_role_code, user_is_bot, raw_data, raw_data_hash, update_date, insert_date) 
+VALUES(0, 'UnitTestUser', 'UnitTest', 'USER', false, '{"test":"test"}', -1063294487, now(), now());
 
 
 

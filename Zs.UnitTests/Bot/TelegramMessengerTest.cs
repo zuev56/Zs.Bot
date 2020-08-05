@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using System.Net;
 using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
@@ -17,16 +16,11 @@ namespace Zs.UnitTest.Bot
     {
         private Zs.Bot.Modules.Messaging.IMessenger _messenger;
 
-        private string _botToken;
-        //private string _proxySocket;
-        //private string _proxyUserName;
-        //private string _proxyPassword;
-
         public TelegramMessengerTest()
         {
             var configuration = new ConfigurationBuilder().AddJsonFile(@"M:\PrivateBotConfiguration.json", true, true).Build();
 
-            _botToken = configuration["BotToken"];
+            string _botToken = configuration["BotToken"];
 
 
             //IWebProxy webProxy = new WebProxy(_proxySocket, true);

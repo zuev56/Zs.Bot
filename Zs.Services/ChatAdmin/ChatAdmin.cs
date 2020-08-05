@@ -14,15 +14,16 @@ using Zs.Service.ChatAdmin.DbModel;
 
 namespace Zs.Service.ChatAdmin
 {
-    // Корректировать время (GMT+3) при загрузке сообщений из JSON
-    // Разобраться, почему при загрузке пользователей из JSON и при добавлении пользователя в процессе работы программы генерируются разные хеш-коды для идентичных строк
-    // При смене имени чата или пользователя исправлять прошлую запись и сохранять историю
-    // Подробное логгирование
-    // Проверить устойчивасть к перебоям со связью
-    // Исправить двойную отправку сообщений в релизной версии
-    // После бана удалять старое предупреждение от бота, чтобы не захламлять чат
-    // Если при обработке группового сообщения приходит Action: Continue - указать конкретную причину для детального логгирования
-
+    // + Корректировать время (GMT+3) при загрузке сообщений из JSON
+    // + После загрузки сообщений и пользователей из JSON менять начальную позицию SEQUENCE
+    // + Разобраться, почему при загрузке пользователей из JSON и при добавлении пользователя в процессе работы программы генерируются разные хеш-коды для идентичных строк - не замечено
+    // - При смене имени чата или пользователя исправлять прошлую запись и сохранять историю
+    // - Подробное логгирование
+    // - Проверить устойчивасть к перебоям со связью
+    // - Исправить двойную отправку сообщений в релизной версии
+    // - После бана удалять старое предупреждение от бота, чтобы не захламлять чат
+    // - Если при обработке группового сообщения приходит Action: Continue - указать конкретную причину для детального логгирования
+    // - Исключить из Zs.Bot.Telegram ссылку на Zs.Bot. Сделать отдельный проект для импорта сообщений извне
 
     internal class ChatAdmin : IHostedService
     {
@@ -143,7 +144,7 @@ namespace Zs.Service.ChatAdmin
                 QueryResultType.String,
                 $"select zl.sf_cmd_get_full_statistics(10, '{DateTime.Today - TimeSpan.FromDays(1)}', '{DateTime.Today - TimeSpan.FromSeconds(1)}')",
                 _configuration["ConnectionString"].ToString(),
-                startDate: DateTime.Now.Date + TimeSpan.FromHours(33));
+                startDate: DateTime.Now.Date + TimeSpan.FromHours(24+10));
 
             var resetLimits = new ProgramJob(
                 TimeSpan.FromDays(1),
@@ -153,7 +154,7 @@ namespace Zs.Service.ChatAdmin
             var sendErrorsAndWarnings = new SqlJob(
                 TimeSpan.FromHours(1),
                 QueryResultType.String,
-                 @"select string_agg('**' || log_type || '**  ' || to_char(insert_date, 'HH24:MI:SS') || E'\n' || log_group || ':  ' || log_message, E'\n\n' order by insert_date desc)"
+                 @"select string_agg('**' || log_type || '**  ' || to_char(insert_date, 'HH24:MI:SS') || E'\n' || log_initiator || ':  ' || log_message, E'\n\n' order by insert_date desc)"
                 + "\nfrom bot.logs"
                 + "\nwhere log_type in ('Warning', 'Error')"
                 + "\n  and insert_date > now() - interval '1 hour'",

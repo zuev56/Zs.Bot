@@ -5,16 +5,35 @@ namespace Zs.Common.Extensions
 {
     public static class JsonExtension
     {
+        /// <summary> Sort parametres and make pretty JSON string </summary>
         public static string NormalizeJsonString(this string json)
         {
             try
             {
-                var parsedObject = JObject.Parse(json);
+                var jTocken = JToken.Parse(json);
 
-                var normalizedObject = SortPropertiesAlphabetically(parsedObject);
+                if (jTocken is JObject)
+                {
+                    var parsedObject = JObject.Parse(json);
+                    var normalizedObject = SortPropertiesAlphabetically(parsedObject);
 
-                return Newtonsoft.Json.JsonConvert.SerializeObject(normalizedObject, Newtonsoft.Json.Formatting.Indented);
+                    return Newtonsoft.Json.JsonConvert.SerializeObject(normalizedObject, Newtonsoft.Json.Formatting.Indented);
+                }
+                else if (jTocken is JArray)
+                {
+                    var parsedArray = JArray.Parse(json);
 
+                    for (int i = 0; i < parsedArray.Count; i++)
+                    {
+                        var normalizedItem = parsedArray[i].ToString().NormalizeJsonString();
+                        parsedArray[i] = JToken.Parse(normalizedItem);
+                    }
+                    return Newtonsoft.Json.JsonConvert.SerializeObject(parsedArray, Newtonsoft.Json.Formatting.Indented);
+                }
+                else
+                {
+                    return json;
+                }
             }
             catch (System.Exception ex)
             {

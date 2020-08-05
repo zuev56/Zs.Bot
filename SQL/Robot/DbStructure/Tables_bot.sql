@@ -71,7 +71,7 @@ ON bot.chats FOR EACH ROW EXECUTE PROCEDURE helper.reset_update_date();
 COMMENT ON TABLE bot.chats IS 'Chats info';
 
 insert into bot.chats (chat_id, chat_name, chat_description, chat_type_code, raw_data, raw_data_hash, raw_data_history, update_date, insert_date)
-values(0, 'UnitTestChat', 'UnitTestChat', 'PRIVATE', '{ "test": "test" }', '123', null, now(), now())
+values(0, 'UnitTestChat', 'UnitTestChat', 'PRIVATE', '{ "test": "test" }', '123', null, now(), now());
 
 
 

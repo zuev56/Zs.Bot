@@ -4,7 +4,9 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Telegram.Bot;
 using Telegram.Bot.Args;
 using Telegram.Bot.Exceptions;
@@ -342,6 +344,50 @@ namespace Zs.Bot.Telegram
                  : false;
         }
 
+        /// <inheritdoc />
+        public int? GetIdenticalUserId(IUser user)
+        {
+            if (user is null)
+                throw new ArgumentNullException(nameof(user));
+
+            using var ctx = new ZsBotDbContext();
+
+            var jObject = JObject.Parse(user.RawData);
+            if (jObject.ContainsKey("Id"))
+            {
+                var tgUserId = (int)jObject["Id"];
+                var identicalUser = ctx.Users.FromSqlRaw($"select * from bot.users where cast(raw_data ->> 'Id' as integer) = {tgUserId}").FirstOrDefault();
+
+                return identicalUser?.UserId;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        /// <inheritdoc />
+        public int? GetIdenticalChatId(IChat chat)
+        {
+            if (chat is null)
+                throw new ArgumentNullException(nameof(chat));
+
+            using var ctx = new ZsBotDbContext();
+
+            var jObject = JObject.Parse(chat.RawData);
+            if (jObject.ContainsKey("Id"))
+            {
+                var tgChatId = (long)jObject["Id"];
+                var identicalChat = ctx.Chats.FromSqlRaw($"select * from bot.chats where cast(raw_data ->> 'Id' as bigint) = {tgChatId}").FirstOrDefault();
+
+                return identicalChat?.ChatId;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
         public OperationResult DeleteMessage(IChat chat, IMessage message)
         {
             try
@@ -472,5 +518,6 @@ namespace Zs.Bot.Telegram
         {
             Volatile.Read(ref MessageDeleted)?.Invoke(args);
         }
+
     }
 }

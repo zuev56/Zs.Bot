@@ -2,8 +2,10 @@
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text.Json;
+using Newtonsoft.Json.Linq;
 using Zs.Common.Enums;
 using Zs.Common.Exceptions;
+using Zs.Common.Extensions;
 
 namespace Zs.Bot.Model.Db
 {
@@ -57,6 +59,43 @@ namespace Zs.Bot.Model.Db
             return ctx.SaveChanges() == 1;
         }
 
+        public static bool UpdateRawData(int userId, IUser newUser)
+        {
+            if (newUser is null)
+                throw new ArgumentNullException(nameof(newUser));
+
+            using var ctx = new ZsBotDbContext();
+            
+            var originalUser = ctx.Users.FirstOrDefault(u => u.UserId == userId);
+
+            if (originalUser is null)
+                throw new ArgumentOutOfRangeException(nameof(userId));
+
+            if (originalUser.RawDataHash == newUser.RawDataHash)
+                return false;
+            else
+            {
+                if (originalUser.RawDataHistory is null)
+                {
+                    originalUser.RawDataHistory = $"[{originalUser.RawData}]".NormalizeJsonString();
+                }
+                else
+                {
+                    var rdHistory = JArray.Parse(originalUser.RawDataHistory);
+                    rdHistory.Add(originalUser.RawData);
+
+                    originalUser.RawDataHistory = rdHistory.ToString().NormalizeJsonString();
+                }
+
+                originalUser.UserName = newUser.UserName;
+                originalUser.UserFullName = newUser.UserFullName;
+                originalUser.RawData = newUser.RawData;
+                originalUser.RawDataHash = originalUser.RawData.GetMD5Hash();
+
+                return ctx.SaveChanges() == 1;
+            }
+        }
+
         public static int GetId(IUser user)
         {
             if (user == null)
@@ -92,6 +131,44 @@ namespace Zs.Bot.Model.Db
             var dbChat = ctx.Chats.FirstOrDefault(c => c.RawDataHash == chat.RawDataHash);
 
             return dbChat?.ChatId ?? throw new ItemNotFoundException(chat);
+        }
+
+        public static bool UpdateRawData(int chatId, IChat newChat)
+        {
+            if (newChat is null)
+                throw new ArgumentNullException(nameof(newChat));
+
+            using var ctx = new ZsBotDbContext();
+
+            var originalChat = ctx.Chats.FirstOrDefault(u => u.ChatId == chatId);
+
+            if (originalChat is null)
+                throw new ArgumentOutOfRangeException(nameof(chatId));
+
+            if (originalChat.RawDataHash == newChat.RawDataHash)
+                return false;
+            else
+            {
+                if (originalChat.RawDataHistory is null)
+                {
+                    originalChat.RawDataHistory = $"[{originalChat.RawData}]".NormalizeJsonString();
+                }
+                else
+                {
+                    var rdHistory = JArray.Parse(originalChat.RawDataHistory);
+                    rdHistory.Add(originalChat.RawData);
+
+                    originalChat.RawDataHistory = rdHistory.ToString().NormalizeJsonString();
+                }
+
+                originalChat.ChatName = newChat.ChatName;
+                originalChat.ChatDescription = newChat.ChatDescription;
+                originalChat.ChatTypeCode = newChat.ChatTypeCode;
+                originalChat.RawData = newChat.RawData;
+                originalChat.RawDataHash = originalChat.RawData.GetMD5Hash();
+
+                return ctx.SaveChanges() == 1;
+            }
         }
 
         public static DbChat GetChat(int chatId)
