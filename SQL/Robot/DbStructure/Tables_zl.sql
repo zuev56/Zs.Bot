@@ -6,12 +6,13 @@ INSERT INTO bot.options(option_group, option_name, option_value, option_descript
 --DROP TABLE zl.bans;
 
 CREATE TABLE zl.bans (
-    ban_id          serial      NOT NULL PRIMARY KEY,
-    user_id         int         NOT NULL REFERENCES bot.users (user_id),
-    chat_id         int         NOT NULL REFERENCES bot.chats (chat_id),
-    ban_finish_date timestamptz     NULL,
-    update_date     timestamptz NOT NULL DEFAULT now(),
-    insert_date     timestamptz NOT NULL DEFAULT now()
+    ban_id             serial      NOT NULL PRIMARY KEY,
+    user_id            int         NOT NULL REFERENCES bot.users (user_id),
+    chat_id            int         NOT NULL REFERENCES bot.chats (chat_id),
+    warning_message_id int             NULL REFERENCES bot.messages (message_id),
+    ban_finish_date    timestamptz     NULL,
+    update_date        timestamptz NOT NULL DEFAULT now(),
+    insert_date        timestamptz NOT NULL DEFAULT now()
 );
 CREATE TRIGGER bans_reset_update_date BEFORE UPDATE
 ON zl.bans FOR EACH ROW EXECUTE PROCEDURE helper.reset_update_date();

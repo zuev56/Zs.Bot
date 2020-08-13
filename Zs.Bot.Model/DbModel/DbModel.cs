@@ -187,39 +187,84 @@ namespace Zs.Bot.Model.Db
             if (message == null)
                 throw new ArgumentNullException(nameof(message));
 
+            var cpMessage = message.DeepCopy();
+            if (cpMessage.MessageText?.Length > 100)
+                cpMessage.MessageText = cpMessage.MessageText.Substring(0, 100);
+
             using var ctx = new ZsBotDbContext();
 
-            if (message.MessageId == default)
-                ctx.Messages.Add((DbMessage)message);
+            if (cpMessage.MessageId == default)
+                ctx.Messages.Add((DbMessage)cpMessage);
             else
             {
-                var oldMessage = ctx.Messages.FirstOrDefault(m => m.MessageId == message.MessageId);
+                var oldMessage = ctx.Messages.FirstOrDefault(m => m.MessageId == cpMessage.MessageId);
 
                 if (oldMessage is null)
-                    ctx.Messages.Add((DbMessage)message);
+                    ctx.Messages.Add((DbMessage)cpMessage);
                 else
-                    oldMessage.ParseFrom(message);
+                    oldMessage.ParseFrom(cpMessage);
             }
 
-            return ctx.SaveChanges() == 1;
+            var isSaved = ctx.SaveChanges() == 1;
+            message.MessageId = cpMessage.MessageId;
+            
+            return isSaved;
+        }
+
+        public static bool UpdateRawData(int messageId, IMessage newMessage)
+        {
+            if (newMessage is null)
+                throw new ArgumentNullException(nameof(newMessage));
+
+            using var ctx = new ZsBotDbContext();
+
+            var originalMessage = ctx.Messages.FirstOrDefault(m => m.MessageId == messageId);
+
+            if (originalMessage is null)
+                throw new ArgumentOutOfRangeException(nameof(messageId));
+
+            if (originalMessage.RawDataHash == newMessage.RawDataHash)
+                return false;
+            else
+            {
+                if (originalMessage.RawDataHistory is null)
+                {
+                    originalMessage.RawDataHistory = $"[{originalMessage.RawData}]".NormalizeJsonString();
+                }
+                else
+                {
+                    var rdHistory = JArray.Parse(originalMessage.RawDataHistory);
+                    rdHistory.Add(originalMessage.RawData);
+
+                    originalMessage.RawDataHistory = rdHistory.ToString().NormalizeJsonString();
+                }
+
+                originalMessage.MessageText = newMessage.MessageText;
+                originalMessage.MessageTypeCode = newMessage.MessageTypeCode;
+                originalMessage.ReplyToMessageId = newMessage.ReplyToMessageId;
+                originalMessage.RawData = newMessage.RawData;
+                originalMessage.RawDataHash = originalMessage.RawData.GetMD5Hash();
+
+                return ctx.SaveChanges() == 1;
+            }
         }
 
         private void ParseFrom(IMessage message)
         {
-            MessageId           = message.MessageId;
-            ReplyToMessageId    = message.ReplyToMessageId;
-            MessengerCode       = message.MessengerCode;
-            MessageTypeCode     = message.MessageTypeCode;
-            UserId              = message.UserId;
-            ChatId              = message.ChatId;
-            MessageText         = message.MessageText;
-            RawData             = message.RawData;
-            IsSucceed           = message.IsSucceed;
-            FailsCount          = message.FailsCount;
-            FailDescription     = message.FailDescription;
-            IsDeleted           = message.IsDeleted;
-            InsertDate          = message.InsertDate;
-            UpdateDate          = DateTime.Now;
+            MessageId        = message.MessageId;
+            ReplyToMessageId = message.ReplyToMessageId;
+            MessengerCode    = message.MessengerCode;
+            MessageTypeCode  = message.MessageTypeCode;
+            UserId           = message.UserId;
+            ChatId           = message.ChatId;
+            MessageText      = message.MessageText;
+            RawData          = message.RawData;
+            IsSucceed        = message.IsSucceed;
+            FailsCount       = message.FailsCount;
+            FailDescription  = message.FailDescription;
+            IsDeleted        = message.IsDeleted;
+            InsertDate       = message.InsertDate;
+            UpdateDate       = DateTime.Now;
         }
     }
 

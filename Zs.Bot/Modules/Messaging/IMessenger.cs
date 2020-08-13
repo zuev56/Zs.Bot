@@ -46,5 +46,11 @@ namespace Zs.Bot.Modules.Messaging
         /// <returns>ChatId if it is found. Otherwise null</returns>
         int? GetIdenticalChatId(IChat chat);
         
+        /// <summary>
+        /// Get an identical Message ID in the database by comparing RawData fields
+        /// </summary>
+        /// <param name="message"></param>
+        /// <returns>MessageId if it is found. Otherwise null</returns>
+        int? GetIdenticalMessageId(IMessage message);
     }
 }

@@ -177,20 +177,22 @@ INSERT INTO bot.message_types(message_type_code, message_type_name) VALUES('OTH'
 
 
 CREATE TABLE bot.messages (
-    message_id            serial       NOT NULL PRIMARY KEY,
-    reply_to_message_id   int              NULL REFERENCES bot.messages(message_id),
-    messenger_code        varchar(2)   NOT NULL REFERENCES bot.messengers(messenger_code),
-    message_type_code     varchar(3)   NOT NULL REFERENCES bot.message_types(message_type_code),
-    user_id               int          NOT NULL REFERENCES bot.users(user_id),
-    chat_id               int          NOT NULL REFERENCES bot.chats(chat_id),
-    message_text          varchar(100)     NULL, -- Полный техт доступен в raw_data
-    raw_data              json         NOT NULL, -- Полный набор данных
-    is_succeed            bool         NOT NULL, -- Successfuly sent/received/deleted
-    fails_count           int          NOT NULL DEFAULT 0,
-    fail_description      json             NULL,
-    is_deleted            bool         NOT NULL DEFAULT(false),
-    update_date           timestamptz  NOT NULL DEFAULT now(),
-    insert_date           timestamptz  NOT NULL DEFAULT now()
+    message_id          serial       NOT NULL PRIMARY KEY,
+    reply_to_message_id int              NULL REFERENCES bot.messages(message_id),
+    messenger_code      varchar(2)   NOT NULL REFERENCES bot.messengers(messenger_code),
+    message_type_code   varchar(3)   NOT NULL REFERENCES bot.message_types(message_type_code),
+    user_id             int          NOT NULL REFERENCES bot.users(user_id),
+    chat_id             int          NOT NULL REFERENCES bot.chats(chat_id),
+    message_text        varchar(100)     NULL, -- Полный техт доступен в raw_data
+    raw_data            json         NOT NULL, -- Полный набор данных
+    raw_data_hash       varchar(50)  NOT NULL,
+    raw_data_history    json             NULL,
+    is_succeed          bool         NOT NULL, -- Successfuly sent/received/deleted
+    fails_count         int          NOT NULL DEFAULT 0,
+    fail_description    json             NULL,
+    is_deleted          bool         NOT NULL DEFAULT(false),
+    update_date         timestamptz  NOT NULL DEFAULT now(),
+    insert_date         timestamptz  NOT NULL DEFAULT now()
 );
 CREATE TRIGGER messages_reset_update_date BEFORE UPDATE
 ON bot.messages FOR EACH ROW EXECUTE PROCEDURE helper.reset_update_date();
@@ -315,12 +317,13 @@ INSERT INTO bot.options(option_group, option_name, option_value, option_descript
 --DROP TABLE zl.bans;
 
 CREATE TABLE zl.bans (
-    ban_id          serial      NOT NULL PRIMARY KEY,
-    user_id         int         NOT NULL REFERENCES bot.users (user_id),
-    chat_id         int         NOT NULL REFERENCES bot.chats (chat_id),
-    ban_finish_date timestamptz     NULL,
-    update_date     timestamptz NOT NULL DEFAULT now(),
-    insert_date     timestamptz NOT NULL DEFAULT now()
+    ban_id             serial      NOT NULL PRIMARY KEY,
+    user_id            int         NOT NULL REFERENCES bot.users (user_id),
+    chat_id            int         NOT NULL REFERENCES bot.chats (chat_id),
+    warning_message_id int             NULL REFERENCES bot.messages (message_id),
+    ban_finish_date    timestamptz     NULL,
+    update_date        timestamptz NOT NULL DEFAULT now(),
+    insert_date        timestamptz NOT NULL DEFAULT now()
 );
 CREATE TRIGGER bans_reset_update_date BEFORE UPDATE
 ON zl.bans FOR EACH ROW EXECUTE PROCEDURE helper.reset_update_date();
@@ -496,7 +499,10 @@ BEGIN
                   and ban_finish_date > now() 
              order by insert_date desc)
     then
-        return '{ "Action": "DeleteMessage" }';
+        return '{ 
+                     "Action": "DeleteMessage",
+                     "Info": "Для пользователя имеется активный бан"
+                }';
     end if;
  
     -- Начало индивидуального учёта после _start_account_after сообщений в чате 
@@ -534,7 +540,10 @@ BEGIN
     --     предупреждение о приближении к лимиту. При этом создаётся запись
     --     в таблице zl.bans и ставится пометка о том, что пользователь предупреждён
     if (_accounted_user_msg_count < _msg_limit_hi) then
-        return '{ "Action": "Continue" }';
+        return '{ 
+                     "Action": "Continue",
+                     "Info": "Количество учтённых сообщений пользователя меньше предупредитетельной уставки: ' || _accounted_user_msg_count::text || ' < ' || _msg_limit_hi::text || '"
+                }';
     elsif (_accounted_user_msg_count >= _msg_limit_hi and _accounted_user_msg_count < _msg_limit_hihi) then
 
         -- Создаём неактивную запись в таблице банов (без даты окончания), 
@@ -542,12 +551,22 @@ BEGIN
         if (_ban_id is null) then        
             insert into zl.bans (user_id, chat_id)
             select _user_id, _chat_id;
+            
+            select ban_id into _ban_id from zl.bans 
+             where user_id = _user_id and chat_id = _chat_id
+               and insert_date > now()::date 
+          order by insert_date desc limit 1;
+
             return '{
                         "Action": "SendMessageToGroup", 
-                        "MessageText": "<UserName>, количеcтво сообщений, отправленных Вами с начала учёта: ' || _accounted_user_msg_count::text || '.\nОсталось сообщений до бана: ' || (_msg_limit_hihi - _accounted_user_msg_count)::text || '" 
+                        "MessageText": "<UserName>, количеcтво сообщений, отправленных Вами с начала учёта: ' || _accounted_user_msg_count::text || '.\nОсталось сообщений до бана: ' || (_msg_limit_hihi - _accounted_user_msg_count)::text || '",
+                        "BanId": "' || _ban_id::text || '"
                     }';
         else
-            return '{ "Action": "Continue" }';
+            return '{ 
+                         "Action": "Continue",
+                         "Info": "Предупреждение о приближении к лимиту было выслано ранее"
+                    }';
         end if;
     elsif (_accounted_user_msg_count >= _msg_limit_hihi) then
         if (_ban_id is null) then
@@ -563,13 +582,17 @@ BEGIN
             where ban_id = _ban_id;
             return '{
                         "Action": "SendMessageToGroup", 
-                        "MessageText": "<UserName>, Вы превысили лимит сообщений (' || _msg_limit_hihi::text || '). Все последующие сообщения в течение 3-х часов будут удаляться.\nПотом до конца дня у Вас будет ' || _msg_limit_after_ban::text || ' сообщений."
+                        "MessageText": "<UserName>, Вы превысили лимит сообщений (' || _msg_limit_hihi::text || '). Все последующие сообщения в течение 3-х часов будут удаляться.\nПотом до конца дня у Вас будет ' || _msg_limit_after_ban::text || ' сообщений.",
+                        "BanId": "' || _ban_id::text || '"
                     }';
 
         -- Иначе, если бан активен и функция всё ещё выполняется, значит бан отработал 
         -- и у пользователя осталось _msg_limit_after_ban сообщений.
         elsif (_accounted_user_msg_count >= _msg_limit_hihi and _accounted_user_msg_count < _msg_limit_hihi + _msg_limit_after_ban) then
-            return '{ "Action": "Continue" }';
+            return '{ 
+                         "Action": "Continue",
+                         "Info": "Бан закончился, пользователь расходует последние ' || _msg_limit_after_ban::text || ' сообщений за день"
+                    }';
 
         -- При достижении второго предела отодвигаем время бана на конец дня и шлём предупреждающее сообщение
         elsif (_accounted_user_msg_count >= _msg_limit_hihi + _msg_limit_after_ban) then
@@ -577,7 +600,8 @@ BEGIN
             where ban_id = _ban_id;
             return '{
                         "Action": "SendMessageToGroup", 
-                        "MessageText" : "<UserName>, вы израсходовали свой лимит сообщений до конца дня" 
+                        "MessageText" : "<UserName>, вы израсходовали свой лимит сообщений до конца дня",
+                        "BanId": "' || _ban_id::text || '"
                     }';
         ---- иначе баним до конца дня
         --elsif (_accounted_user_msg_count > _msg_limit_hihi + _msg_limit_after_ban) then

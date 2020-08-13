@@ -36,6 +36,7 @@ namespace Zs.Bot
                 Messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
                 Messenger.MessageReceived += Messenger_MessageReceived;
                 Messenger.MessageSent += Messenger_MessageSent;
+                Messenger.MessageEdited += Messenger_MessageEdited;
                 Messenger.MessageDeleted += Messenger_MessageDeleted;
 
                 CommandManager = new CommandManager();
@@ -90,6 +91,22 @@ namespace Zs.Bot
         private void Messenger_MessageSent(MessageActionEventArgs args)
         {
             SaveMessageData(args);
+        }
+
+        private void Messenger_MessageEdited(MessageActionEventArgs args)
+        {
+            {
+                int? identicalMessageId = Messenger.GetIdenticalMessageId(args.Message);
+                if (identicalMessageId != null)
+                {
+                    if (args.Message.MessageText == null)
+                        args.Message.MessageText = "[Empty]";
+                    
+                    DbMessage.UpdateRawData((int)identicalMessageId, args.Message);
+                }
+                else
+                    _logger.LogWarning("The edited message is not found in the database", args.Message, nameof(ZsBot));
+            }
         }
 
         private void Messenger_MessageDeleted(MessageActionEventArgs args)

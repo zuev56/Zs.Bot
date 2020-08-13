@@ -10,12 +10,6 @@ namespace Zs.Common.T4
 {
     public static class ModelGenerator
     {
-        public static void Test(TextTransformation tt)
-        {
-            tt.WriteLine("Hello!");
-        }
-
-
         /// <summary> Генерация классов - модели таблиц и вьюх базы данных </summary>
         /// <param name="tt"></param>
         /// <param name="dataBase"></param>
@@ -43,7 +37,7 @@ namespace Zs.Common.T4
                 {
                     if (!string.IsNullOrWhiteSpace(schemaInfo.Description))
                         tt.WriteLine($"// {schemaInfo.Description}");
-                    tt.WriteLine($"#region Interfaces {schemaInfo.Name}");
+                    tt.WriteLine($"#region Interfaces for '{schemaInfo.Name}' schema");
 
                     foreach (var tableInfo in schemaInfo)
                     {
@@ -61,7 +55,7 @@ namespace Zs.Common.T4
             {
                 if (!string.IsNullOrWhiteSpace(schemaInfo.Description))
                     tt.WriteLine($"// {schemaInfo.Description}");
-                tt.WriteLine($"#region Classes {schemaInfo.Name}");
+                tt.WriteLine($"#region Classes for '{schemaInfo.Name}' schema");
 
                 foreach (var tableInfo in schemaInfo)
                 {
@@ -70,28 +64,20 @@ namespace Zs.Common.T4
                     
                     var inheritedInterfaces = useAutoInterface ? new[] { interfaceName } : null;
 
-                    GenerateDbClass(tt, modifier, className, tableInfo, schemaInfo.Name, inheritedInterfaces);
+                    GenerateDbClass(tt, modifier, className, interfaceName,
+                        tableInfo, schemaInfo.Name, inheritedInterfaces);
 
                     tt.WriteLine("");
                 }             
                 tt.WriteLine("#endregion");
             }
-            
-            //GenerateDbContext(
-            //    tt,
-            //    dataBase,
-            //    "public",
-            //    "Db",
-            //    dbContextClassName: default,
-            //    pluralToSingularMap
-            //);
-            //GenerateDbContext(tt, dataBase, modifier, namePrefix, pluralToSingularMap);
         }
         
         private static void GenerateDbClass(
             TextTransformation tt, 
             string modifier, 
-            string className, 
+            string className,
+            string interfaceName,
             DbTable table, 
             string schemaName,
             string[] inheritedInterfaces)
@@ -110,36 +96,9 @@ namespace Zs.Common.T4
                 tt.WriteLine("{");
                 tt.PushIndent("    ");
                 {
-                    foreach (var column in table)
-                    {
-                        if (!string.IsNullOrWhiteSpace(column.Description))
-                            tt.WriteLine($"/// <summary> {column.Description} </summary>");
-
-                        if (column.ConstraintType == ConstraintType.PrimaryKey)
-                            tt.WriteLine("[Key]");
-
-                        if (column.StringLength != null) //StringLength(30)
-                            tt.WriteLine($"[StringLength({column.StringLength})]");
-
-                        if (!column.IsNullable)
-                            tt.WriteLine($"[Required(ErrorMessage = \"Property '{UnderscoreToPascalCase(column.Name)}' is required\")]");
-
-                        var columnTypeName = column.SqlDataType.Equals("character varying", StringComparison.InvariantCultureIgnoreCase) 
-                                          && column.StringLength != null
-                            ? $"{column.SqlDataType}({column.StringLength})"
-                            : column.SqlDataType;
-
-                        tt.WriteLine($"[Column(\"{column.Name}\", TypeName = \"{columnTypeName}\")]");
-
-                        //tt.WriteLine($"[DataType(DataType.{column.AnnotationDataType}]");
-
-                        string nullableMarker = "";
-                        if (column.DataType.IsValueType && column.IsNullable)
-                            nullableMarker = "?";
-
-                        tt.WriteLine($"public {column.DataType.Name}{nullableMarker} {UnderscoreToPascalCase(column.Name)} {{ get; set; }}");
-                        tt.WriteLine("");
-                    }
+                    WriteProperties(tt, table);
+                    tt.WriteLine("");
+                    WriteDeepCopyMethod(tt, className, interfaceName, table);
                 }
                 tt.PopIndent();
                 tt.WriteLine("}");
@@ -148,6 +107,61 @@ namespace Zs.Common.T4
             {
                 T4Logger.TraceException(ex);
             }
+        }
+
+        private static void WriteProperties(TextTransformation tt, DbTable table)
+        {
+            foreach (var column in table)
+            {
+                if (!string.IsNullOrWhiteSpace(column.Description))
+                    tt.WriteLine($"/// <summary> {column.Description} </summary>");
+
+                if (column.ConstraintType == ConstraintType.PrimaryKey)
+                    tt.WriteLine("[Key]");
+
+                if (column.StringLength != null)
+                    tt.WriteLine($"[StringLength({column.StringLength})]");
+
+                if (!column.IsNullable)
+                    tt.WriteLine($"[Required(ErrorMessage = \"Property '{UnderscoreToPascalCase(column.Name)}' is required\")]");
+
+                var columnTypeName = column.SqlDataType.Equals("character varying", StringComparison.InvariantCultureIgnoreCase)
+                                          && column.StringLength != null
+                            ? $"{column.SqlDataType}({column.StringLength})"
+                            : column.SqlDataType;
+
+                tt.WriteLine($"[Column(\"{column.Name}\", TypeName = \"{columnTypeName}\")]");
+
+                string nullableMarker = "";
+                if (column.DataType.IsValueType && column.IsNullable)
+                    nullableMarker = "?";
+
+                tt.WriteLine($"public {column.DataType.Name}{nullableMarker} {UnderscoreToPascalCase(column.Name)} {{ get; set; }}");
+                tt.WriteLine("");
+            }
+        }
+
+        private static void WriteDeepCopyMethod(TextTransformation tt, string className, string interfaceName, DbTable table)
+        {
+            tt.WriteLine($"public {interfaceName} DeepCopy()");
+            tt.WriteLine("{");
+            tt.PushIndent("    ");
+            {
+                tt.WriteLine($"return new {className}");
+                tt.WriteLine("{");
+                tt.PushIndent("    ");
+                {
+                    foreach (var column in table)
+                    {
+                        tt.WriteLine($"{UnderscoreToPascalCase(column.Name)} "
+                            + $"= this.{UnderscoreToPascalCase(column.Name)},");
+                    }
+                }
+                tt.PopIndent();
+                tt.WriteLine("};");
+            }
+            tt.PopIndent();
+            tt.WriteLine("}");
         }
 
         private static void GenerateInterface(
@@ -177,6 +191,8 @@ namespace Zs.Common.T4
                         tt.WriteLine($"public {column.DataType.Name}{nullableMarker} {UnderscoreToPascalCase(column.Name)} {{ get; set; }}");
                         tt.WriteLine("");
                     }
+
+                    tt.WriteLine($"{interfaceName} DeepCopy();");
                 }
                 tt.PopIndent();
                 tt.WriteLine("}");

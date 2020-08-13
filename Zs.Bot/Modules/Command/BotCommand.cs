@@ -38,7 +38,11 @@ namespace Zs.Bot.Modules.Command
                 {
                     // Если есть кавычки, их должно быть чётное количество
                     if (message.MessageText.Count(c => c == '"') % 2 != 0)
-                        throw new ArgumentException("Кавычек должно быть чётное количество!");
+                    {
+                        var aex = new ArgumentException("Кавычек должно быть чётное количество!");
+                        aex.Data.Add("Message", message);
+                        throw aex;
+                    }
 
                     // 1. Получаем команду и её параметры из текста сообщения
                     var messageWords = MessageSplitter(message.MessageText);

@@ -142,20 +142,22 @@ INSERT INTO bot.message_types(message_type_code, message_type_name) VALUES('OTH'
 
 
 CREATE TABLE bot.messages (
-    message_id            serial       NOT NULL PRIMARY KEY,
-    reply_to_message_id   int              NULL REFERENCES bot.messages(message_id),
-    messenger_code        varchar(2)   NOT NULL REFERENCES bot.messengers(messenger_code),
-    message_type_code     varchar(3)   NOT NULL REFERENCES bot.message_types(message_type_code),
-    user_id               int          NOT NULL REFERENCES bot.users(user_id),
-    chat_id               int          NOT NULL REFERENCES bot.chats(chat_id),
-    message_text          varchar(100)     NULL, -- Полный техт доступен в raw_data
-    raw_data              json         NOT NULL, -- Полный набор данных
-    is_succeed            bool         NOT NULL, -- Successfuly sent/received/deleted
-    fails_count           int          NOT NULL DEFAULT 0,
-    fail_description      json             NULL,
-    is_deleted            bool         NOT NULL DEFAULT(false),
-    update_date           timestamptz  NOT NULL DEFAULT now(),
-    insert_date           timestamptz  NOT NULL DEFAULT now()
+    message_id          serial       NOT NULL PRIMARY KEY,
+    reply_to_message_id int              NULL REFERENCES bot.messages(message_id),
+    messenger_code      varchar(2)   NOT NULL REFERENCES bot.messengers(messenger_code),
+    message_type_code   varchar(3)   NOT NULL REFERENCES bot.message_types(message_type_code),
+    user_id             int          NOT NULL REFERENCES bot.users(user_id),
+    chat_id             int          NOT NULL REFERENCES bot.chats(chat_id),
+    message_text        varchar(100)     NULL, -- Полный техт доступен в raw_data
+    raw_data            json         NOT NULL, -- Полный набор данных
+    raw_data_hash       varchar(50)  NOT NULL,
+    raw_data_history    json             NULL,
+    is_succeed          bool         NOT NULL, -- Successfuly sent/received/deleted
+    fails_count         int          NOT NULL DEFAULT 0,
+    fail_description    json             NULL,
+    is_deleted          bool         NOT NULL DEFAULT(false),
+    update_date         timestamptz  NOT NULL DEFAULT now(),
+    insert_date         timestamptz  NOT NULL DEFAULT now()
 );
 CREATE TRIGGER messages_reset_update_date BEFORE UPDATE
 ON bot.messages FOR EACH ROW EXECUTE PROCEDURE helper.reset_update_date();

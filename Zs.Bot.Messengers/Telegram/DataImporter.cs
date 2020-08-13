@@ -236,6 +236,7 @@ namespace Zs.Bot.Telegram
                             FailDescription  = null,
                             IsDeleted        = false,
                             RawData          = jsonMessage.ToString(),
+                            RawDataHash      = jsonMessage.ToString().GetMD5Hash(),
                             InsertDate       = date - TimeSpan.FromHours(3),
                             UpdateDate       = DateTime.Now
                         };
@@ -306,7 +307,7 @@ namespace Zs.Bot.Telegram
                 }
                 catch (Exception ex)
                 {
-
+                    throw;
                 }
             }
             catch (Exception ex)

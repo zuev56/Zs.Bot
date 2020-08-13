@@ -117,7 +117,9 @@ namespace Zs.Service.ChatAdmin
                         if (dictResult["MessageText"].Contains("<UserName>", StringComparison.InvariantCultureIgnoreCase))
                         {
                             var dbUser = ctx.Users.FirstOrDefault(u => u.UserId == message.UserId);
-                            var userName = dbUser?.UserName ?? dbUser?.UserFullName ?? "UserName";
+                            var userName = dbUser?.UserName != null
+                                ? $"@{dbUser.UserName}"
+                                : dbUser?.UserFullName ?? "UserName";
                             dictResult["MessageText"] = dictResult["MessageText"].Replace("<UserName>", userName, StringComparison.InvariantCultureIgnoreCase);
                         }
                     }
@@ -138,6 +140,27 @@ namespace Zs.Service.ChatAdmin
                             return;
                         case "SendMessageToGroup":
                             _messenger.AddMessageToOutbox(chat, dictResult["MessageText"], message);
+
+                            if (dictResult.ContainsKey("BanId") && int.TryParse(dictResult["BanId"], out int banId))
+                            {
+                            //    using (var ctxZl = new ChatAdminDbContext())
+                            //    {
+                            //        var ban = ctxZl.Bans.FirstOrDefault(b => b.BanId == banId);
+                            //
+                            //        if (ban.WarningMessageId != default)
+                            //        {
+                            //            var oldWarningMessage = ctx.Messages.FirstOrDefault(m => m.MessageId == ban.WarningMessageId);
+                            //            _messenger.DeleteMessage(oldWarningMessage);
+                            //        }
+                            //    #warning Very bad decision...
+                            //        var warningMessage = ctx.Messages
+                            //            .FirstOrDefault(m => m.ReplyToMessageId == message.MessageId
+                            //                              && m.MessageText.Contains(dictResult["MessageText"]));
+                            //
+                            //        ban.WarningMessageId = warningMessage?.MessageId;
+                            //        ctxZl.SaveChanges();
+                            //    } 
+                            }
                             return;
                         case "SendMessageToOwner":
                             _messenger.AddMessageToOutbox(dictResult["MessageText"], "OWNER", "ADMIN");

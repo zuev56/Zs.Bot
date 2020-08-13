@@ -26,21 +26,19 @@ namespace Zs.Bot.Telegram
             if (specificMessage is TgMessage telegramMessage)
             {
                 var message = DbEntityFactory.NewMessage();
-                var msgText = telegramMessage.Text?.Length > 100
-                            ? telegramMessage.Text.Substring(0, 100)
-                            : telegramMessage.Text;
-
+                
                 //message.MessageId     -> Auto
                 //message.ChatId        -> define when saving
                 //message.UserId        -> define when saving
                 message.MessengerCode = "TG";
                 message.MessageTypeCode = GetGeneralMessageTypeCode(telegramMessage.Type);
-                message.MessageText = msgText;
+                message.MessageText = telegramMessage.Text;
                 message.RawData = JsonSerializer.Serialize(telegramMessage, options).NormalizeJsonString();
+                message.RawDataHash = message.RawData.GetMD5Hash();
                 message.IsSucceed = telegramMessage.IsSucceed;
                 message.FailsCount = telegramMessage.SendingFails;
                 message.FailDescription = telegramMessage.FailDescription;
-                message.ReplyToMessageId = null; // telegramMessage.ReplyToMessageId; Надо сначала найти в БД подходящее сообщение и указать DbMessage.ReplyToMessageId
+                message.ReplyToMessageId = null; // Надо сначала найти в БД подходящее сообщение и указать его MessageId
                 return message;
             }
             else

@@ -24,9 +24,9 @@ namespace Zs.Common.Modules.CycleWorker
 
         protected override IJobExecutionResult GetExecutionResult()
         {
-#if DEBUG
-            Trace.WriteLine($"ProgramJobBody: [{Counter}], ThreadId: {Thread.CurrentThread.ManagedThreadId}");
-#endif
+//#if DEBUG
+//            Trace.WriteLine($"ProgramJobBody: [{Counter}], ThreadId: {Thread.CurrentThread.ManagedThreadId}");
+//#endif
              _method.Invoke();
             return default;
         }

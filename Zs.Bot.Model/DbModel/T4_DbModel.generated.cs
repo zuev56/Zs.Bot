@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Zs.Bot.Model.Db
 {
-    #region Interfaces bot
+    #region Interfaces for schema 'bot'
 
     /// <summary> Bots info </summary>
     public interface IBot
@@ -24,6 +24,7 @@ namespace Zs.Bot.Model.Db
 
         public DateTime InsertDate { get; set; }
 
+        IBot DeepCopy();
     }
 
 
@@ -38,6 +39,7 @@ namespace Zs.Bot.Model.Db
 
         public DateTime InsertDate { get; set; }
 
+        IChatType DeepCopy();
     }
 
 
@@ -62,6 +64,7 @@ namespace Zs.Bot.Model.Db
 
         public DateTime InsertDate { get; set; }
 
+        IChat DeepCopy();
     }
 
 
@@ -82,6 +85,7 @@ namespace Zs.Bot.Model.Db
 
         public DateTime InsertDate { get; set; }
 
+        ICommand DeepCopy();
     }
 
 
@@ -100,6 +104,7 @@ namespace Zs.Bot.Model.Db
 
         public DateTime InsertDate { get; set; }
 
+        ILog DeepCopy();
     }
 
 
@@ -114,6 +119,7 @@ namespace Zs.Bot.Model.Db
 
         public DateTime InsertDate { get; set; }
 
+        IMessageType DeepCopy();
     }
 
 
@@ -136,6 +142,10 @@ namespace Zs.Bot.Model.Db
 
         public String RawData { get; set; }
 
+        public String RawDataHash { get; set; }
+
+        public String RawDataHistory { get; set; }
+
         public Boolean IsSucceed { get; set; }
 
         public Int32 FailsCount { get; set; }
@@ -148,6 +158,7 @@ namespace Zs.Bot.Model.Db
 
         public DateTime InsertDate { get; set; }
 
+        IMessage DeepCopy();
     }
 
 
@@ -162,6 +173,7 @@ namespace Zs.Bot.Model.Db
 
         public DateTime InsertDate { get; set; }
 
+        IMessengerInfo DeepCopy();
     }
 
 
@@ -179,6 +191,7 @@ namespace Zs.Bot.Model.Db
 
         public DateTime InsertDate { get; set; }
 
+        IOption DeepCopy();
     }
 
 
@@ -197,6 +210,7 @@ namespace Zs.Bot.Model.Db
 
         public DateTime InsertDate { get; set; }
 
+        ISession DeepCopy();
     }
 
 
@@ -213,6 +227,7 @@ namespace Zs.Bot.Model.Db
 
         public DateTime InsertDate { get; set; }
 
+        IUserRole DeepCopy();
     }
 
 
@@ -238,10 +253,11 @@ namespace Zs.Bot.Model.Db
 
         public DateTime InsertDate { get; set; }
 
+        IUser DeepCopy();
     }
 
     #endregion
-    #region Classes bot
+    #region Classes for schema 'bot'
 
     /// <summary> Bots info </summary>
     [Table("bots", Schema = "bot")]
@@ -279,6 +295,20 @@ namespace Zs.Bot.Model.Db
         [Column("insert_date", TypeName = "timestamp with time zone")]
         public DateTime InsertDate { get; set; }
 
+
+        public IBot DeepCopy()
+        {
+            return new DbBot
+            {
+                BotId = this.BotId,
+                MessengerCode = this.MessengerCode,
+                BotName = this.BotName,
+                BotToken = this.BotToken,
+                BotDescription = this.BotDescription,
+                UpdateDate = this.UpdateDate,
+                InsertDate = this.InsertDate,
+            };
+        }
     }
 
 
@@ -305,6 +335,17 @@ namespace Zs.Bot.Model.Db
         [Column("insert_date", TypeName = "timestamp with time zone")]
         public DateTime InsertDate { get; set; }
 
+
+        public IChatType DeepCopy()
+        {
+            return new DbChatType
+            {
+                ChatTypeCode = this.ChatTypeCode,
+                ChatTypeName = this.ChatTypeName,
+                UpdateDate = this.UpdateDate,
+                InsertDate = this.InsertDate,
+            };
+        }
     }
 
 
@@ -351,6 +392,22 @@ namespace Zs.Bot.Model.Db
         [Column("insert_date", TypeName = "timestamp with time zone")]
         public DateTime InsertDate { get; set; }
 
+
+        public IChat DeepCopy()
+        {
+            return new DbChat
+            {
+                ChatId = this.ChatId,
+                ChatName = this.ChatName,
+                ChatDescription = this.ChatDescription,
+                ChatTypeCode = this.ChatTypeCode,
+                RawData = this.RawData,
+                RawDataHash = this.RawDataHash,
+                RawDataHistory = this.RawDataHistory,
+                UpdateDate = this.UpdateDate,
+                InsertDate = this.InsertDate,
+            };
+        }
     }
 
 
@@ -390,6 +447,20 @@ namespace Zs.Bot.Model.Db
         [Column("insert_date", TypeName = "timestamp with time zone")]
         public DateTime InsertDate { get; set; }
 
+
+        public ICommand DeepCopy()
+        {
+            return new DbCommand
+            {
+                CommandName = this.CommandName,
+                CommandScript = this.CommandScript,
+                CommandDefaultArgs = this.CommandDefaultArgs,
+                CommandDesc = this.CommandDesc,
+                CommandGroup = this.CommandGroup,
+                UpdateDate = this.UpdateDate,
+                InsertDate = this.InsertDate,
+            };
+        }
     }
 
 
@@ -423,6 +494,19 @@ namespace Zs.Bot.Model.Db
         [Column("insert_date", TypeName = "timestamp with time zone")]
         public DateTime InsertDate { get; set; }
 
+
+        public ILog DeepCopy()
+        {
+            return new DbLog
+            {
+                LogId = this.LogId,
+                LogType = this.LogType,
+                LogInitiator = this.LogInitiator,
+                LogMessage = this.LogMessage,
+                LogData = this.LogData,
+                InsertDate = this.InsertDate,
+            };
+        }
     }
 
 
@@ -449,6 +533,17 @@ namespace Zs.Bot.Model.Db
         [Column("insert_date", TypeName = "timestamp with time zone")]
         public DateTime InsertDate { get; set; }
 
+
+        public IMessageType DeepCopy()
+        {
+            return new DbMessageType
+            {
+                MessageTypeCode = this.MessageTypeCode,
+                MessageTypeName = this.MessageTypeName,
+                UpdateDate = this.UpdateDate,
+                InsertDate = this.InsertDate,
+            };
+        }
     }
 
 
@@ -490,6 +585,14 @@ namespace Zs.Bot.Model.Db
         [Column("raw_data", TypeName = "json")]
         public String RawData { get; set; }
 
+        [StringLength(50)]
+        [Required(ErrorMessage = "Property 'RawDataHash' is required")]
+        [Column("raw_data_hash", TypeName = "character varying(50)")]
+        public String RawDataHash { get; set; }
+
+        [Column("raw_data_history", TypeName = "json")]
+        public String RawDataHistory { get; set; }
+
         [Required(ErrorMessage = "Property 'IsSucceed' is required")]
         [Column("is_succeed", TypeName = "boolean")]
         public Boolean IsSucceed { get; set; }
@@ -513,6 +616,29 @@ namespace Zs.Bot.Model.Db
         [Column("insert_date", TypeName = "timestamp with time zone")]
         public DateTime InsertDate { get; set; }
 
+
+        public IMessage DeepCopy()
+        {
+            return new DbMessage
+            {
+                MessageId = this.MessageId,
+                ReplyToMessageId = this.ReplyToMessageId,
+                MessengerCode = this.MessengerCode,
+                MessageTypeCode = this.MessageTypeCode,
+                UserId = this.UserId,
+                ChatId = this.ChatId,
+                MessageText = this.MessageText,
+                RawData = this.RawData,
+                RawDataHash = this.RawDataHash,
+                RawDataHistory = this.RawDataHistory,
+                IsSucceed = this.IsSucceed,
+                FailsCount = this.FailsCount,
+                FailDescription = this.FailDescription,
+                IsDeleted = this.IsDeleted,
+                UpdateDate = this.UpdateDate,
+                InsertDate = this.InsertDate,
+            };
+        }
     }
 
 
@@ -539,6 +665,17 @@ namespace Zs.Bot.Model.Db
         [Column("insert_date", TypeName = "timestamp with time zone")]
         public DateTime InsertDate { get; set; }
 
+
+        public IMessengerInfo DeepCopy()
+        {
+            return new DbMessengerInfo
+            {
+                MessengerCode = this.MessengerCode,
+                MessengerName = this.MessengerName,
+                UpdateDate = this.UpdateDate,
+                InsertDate = this.InsertDate,
+            };
+        }
     }
 
 
@@ -572,6 +709,19 @@ namespace Zs.Bot.Model.Db
         [Column("insert_date", TypeName = "timestamp with time zone")]
         public DateTime InsertDate { get; set; }
 
+
+        public IOption DeepCopy()
+        {
+            return new DbOption
+            {
+                OptionName = this.OptionName,
+                OptionValue = this.OptionValue,
+                OptionGroup = this.OptionGroup,
+                OptionDescription = this.OptionDescription,
+                UpdateDate = this.UpdateDate,
+                InsertDate = this.InsertDate,
+            };
+        }
     }
 
 
@@ -604,6 +754,19 @@ namespace Zs.Bot.Model.Db
         [Column("insert_date", TypeName = "timestamp with time zone")]
         public DateTime InsertDate { get; set; }
 
+
+        public ISession DeepCopy()
+        {
+            return new DbSession
+            {
+                SessionId = this.SessionId,
+                ChatId = this.ChatId,
+                SessionIsLoggedIn = this.SessionIsLoggedIn,
+                SessionCurrentState = this.SessionCurrentState,
+                UpdateDate = this.UpdateDate,
+                InsertDate = this.InsertDate,
+            };
+        }
     }
 
 
@@ -634,6 +797,18 @@ namespace Zs.Bot.Model.Db
         [Column("insert_date", TypeName = "timestamp with time zone")]
         public DateTime InsertDate { get; set; }
 
+
+        public IUserRole DeepCopy()
+        {
+            return new DbUserRole
+            {
+                UserRoleCode = this.UserRoleCode,
+                UserRoleName = this.UserRoleName,
+                UserRolePermissions = this.UserRolePermissions,
+                UpdateDate = this.UpdateDate,
+                InsertDate = this.InsertDate,
+            };
+        }
     }
 
 
@@ -682,6 +857,23 @@ namespace Zs.Bot.Model.Db
         [Column("insert_date", TypeName = "timestamp with time zone")]
         public DateTime InsertDate { get; set; }
 
+
+        public IUser DeepCopy()
+        {
+            return new DbUser
+            {
+                UserId = this.UserId,
+                UserName = this.UserName,
+                UserFullName = this.UserFullName,
+                UserRoleCode = this.UserRoleCode,
+                UserIsBot = this.UserIsBot,
+                RawData = this.RawData,
+                RawDataHash = this.RawDataHash,
+                RawDataHistory = this.RawDataHistory,
+                UpdateDate = this.UpdateDate,
+                InsertDate = this.InsertDate,
+            };
+        }
     }
 
     #endregion

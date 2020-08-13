@@ -38,9 +38,9 @@ namespace Zs.Common.Modules.CycleWorker
             try
             {
 
-#if DEBUG
-                Trace.WriteLine($"SqlJobBody: {_sqlQuery} [{Counter}], ThreadId: {Thread.CurrentThread.ManagedThreadId}");
-#endif
+//#if DEBUG
+//                Trace.WriteLine($"SqlJobBody: {_sqlQuery} [{Counter}], ThreadId: {Thread.CurrentThread.ManagedThreadId}");
+//#endif
                 using var connection = new NpgsqlConnection(_connectionString);
                 connection.Open();
 
@@ -54,16 +54,21 @@ namespace Zs.Common.Modules.CycleWorker
                     {
                         case QueryResultType.Double:
                             reader.Read();
-                            if (!reader.IsDBNull(0))
-                                LastResult = new JobExecutionResult<double>(reader.GetDouble(0));
+                            LastResult = !reader.IsDBNull(0)
+                                ? new JobExecutionResult<double>(reader.GetDouble(0))
+                                : null;
                             break;
                         case QueryResultType.Json:
                             LastResult = new JobExecutionResult<string>(reader.ReadToJson());
                             break;
                         case QueryResultType.String:
                             reader.Read();
-                            if (!reader.IsDBNull(0))
-                                LastResult = new JobExecutionResult<string>(reader.GetString(0));
+                            LastResult = !reader.IsDBNull(0)
+                                ? new JobExecutionResult<string>(reader.GetString(0))
+                                : null;
+                            break;
+                        default:
+                            LastResult = null;
                             break;
                     }
                 }

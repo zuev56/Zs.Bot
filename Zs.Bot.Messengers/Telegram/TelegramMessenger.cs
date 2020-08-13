@@ -27,7 +27,7 @@ namespace Zs.Bot.Telegram
         private readonly TelegramBotClient _botClient;
         private readonly Buffer<TgMessage> _inputMessageBuffer = new Buffer<TgMessage>();
         private readonly Buffer<TgMessage> _outputMessageBuffer = new Buffer<TgMessage>();
-        private readonly object _lock = new object();
+        private readonly object _locker = new object();
 
         public event Action<MessageActionEventArgs> MessageEdited;
         public event Action<MessageActionEventArgs> MessageReceived;
@@ -206,10 +206,11 @@ namespace Zs.Bot.Telegram
                     if (tgMessage.EditDate is { })
                     {
                         OnMessageEdited(args);
-                        continue;
                     }
-
-                    OnMessageReceived(args);
+                    else
+                    {
+                        OnMessageReceived(args);
+                    }
 
                     msgForLog = null;
 #if DEBUG
@@ -217,10 +218,10 @@ namespace Zs.Bot.Telegram
 #endif
                 }
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                e.Data.Add("MessageId", msgForLog?.MessageId);
-                _logger.LogError(e, nameof(TelegramMessenger));
+                ex.Data.Add("MessageId", msgForLog?.MessageId);
+                _logger.LogError(ex, nameof(TelegramMessenger));
             }
         }
 
@@ -234,7 +235,7 @@ namespace Zs.Bot.Telegram
                     msgForLog = tgMessage;
                     OperationResult sendingResult;
 
-                    lock (_lock)
+                    lock (_locker)
                     {
                         sendingResult = SendMessageFinaly(tgMessage, currentTask);
                     }
@@ -315,6 +316,12 @@ namespace Zs.Bot.Telegram
                     .Where(c => c.Id >= int.MinValue && c.Id <= int.MaxValue 
                              && tgUsers.Select(u => u.Id).Contains((int)c.Id)).ToList();
 
+                //var userIds = string.Join(',', tgUsers.Select(u => u.Id));
+                //var tgChat2 = ctx.Chats.FromSqlRaw(
+                //    $"select * from bot.chats " +
+                //    $"where cast(raw_data ->> 'Id' as bigint) in ({userIds})").ToList();
+
+
                 foreach (var chat in tgChats)
                     _outputMessageBuffer.Enqueue(new TgMessage(chat, messageText));
             }
@@ -388,6 +395,35 @@ namespace Zs.Bot.Telegram
             }
         }
 
+        /// <inheritdoc />
+        public int? GetIdenticalMessageId(IMessage message)
+        {
+            if (message is null)
+                throw new ArgumentNullException(nameof(message));
+
+            using var ctx = new ZsBotDbContext();
+
+            //Вместо изменения текущего сообщения, 
+            //было создано новое с некорректными ChatId и UserId
+
+            var jObject = JObject.Parse(message.RawData);
+            if (jObject.ContainsKey("MessageId") && jObject.ContainsKey("ChatId"))
+            {
+                var tgMessageId = (int)jObject["MessageId"];
+                var tgChatId = (long)jObject["ChatId"];
+                var identicalMessage = ctx.Messages.FromSqlRaw(
+                    $"select * from bot.messages " +
+                    $" where cast(raw_data ->> 'MessageId' as integer) = {tgMessageId}" +
+                    $"   and cast(raw_data ->> 'ChatId' as bigint) = {tgChatId}").FirstOrDefault();
+
+                return identicalMessage?.MessageId;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
         public OperationResult DeleteMessage(IChat chat, IMessage message)
         {
             try
@@ -440,11 +476,11 @@ namespace Zs.Bot.Telegram
                                 ? _botClient.SendTextMessageAsync(
                                     message.Chat.Id,
                                     message.Text,
-                                    ParseMode.Markdown).GetAwaiter().GetResult()
+                                    ParseMode.Default).GetAwaiter().GetResult()
                                 : _botClient.SendTextMessageAsync(
                                     message.Chat.Id,
                                     message.Text,
-                                    ParseMode.Markdown,
+                                    ParseMode.Default,
                                     replyToMessageId: (int)message.ReplyToMessageId).GetAwaiter().GetResult();
                         tgMessage = new TgMessage(tmp);
                         break;
@@ -466,9 +502,9 @@ namespace Zs.Bot.Telegram
 
                 return OperationResult.Success;
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                if (e is ApiRequestException)
+                if (ex is ApiRequestException)
                 {
                     if (message.SendingFails > 1)
                     {
@@ -481,7 +517,7 @@ namespace Zs.Bot.Telegram
 
                 if (message.SendingFails < _sendingRetryLimit)
                 {
-                    message.FailDescription = JsonConvert.SerializeObject(e, Formatting.Indented);
+                    message.FailDescription = JsonConvert.SerializeObject(ex, Formatting.Indented);
                     message.SendingFails++;
                     currentTask.Wait(2000 * message.SendingFails);
                     _outputMessageBuffer.Enqueue(message);
@@ -492,8 +528,8 @@ namespace Zs.Bot.Telegram
                     try
                     {
                         message.IsSucceed = false;
-                        e.Data.Add("Message", message);
-                        _logger.LogError(e, nameof(TelegramMessenger));
+                        ex.Data.Add("Message", message);
+                        _logger.LogError(ex, nameof(TelegramMessenger));
                         return OperationResult.Failure;
                     }
                     catch { return OperationResult.Failure; }

@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Zs.Service.ChatAdmin.DbModel
 {
-    #region Interfaces zl
+    #region Interfaces for schema 'zl'
 
     /// <summary> Информация о времени начала учёта сообщений каждого отдельного пользователя </summary>
     public interface IAccounting
@@ -16,6 +16,7 @@ namespace Zs.Service.ChatAdmin.DbModel
 
         public DateTime UpdateDate { get; set; }
 
+        IAccounting DeepCopy();
     }
 
 
@@ -26,6 +27,7 @@ namespace Zs.Service.ChatAdmin.DbModel
 
         public DateTime InsertDate { get; set; }
 
+        IAuxiliaryWord DeepCopy();
     }
 
 
@@ -38,12 +40,15 @@ namespace Zs.Service.ChatAdmin.DbModel
 
         public Int32 ChatId { get; set; }
 
+        public Int32? WarningMessageId { get; set; }
+
         public DateTime? BanFinishDate { get; set; }
 
         public DateTime UpdateDate { get; set; }
 
         public DateTime InsertDate { get; set; }
 
+        IBan DeepCopy();
     }
 
 
@@ -70,10 +75,11 @@ namespace Zs.Service.ChatAdmin.DbModel
 
         public DateTime InsertDate { get; set; }
 
+        INotification DeepCopy();
     }
 
     #endregion
-    #region Classes zl
+    #region Classes for schema 'zl'
 
     /// <summary> Информация о времени начала учёта сообщений каждого отдельного пользователя </summary>
     [Table("accountings", Schema = "zl")]
@@ -92,6 +98,16 @@ namespace Zs.Service.ChatAdmin.DbModel
         [Column("update_date", TypeName = "timestamp with time zone")]
         public DateTime UpdateDate { get; set; }
 
+
+        public IAccounting DeepCopy()
+        {
+            return new DbAccounting
+            {
+                AccountingId = this.AccountingId,
+                AccountingStartDate = this.AccountingStartDate,
+                UpdateDate = this.UpdateDate,
+            };
+        }
     }
 
 
@@ -109,6 +125,15 @@ namespace Zs.Service.ChatAdmin.DbModel
         [Column("insert_date", TypeName = "timestamp with time zone")]
         public DateTime InsertDate { get; set; }
 
+
+        public IAuxiliaryWord DeepCopy()
+        {
+            return new DbAuxiliaryWord
+            {
+                TheWord = this.TheWord,
+                InsertDate = this.InsertDate,
+            };
+        }
     }
 
 
@@ -129,6 +154,9 @@ namespace Zs.Service.ChatAdmin.DbModel
         [Column("chat_id", TypeName = "integer")]
         public Int32 ChatId { get; set; }
 
+        [Column("warning_message_id", TypeName = "integer")]
+        public Int32? WarningMessageId { get; set; }
+
         [Column("ban_finish_date", TypeName = "timestamp with time zone")]
         public DateTime? BanFinishDate { get; set; }
 
@@ -140,6 +168,20 @@ namespace Zs.Service.ChatAdmin.DbModel
         [Column("insert_date", TypeName = "timestamp with time zone")]
         public DateTime InsertDate { get; set; }
 
+
+        public IBan DeepCopy()
+        {
+            return new DbBan
+            {
+                BanId = this.BanId,
+                UserId = this.UserId,
+                ChatId = this.ChatId,
+                WarningMessageId = this.WarningMessageId,
+                BanFinishDate = this.BanFinishDate,
+                UpdateDate = this.UpdateDate,
+                InsertDate = this.InsertDate,
+            };
+        }
     }
 
 
@@ -187,6 +229,23 @@ namespace Zs.Service.ChatAdmin.DbModel
         [Column("insert_date", TypeName = "timestamp with time zone")]
         public DateTime InsertDate { get; set; }
 
+
+        public INotification DeepCopy()
+        {
+            return new DbNotification
+            {
+                NotificationId = this.NotificationId,
+                NotificationIsActive = this.NotificationIsActive,
+                NotificationMessage = this.NotificationMessage,
+                NotificationMonth = this.NotificationMonth,
+                NotificationDay = this.NotificationDay,
+                NotificationHour = this.NotificationHour,
+                NotificationMinute = this.NotificationMinute,
+                NotificationExecDate = this.NotificationExecDate,
+                UpdateDate = this.UpdateDate,
+                InsertDate = this.InsertDate,
+            };
+        }
     }
 
     #endregion
