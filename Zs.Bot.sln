@@ -3,17 +3,17 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29409.12
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.Bot", "Zs.Bot\Zs.Bot.csproj", "{26B4EFEE-4C4A-4EF1-BC18-521671F14AF5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.Bot", "Bot\Zs.Bot\Zs.Bot.csproj", "{26B4EFEE-4C4A-4EF1-BC18-521671F14AF5}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.Bot.Model", "Zs.Bot.Model\Zs.Bot.Model.csproj", "{D3971B75-73BD-487A-8CC2-7D0E785C5AE7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.Bot.Model", "Bot\Zs.Bot.Model\Zs.Bot.Model.csproj", "{D3971B75-73BD-487A-8CC2-7D0E785C5AE7}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.Bot.Telegram", "Zs.Bot.Messengers\Telegram\Zs.Bot.Telegram.csproj", "{68E24E7A-C999-4CA7-B44F-D09FE1449416}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.Bot.Messenger.Telegram", "Bot\Messengers\Zs.Bot.Messenger.Telegram\Zs.Bot.Messenger.Telegram.csproj", "{68E24E7A-C999-4CA7-B44F-D09FE1449416}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.Service.ChatAdmin", "Zs.Services\ChatAdmin\Zs.Service.ChatAdmin.csproj", "{9B847C34-A8CA-4A0A-A497-5DBE168F541E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.Service.ChatAdmin", "Services\Zs.Service.ChatAdmin\Zs.Service.ChatAdmin.csproj", "{9B847C34-A8CA-4A0A-A497-5DBE168F541E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.UnitTest.Bot", "Zs.UnitTests\Bot\Zs.UnitTest.Bot.csproj", "{186B00E5-63F1-4650-9A2A-735039E287A7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.UnitTest.Bot", "UnitTests\Zs.UnitTest.Bot\Zs.UnitTest.Bot.csproj", "{186B00E5-63F1-4650-9A2A-735039E287A7}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.UnitTest.Tools", "Zs.UnitTests\Tools\Zs.UnitTest.Tools.csproj", "{0BBC5A99-A707-4993-83B9-20175912CCF9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.UnitTest.Tools", "UnitTests\Zs.UnitTest.Tools\Zs.UnitTest.Tools.csproj", "{0BBC5A99-A707-4993-83B9-20175912CCF9}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "!SQL", "!SQL", "{7EEC88C0-E35E-46A7-A891-D4B0B46598A7}"
 EndProject
@@ -27,19 +27,23 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Bot", "Bot", "{E77CA16B-EA0
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{3FAF192A-78FD-454E-A32D-0AE923DB24D1}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.UnitTest.Services.ChatAdmin", "Zs.UnitTests\ChatAdmin\Zs.UnitTest.Services.ChatAdmin.csproj", "{5E658E9C-AA4D-42C9-9EFA-D0BE60E537C3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.UnitTest.Services.ChatAdmin", "UnitTests\Zs.UnitTest.Services.ChatAdmin\Zs.UnitTest.Services.ChatAdmin.csproj", "{5E658E9C-AA4D-42C9-9EFA-D0BE60E537C3}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.Common", "Zs.Common\Zs.Common.csproj", "{B047D3FF-44B7-4507-AA36-FD8306D27AE6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.Common", "Common\Zs.Common\Zs.Common.csproj", "{B047D3FF-44B7-4507-AA36-FD8306D27AE6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zs.Common.T4", "Zs.Common.T4\Zs.Common.T4.csproj", "{8BDDC286-6BE0-488F-9DCD-84050C5AF16F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zs.Common.T4", "Common\Zs.Common.T4\Zs.Common.T4.csproj", "{8BDDC286-6BE0-488F-9DCD-84050C5AF16F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.Bot.Database", "SQL\Robot\Zs.Bot.Database.csproj", "{86E0D68B-0525-4AE9-8976-5F8737A1FBC5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.Bot.Database", "SQL\Zs.Bot.Database\Zs.Bot.Database.csproj", "{86E0D68B-0525-4AE9-8976-5F8737A1FBC5}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{18CCC3CE-1498-4B8C-BB6C-136A3A839EEC}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
 		.filenesting.json = .filenesting.json
 	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Api", "Api", "{9C4F1BF3-3AEA-4FD5-85AC-13ACE38A5357}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyTestTelegramBotApi", "Bot\Api\MyTestTelegramBotApi\MyTestTelegramBotApi.csproj", "{5FFABCAF-10B8-4AE2-B5CE-B72BBC768D3E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -87,6 +91,10 @@ Global
 		{86E0D68B-0525-4AE9-8976-5F8737A1FBC5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{86E0D68B-0525-4AE9-8976-5F8737A1FBC5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{86E0D68B-0525-4AE9-8976-5F8737A1FBC5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5FFABCAF-10B8-4AE2-B5CE-B72BBC768D3E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5FFABCAF-10B8-4AE2-B5CE-B72BBC768D3E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5FFABCAF-10B8-4AE2-B5CE-B72BBC768D3E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5FFABCAF-10B8-4AE2-B5CE-B72BBC768D3E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -103,6 +111,8 @@ Global
 		{B047D3FF-44B7-4507-AA36-FD8306D27AE6} = {3FAF192A-78FD-454E-A32D-0AE923DB24D1}
 		{8BDDC286-6BE0-488F-9DCD-84050C5AF16F} = {3FAF192A-78FD-454E-A32D-0AE923DB24D1}
 		{86E0D68B-0525-4AE9-8976-5F8737A1FBC5} = {7EEC88C0-E35E-46A7-A891-D4B0B46598A7}
+		{9C4F1BF3-3AEA-4FD5-85AC-13ACE38A5357} = {E77CA16B-EA06-4649-9E7D-9518F7D06033}
+		{5FFABCAF-10B8-4AE2-B5CE-B72BBC768D3E} = {9C4F1BF3-3AEA-4FD5-85AC-13ACE38A5357}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {F6A9C4CA-DF26-4772-9119-627935D70E7C}
