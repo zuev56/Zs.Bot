@@ -104,7 +104,7 @@ BEGIN
                   and ban_finish_date > now() 
              order by insert_date desc)
     then
-        return '{ 
+        return '{
                      "Action": "DeleteMessage",
                      "Info": "Для пользователя имеется активный бан"
                 }';
@@ -123,8 +123,7 @@ BEGIN
  
     -- Дата начала учёта хранится в пямяти программы и передаётся в этот метод
     -- Переопределяется после перезагрузки или восстановления соединения с сетью
-    if (_accounting_start_date is null and _daily_chat_msg_count >= _start_account_after)
-    then
+    if (_accounting_start_date is null and _daily_chat_msg_count >= _start_account_after) then
         return '{ 
                     "Action": "SetAccountingStartDate",
                     "AccountingStartDate": "' || now()::text || E'"\n' ||',

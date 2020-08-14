@@ -120,7 +120,7 @@ namespace Zs.UnitTest.Bot
                 var role            = new DbUserRole        { UserRoleCode = "UNITTEST1", UserRoleName = "UnitTest1", UserRolePermissions = "[ \"UnitTest1\" ]" };
                 var user            = new DbUser            { UserId = -2, UserName = "UnitTest1", UserRoleCode = "UNITTEST1", UserIsBot = false, RawData = testJsonValue, RawDataHash = testJsonValue.GetMD5Hash() };
                 var messageType     = new DbMessageType     { MessageTypeCode = "U1", MessageTypeName = "UnitTest1" };
-                var message         = new DbMessage         { MessageId = -2, MessengerCode = "U1", MessageTypeCode = "U1", ChatId = -2, UserId = -2, RawData = testJsonValue };
+                var message         = new DbMessage         { MessageId = -2, MessengerCode = "U1", MessageTypeCode = "U1", ChatId = -2, UserId = -2, RawData = testJsonValue, RawDataHash = testJsonValue.GetMD5Hash() };
                 var session         = new DbSession         { SessionId = -2, SessionCurrentState = testJsonValue, ChatId = -2, SessionIsLoggedIn = false };
                 var log             = new DbLog             { LogId = -2, LogType = "WARNING", LogMessage = "UnitTest1" };
                 var command         = new DbCommand         { CommandName = "/unittest1", CommandScript = "UnitTest1", CommandGroup = "UnitTest1" };
@@ -203,7 +203,7 @@ namespace Zs.UnitTest.Bot
                 var role            = new DbUserRole        { UserRoleCode = "UNITTEST0", UserRoleName = "UnitTest0", UserRolePermissions = "[ \"UnitTest0\" ]" };
                 var user            = new DbUser            { UserId = -1, UserName = "UnitTest0", UserRoleCode = "UNITTEST0", UserIsBot = false, RawData = testJsonValue, RawDataHash = testJsonValue.GetMD5Hash() };
                 var messageType     = new DbMessageType     { MessageTypeCode = "U0", MessageTypeName = "UnitTest0" };
-                var message         = new DbMessage         { MessageId = -1, MessengerCode = "U0", MessageTypeCode = "U0", ChatId = -1, UserId = -1, RawData = testJsonValue };
+                var message         = new DbMessage         { MessageId = -1, MessengerCode = "U0", MessageTypeCode = "U0", ChatId = -1, UserId = -1, RawData = testJsonValue, RawDataHash = testJsonValue.GetMD5Hash() };
                 var session         = new DbSession         { SessionId = -1, SessionCurrentState = testJsonValue, ChatId = -1, SessionIsLoggedIn = false };
                 var log             = new DbLog             { LogId = -1, LogType = "WARNING", LogMessage = "UnitTest0" };
                 var command         = new DbCommand         { CommandName = "/unittest0", CommandScript = "UnitTest0", CommandGroup = "UnitTest0" };

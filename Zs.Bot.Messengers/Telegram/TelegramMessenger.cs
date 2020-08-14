@@ -220,7 +220,7 @@ namespace Zs.Bot.Telegram
             }
             catch (Exception ex)
             {
-                ex.Data.Add("MessageId", msgForLog?.MessageId);
+                ex.Data.Add("Message", msgForLog);
                 _logger.LogError(ex, nameof(TelegramMessenger));
             }
         }
@@ -266,7 +266,7 @@ namespace Zs.Bot.Telegram
             }
             catch (Exception e)
             {
-                e.Data.Add("MessageId", msgForLog?.MessageId);
+                e.Data.Add("Message", msgForLog);
                 _logger.LogError(e, nameof(TelegramMessenger));
             }
         }
@@ -294,9 +294,9 @@ namespace Zs.Bot.Telegram
 
                 _outputMessageBuffer.Enqueue(msg);
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                _logger.LogError(e, nameof(TelegramMessenger));
+                _logger.LogError(ex, nameof(TelegramMessenger));
                 throw;
             }
         }
@@ -321,13 +321,12 @@ namespace Zs.Bot.Telegram
                 //    $"select * from bot.chats " +
                 //    $"where cast(raw_data ->> 'Id' as bigint) in ({userIds})").ToList();
 
-
                 foreach (var chat in tgChats)
                     _outputMessageBuffer.Enqueue(new TgMessage(chat, messageText));
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                _logger.LogError(e, nameof(TelegramMessenger));
+                _logger.LogError(ex, nameof(TelegramMessenger));
             }
         }
         
@@ -461,7 +460,8 @@ namespace Zs.Bot.Telegram
 
         private OperationResult SendMessageFinaly(TgMessage message, Task currentTask)
         {
-            // Telegram.Bot.API не позволяет отправлять сообщения, содержащие текст вида */command@botName*
+            // Telegram.Bot.API не позволяет отправлять сообщения, 
+            // содержащие текст вида */command@botName*
             try
             {
                 Message tgMessage = null;
@@ -509,6 +509,8 @@ namespace Zs.Bot.Telegram
                     if (message.SendingFails > 1)
                     {
                         message.IsSucceed = false;
+                        ex.Data.Add("Message", message);
+                        _logger.LogError(ex, nameof(TelegramMessenger));
                         return OperationResult.Failure;
                     }
                     else

@@ -11,12 +11,13 @@ using Npgsql;
 using Zs.Bot.Helpers;
 using Zs.Bot.Model.Db;
 using Zs.Common.Exceptions;
+using Zs.Common.Extensions;
 using Zs.Common.Interfaces;
 
 namespace Zs.Bot.Modules.Command
 {
     /// <summary>
-    /// Занимается обработкой команд
+    /// Handles commands
     /// </summary>
     public class CommandManager
     {
@@ -42,7 +43,7 @@ namespace Zs.Bot.Modules.Command
         {
             try
             {
-                _logger.LogInfo("Получена команда", nameof(CommandManager));
+                _logger.LogInfo("Command received", command, nameof(CommandManager));
                 _commandBuffer.Enqueue(command);
 
                 return true;
@@ -54,7 +55,11 @@ namespace Zs.Bot.Modules.Command
             }
         }
 
-        /// <summary> Выполнение команды в БД. Возвращает результат </summary>
+        /// <summary>
+        /// Execute command in database
+        /// </summary>
+        /// <param name="botCommand"></param>
+        /// <returns>Execution result</returns>
         internal string RunCommand(BotCommand botCommand)
         {
             string cmdExecResult = null;
@@ -62,9 +67,6 @@ namespace Zs.Bot.Modules.Command
             {
                 using (var ctx = new ZsBotDbContext())
                 {
-                    //throw new NotImplementedException("Раскомментировать текст ниже после восстановления модели данных");
-
-                    // Команда из таблицы Command 
                     var dbCommand = ctx.Commands.FirstOrDefault(c => c.CommandName == botCommand.Name);
                     
                     if (dbCommand != null)
@@ -100,28 +102,27 @@ namespace Zs.Bot.Modules.Command
 
                             try
                             {
-                                cmdExecResult = fromSql.ToList()?[0]?.Result
-                                             ?? "NULL";
+                                cmdExecResult = fromSql.ToList()?[0]?.Result ?? "NULL";
                             }
-                            catch (PostgresException pe)
+                            catch (PostgresException pEx)
                             {
-                                pe.Data.Add("BotCommand", botCommand);
-                                _logger.LogError(pe, nameof(CommandManager));
+                                pEx.Data.Add("BotCommand", botCommand);
+                                _logger.LogError(pEx, nameof(CommandManager));
                                 cmdExecResult = "Command execution: request processing error!";
                             }
-                            catch (Exception e)
+                            catch (Exception ex)
                             {
-                                e.Data.Add("BotCommand", botCommand);
-                                _logger.LogError(e, nameof(CommandManager));
+                                ex.Data.Add("BotCommand", botCommand);
+                                _logger.LogError(ex, nameof(CommandManager));
 
-                                cmdExecResult = e.Message == "Column is null"
+                                cmdExecResult = ex.Message == "Column is null"
                                     ? "NULL"
                                     : "Command execution: general error!";
                             }
                         }
                         else
                         {
-                            cmdExecResult = "Sorry, you have no rights for this command";
+                            cmdExecResult = "You have no rights for this command";
                         }
                     }
                     else
@@ -131,17 +132,17 @@ namespace Zs.Bot.Modules.Command
             catch (Exception ex)
             {
                 _logger.LogError(ex, nameof(CommandManager));
-                return $"Command '{botCommand.Name}' running failed!";
+                return $"Command '{botCommand.Name}' execution failed!";
             }
 
             return cmdExecResult?.Trim();
         }
 
         /// <summary>
-        /// Здесь происходит замена обобщённых параметров на конкретные значения
+        /// Changes generic parameters to theirs specific values
         /// </summary>
-        /// <param name="parameters"></param>
-        /// <returns></returns>
+        /// <param name="parameters">An array, that can contain generic parametres</param>
+        /// <returns>Specific parameters array</returns>
         private object[] ProcessParameters(BotCommand botCommand)
         {
             var regex = new Regex(@"<([^\s>]+)\>", RegexOptions.IgnoreCase);
@@ -176,7 +177,7 @@ namespace Zs.Bot.Modules.Command
             return parameters;
         }
 
-        /// <summary> Обработчик очереди команд. Работает в отдельном потоке </summary>
+        /// <summary> Command queue processor </summary>
         private void ProcessCommandQueue()
         {
             string logCmdName = null;
@@ -190,18 +191,30 @@ namespace Zs.Bot.Modules.Command
                     logCmdName = command.Name;
                     var result = RunCommand(command);
 
-                    CommandCompleted?.Invoke(new CommandResult(command.ChatIdForAnswer, result));
+                    var maxResultLength = 4000; // max for Telegram 4096
+                    if (result.Length < maxResultLength)
+                    {
+                        CommandCompleted?.Invoke(new CommandResult(command.ChatIdForAnswer, result));
+                    }
+                    else
+                    {
+                        foreach (var part in result.SplitToParts(maxResultLength))
+                            CommandCompleted?.Invoke(new CommandResult(command.ChatIdForAnswer, part));
+                    }
                 }
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                e.Data.Add("Command", logCmdName);
-                _logger.LogError(e, nameof(CommandManager));
+                ex.Data.Add("Command", logCmdName);
+                _logger.LogError(ex, nameof(CommandManager));
             }
         }
 
-
-        /// <summary> Получение списка команд из БД </summary>
+        /// <summary>
+        /// Get command list for the role from database
+        /// </summary>
+        /// <param name="userRoleCode"></param>
+        /// <returns>List of commands</returns>
         public static List<DbCommand> GetDbCommands(string userRoleCode)
         {
             if (userRoleCode is null)
@@ -218,27 +231,5 @@ namespace Zs.Bot.Modules.Command
             return dbCommands.ToList();
         }
 
-        /// <summary> Получение списка команд c описанием для заданной роли </summary>
-        [Obsolete("В коде не должно использоваться. Выводить эту информацию через запрос к БД")]
-        public static List<string> GetCommandsInfo(string userRoleCode)
-        {
-            if (userRoleCode is null)
-                throw new ArgumentNullException(nameof(userRoleCode));
-
-            using var ctx = new ZsBotDbContext();
-            var permissionsString = ctx.UserRoles.FirstOrDefault(r => r.UserRoleCode == userRoleCode).UserRolePermissions;
-            var permissionsArray = JArray.Parse(permissionsString).ToObject<string[]>();
-
-            var dbCommands = permissionsArray.Any(p => string.Equals(p, "All", StringComparison.InvariantCultureIgnoreCase))
-                ? ctx.Commands.ToList()
-                : ctx.Commands.Where(c => permissionsArray.Contains(c.CommandGroup)).ToList();
-
-            var resultList = new List<string>(dbCommands.Count);
-            dbCommands.ForEach(c => resultList.Add($"{c.CommandName} - {c.CommandDesc}"));
-
-            return resultList;
-        }
-
     }
-
 }

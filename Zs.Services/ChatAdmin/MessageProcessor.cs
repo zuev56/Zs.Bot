@@ -218,7 +218,16 @@ namespace Zs.Service.ChatAdmin
                 _accountingStartDate = null;
 
                 if (_detailedLogging)
-                    _logger.LogInfo("Limits set from configuration", nameof(MessageProcessor));
+                {
+                    var logData = new Dictionary<string, int>()
+                    {
+                        { "MessageLimitHi", _limitHi },
+                        { "MessageLimitHiHi", _limitHiHi },
+                        { "MessageLimitAfterBan", _limitAfterBan },
+                        { "AccountingStartsAfter", _accountingStartsAfter }
+                    };
+                    _logger.LogInfo("Limits set from configuration file", logData, nameof(MessageProcessor));
+                }
 
                 Volatile.Read(ref LimitsDefined)?.Invoke(GetLimitInfo());
             }
