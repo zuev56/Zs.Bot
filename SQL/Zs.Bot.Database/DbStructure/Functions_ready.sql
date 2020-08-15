@@ -1,5 +1,5 @@
 
--- READY
+-- Get permissions for a specific user role
 CREATE OR REPLACE FUNCTION bot.sf_get_permission_array(
     user_role_code_ varchar(10))
     RETURNS TEXT[]
@@ -29,7 +29,7 @@ COMMENT ON FUNCTION bot.sf_get_permission_array(character varying)
 
 
 
--- READY
+-- Get list of awailable functions for a specific user role
 CREATE OR REPLACE FUNCTION bot.sf_cmd_get_help(
     user_role_code_ varchar(10))
     RETURNS TEXT
@@ -63,7 +63,7 @@ COMMENT ON FUNCTION bot.sf_cmd_get_help(character varying)
 
 
     
--- READY
+-- Process incoming messages of specific chat
 CREATE OR REPLACE FUNCTION zl.sf_process_group_message(
     _chat_id integer,
     _message_id integer,
@@ -95,7 +95,7 @@ BEGIN
 
     select ban_id into _ban_id from zl.bans 
          where user_id = _user_id and chat_id = _chat_id
-           and insert_date > now()::date 
+           and insert_date > now()::date -- - interval '3 hours' -- Захватываем баны с предыдущего дня
       order by insert_date desc limit 1;
       
     -- Если для пользователя есть активный бан, то удаляем сообщение. Учитываем бан с предыдущего дня
@@ -105,9 +105,31 @@ BEGIN
              order by insert_date desc)
     then
         return '{
-                     "Action": "DeleteMessage",
-                     "Info": "Для пользователя имеется активный бан"
+                    "Action": "DeleteMessage",
+                    "Info": "Для пользователя имеется активный бан"
                 }';
+    end if;
+
+-- !!! На случай, если было разорвано соединение с интернетом, и бан пользователя 
+--     закончился к моменту его восстановления, то, несмотря на сброшенную дату начала учёта
+--     ориентируемся на кол-во сообщений пользователя, оставленных после окончания бана
+    if (select insert_date::date from zl.bans where ban_id = _ban_id) = now()::date -- Важно учитывать только баны текущего дня
+    then
+        if (select count(m.*)
+              from bot.messages m
+         left join zl.bans b on b.ban_id = _ban_id
+             where m.insert_date > b.ban_finish_date
+               and m.user_id = _user_id
+               and m.is_deleted = false) >= _msg_limit_after_ban
+        then
+            update zl.bans set ban_finish_date = now()::date + interval '1 day' - interval '1 second'
+            where ban_id = _ban_id;
+            return '{
+                        "Action": "SendMessageToGroup", 
+                        "MessageText" : "<UserName>, вы израсходовали свой лимит сообщений до конца дня",
+                        "BanId": "' || _ban_id::text || '"
+                    }';
+        end if;
     end if;
  
     -- Начало индивидуального учёта после _start_account_after сообщений в чате 
@@ -213,13 +235,13 @@ BEGIN
         else
             return '{ 
                         "Action": "SendMessageToOwner",
-                        "MessageText" : "Error! The user has exceeded the limit but no condition has been met!" 
+                        "Info" : "Error! The user has exceeded the limit but no condition has been met!" 
                     }';
         end if;
     end if;
     return '{
                 "Action": "SendMessageToOwner",
-                "MessageText" : "Error! End of function has been reached!" 
+                "Info" : "Error! End of function has been reached!" 
             }';
 END;
 $BODY$;
@@ -229,7 +251,7 @@ ALTER FUNCTION zl.sf_process_group_message(integer, integer, timestamp with time
 
 
 
--- READY
+-- Get statistics of specific chat
 CREATE OR REPLACE FUNCTION bot.sf_get_chat_statistics(
     _chat_id     integer,
     _users_limit integer,
@@ -264,7 +286,7 @@ COMMENT ON FUNCTION bot.sf_get_chat_statistics(integer, integer, timestamp with 
 
 
 
--- READY
+-- Get statistics of all chats in the specified time interval
 CREATE OR REPLACE FUNCTION zl.sf_cmd_get_full_statistics(
     _users_limit integer,
     _from_date   timestamp with time zone,

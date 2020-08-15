@@ -1,0 +1,83 @@
+﻿@model IEnumerable<Zs.Bot.Model.Db.DbUser>
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>Index</h1>
+
+<p>
+    <a asp-action="Create">Create New</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.UserName)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.UserFullName)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.UserRoleCode)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.UserIsBot)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.RawData)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.RawDataHash)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.RawDataHistory)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.UpdateDate)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.InsertDate)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.UserName)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.UserFullName)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.UserRoleCode)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.UserIsBot)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.RawData)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.RawDataHash)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.RawDataHistory)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.UpdateDate)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.InsertDate)
+            </td>
+            <td>
+                <a asp-action="Edit" asp-route-id="@item.UserId">Edit</a> |
+                <a asp-action="Details" asp-route-id="@item.UserId">Details</a> |
+                <a asp-action="Delete" asp-route-id="@item.UserId">Delete</a>
+            </td>
+        </tr>
+}
+    </tbody>
+</table>

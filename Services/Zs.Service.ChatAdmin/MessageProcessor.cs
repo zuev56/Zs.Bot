@@ -102,7 +102,7 @@ namespace Zs.Service.ChatAdmin
                         { "JsonResult", jsonResult },
                         { "MessageId", message.MessageId }
                     };
-                    _logger.LogInfo("Got message sql-process result", logData, nameof(MessageProcessor));
+                    _logger.LogInfo("Incoming message sql-processing result", logData, nameof(MessageProcessor));
                 }
 
                 var dictResult = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string,string>>(jsonResult);
