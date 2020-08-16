@@ -5,9 +5,10 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using MyTestWebInterface.Models;
 using Zs.Bot.Model.Db;
 
-namespace ChatWebInterface.Controllers
+namespace MyTestWebInterface.Controllers
 {
     public class UsersController : Controller
     {
@@ -19,9 +20,38 @@ namespace ChatWebInterface.Controllers
         }
 
         // GET: Users
-        public async Task<IActionResult> Index()
+        //public async Task<IActionResult> Index()
+        //{
+        //    return View(await _context.Users.ToListAsync());
+        //}
+
+        // GET: Users
+        public async Task<IActionResult> Index(string userRoleCode, string searchString)
         {
-            return View(await _context.Users.ToListAsync());
+            var userRoleCodes = _context.Users
+                .OrderBy(u => u.UserRoleCode)
+                .Select(u => u.UserRoleCode);
+
+            var users = _context.Users.AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(userRoleCode))
+            {
+                users = users.Where(u => u.UserRoleCode == userRoleCode);
+            }
+
+            if (!string.IsNullOrWhiteSpace(searchString))
+            {
+                users = users.Where(u => u.UserName.Contains(searchString)
+                                      || u.UserFullName.Contains(searchString));
+            }
+
+            var userRoleVM = new UserRoleViewModel()
+            {
+                RoleCodes = new SelectList(await userRoleCodes.Distinct().ToListAsync()),
+                Users = await users.ToListAsync()
+            };
+
+            return View(userRoleVM);
         }
 
         // GET: Users/Details/5

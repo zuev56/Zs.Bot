@@ -1,4 +1,4 @@
-﻿@model IEnumerable<Zs.Bot.Model.Db.DbUser>
+﻿@model UserRoleViewModel
 
 @{
     ViewData["Title"] = "Index";
@@ -9,41 +9,53 @@
 <p>
     <a asp-action="Create">Create New</a>
 </p>
+
+<form asp-controller="Users" asp-action="Index" method="get">
+    <select asp-for="UserRoleCode" asp-items="Model.RoleCodes">
+        <option value="">All</option>
+    </select>
+    
+    <p>
+        Имя: <input type="text" name="SearchString" />
+        <input type="submit" value="Фильтр" />
+    </p>
+</form>
+
 <table class="table">
     <thead>
         <tr>
             <th>
-                @Html.DisplayNameFor(model => model.UserName)
+                @Html.DisplayNameFor(model => model.Users[0].UserName)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.UserFullName)
+                @Html.DisplayNameFor(model => model.Users[0].UserFullName)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.UserRoleCode)
+                @Html.DisplayNameFor(model => model.Users[0].UserRoleCode)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.UserIsBot)
+                @Html.DisplayNameFor(model => model.Users[0].UserIsBot)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.RawData)
+                @Html.DisplayNameFor(model => model.Users[0].RawData)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.RawDataHash)
+                @Html.DisplayNameFor(model => model.Users[0].RawDataHash)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.RawDataHistory)
+                @Html.DisplayNameFor(model => model.Users[0].RawDataHistory)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.UpdateDate)
+                @Html.DisplayNameFor(model => model.Users[0].UpdateDate)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.InsertDate)
+                @Html.DisplayNameFor(model => model.Users[0].InsertDate)
             </th>
             <th></th>
         </tr>
     </thead>
     <tbody>
-@foreach (var item in Model) {
+@foreach (var item in Model.Users) {
         <tr>
             <td>
                 @Html.DisplayFor(modelItem => item.UserName)

@@ -1,0 +1,26 @@
+﻿@*@model IEnumerable<Zs.Bot.Model.Db.DbUser>*@
+@*@page*@
+@*@System.Globalization.CultureInfo.CurrentUICulture*@
+@model MyTestWebInterface.Models.TelegramBotApiViewModel
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>Telegram Bot API</h1>
+
+<p>
+    @*<a asp-page="Something">Something</a>*@
+</p>
+
+<form >
+    <p>
+        Bot Token: <input type="text" asp-for="BotToken" />
+        <input type="submit" value="GetMe" />
+    </p>
+</form>
+
+@*<label asp-for="JsonResult" class="control-label" />*@
+<input asp-for="JsonResult" class="form-control" />
+
+<a asp-action="MakeRequest" asp-route-id="GetMe">GetMe</a>

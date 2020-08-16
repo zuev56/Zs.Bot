@@ -1,6 +1,6 @@
 using System;
 
-namespace ChatWebInterface.Models
+namespace MyTestWebInterface.Models
 {
     public class ErrorViewModel
     {

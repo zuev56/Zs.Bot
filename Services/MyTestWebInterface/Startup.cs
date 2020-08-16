@@ -11,7 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Zs.Bot.Model.Db;
 
-namespace ChatWebInterface
+namespace MyTestWebInterface
 {
     public class Startup
     {
@@ -50,7 +50,7 @@ namespace ChatWebInterface
             app.UseRouting();
             app.UseAuthorization();
 
-            app.UseEndpoints(endpoints =>
+            app.UseEndpoints(endpoints => // UseMvc
             {
                 endpoints.MapControllerRoute(
                     name: "default",

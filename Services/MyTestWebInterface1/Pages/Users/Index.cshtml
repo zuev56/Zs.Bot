@@ -1,0 +1,73 @@
+﻿@page
+@*@System.Globalization.CultureInfo.CurrentUICulture*@
+@model MyTestWebInterface.Pages.Users.IndexModel
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>Index</h1>
+
+<p>
+    <a asp-page="Create">Create New</a>
+</p>
+
+<form>
+    <select asp-for="MovieGenre" asp-items="Model.Genres">
+        <option value="">All</option>
+    </select>
+    <p>
+        Title: <input type="text" asp-for="SearchString" />
+        <input type="submit" value="Filter" />
+    </p>
+</form>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.ChatUsers[0].UserName)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.ChatUsers[0].UserFullName)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.ChatUsers[0].UserIsBot)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.ChatUsers[0].RawData)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.ChatUsers[0].RawDataHistory)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.ChatUsers)
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.UserName)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.UserFullName)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.UserIsBot)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.RawData)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.RawDataHistory)
+                </td>
+                <td>
+                    <a asp-page="./Edit" asp-route-id="@item.UserId">Edit</a> |
+                    <a asp-page="./Details" asp-route-id="@item.UserId">Details</a> |
+                    <a asp-page="./Delete" asp-route-id="@item.UserId">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
