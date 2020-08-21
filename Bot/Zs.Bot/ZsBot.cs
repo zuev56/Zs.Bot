@@ -1,6 +1,6 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore;
-using Zs.Bot.Helpers;
+using Microsoft.Extensions.Configuration;
 using Zs.Bot.Model.Db;
 using Zs.Bot.Modules.Command;
 using Zs.Bot.Modules.Messaging;
@@ -10,22 +10,26 @@ namespace Zs.Bot
 {
     public class ZsBot
     {
-        private readonly IZsConfiguration _configuration;
-        private readonly Logger _logger = Logger.GetInstance();
+        private readonly IConfiguration _configuration;
+        private readonly IZsLogger _logger;// = Logger.GetInstance();
         private readonly bool _detailedLogging;
 
         public CommandManager CommandManager { get; set; }
         public IMessenger Messenger { get; set; }
 
 
-        public ZsBot(IZsConfiguration configuration, IMessenger messenger)
+        public ZsBot(
+            IConfiguration configuration,
+            IMessenger messenger,
+            IZsLogger logger)
         {
             try
             {
+                _logger = logger ?? throw new ArgumentNullException(nameof(logger));
                 _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
                 
-                if (_configuration.Contains("DetailedLogging"))
-                    bool.TryParse(_configuration["DetailedLogging"].ToString(), out _detailedLogging);
+                //if (_configuration["DetailedLogging"] != null)
+                bool.TryParse(_configuration["DetailedLogging"]?.ToString(), out _detailedLogging);
 
                 var optionsBuilder = new DbContextOptionsBuilder<ZsBotDbContext>();
                 optionsBuilder.UseNpgsql(_configuration["ConnectionString"].ToString());

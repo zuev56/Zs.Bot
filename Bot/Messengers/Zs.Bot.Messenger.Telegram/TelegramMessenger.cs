@@ -87,7 +87,6 @@ namespace Zs.Bot.Messenger.Telegram
             }
         }
 
-
         #region Обработчики событий TelegramBotClient
 
         private void BotClient_ApiResponseReceived(object sender, ApiResponseEventArgs e)

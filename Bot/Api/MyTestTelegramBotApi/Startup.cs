@@ -10,6 +10,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using MyTestTelegramBotApi.Models;
 
 namespace MyTestTelegramBotApi
 {
@@ -18,12 +19,21 @@ namespace MyTestTelegramBotApi
         public IConfiguration Configuration { get; }
 
         public Startup(IConfiguration configuration)
-            => Configuration = configuration; 
+            => Configuration = configuration;
 
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
-            => services.AddControllers();
+        {
+            // Add framework services
+            services.AddMvc();
+
+            services.AddLogging();
+
+            services.AddSingleton<ITodoRepository, TodoRepository>();
+
+            services.AddControllers();
+        }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -33,6 +43,7 @@ namespace MyTestTelegramBotApi
                 app.UseDeveloperExceptionPage();
             }
 
+            // Redirect http requests to https
             app.UseHttpsRedirection();
 
             app.UseRouting();

@@ -81,15 +81,6 @@ DECLARE
    _daily_chat_msg_count integer;
    _ban_id integer;
 BEGIN
- -- При достижении лимита пользователь банится на 3 часа. 
- --     Если лимит достигнут ближе к концу дня, бан продолжает своё действие 
- --     до окончания трёхчасового периода. Если 3 часа бана прошло, 
- --     а день не закончился, позволяем пользователю отправку 5-ти сообщений 
- --     до начала следующего дня
- -- 
- -- После восстановления интернета через 1 минуту происходит 
- --     переопределение лимитов для того, чтобы не перетереть 
- --     только что полученные сообщения
     
     select user_id into _user_id from bot.messages where message_id = _message_id;
 
@@ -145,15 +136,22 @@ BEGIN
  
     -- Дата начала учёта хранится в пямяти программы и передаётся в этот метод
     -- Переопределяется после перезагрузки или восстановления соединения с сетью
-    if (_accounting_start_date is null and _daily_chat_msg_count >= _start_account_after) then
+    if (_accounting_start_date is null and _daily_chat_msg_count >= _start_account_after) 
+    then
         return '{ 
                     "Action": "SetAccountingStartDate",
                     "AccountingStartDate": "' || now()::text || E'"\n' ||',
                     "MessageText" : "В чате уже ' || _daily_chat_msg_count::text || ' сообщений. Начинаю персональный учёт." 
-               }';
+                }';
+    elsif (_accounting_start_date is null and _daily_chat_msg_count < _start_account_after)
+    then
+        return '{ 
+                    "Action": "Continue",
+                    "Info": "Учёт сообщений ещё не начался" 
+                }';
     end if;
 
-    select user_id into _user_id from bot.messages where message_id = _message_id;
+    --select user_id into _user_id from bot.messages where message_id = _message_id;
      
     select count(*) into _accounted_user_msg_count from bot.messages 
     where insert_date > _accounting_start_date 
@@ -404,8 +402,4 @@ COMMENT ON FUNCTION zl.sf_cmd_get_full_statistics(integer, timestamp with time z
     
     
     
-    
-
-
-
     

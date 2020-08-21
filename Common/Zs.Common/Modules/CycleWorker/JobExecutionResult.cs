@@ -2,19 +2,19 @@
 {
     public interface IJobExecutionResult
     {
-        string Show();
+        string TextValue { get; }
     }
 
     public class JobExecutionResult<TResult> : IJobExecutionResult
     {
         private readonly TResult _result;
 
+        public string TextValue => _result?.ToString();
+
         public JobExecutionResult(TResult result)
         {
             _result = result;
         }
-
-        public string Show() => _result.ToString();
     }
 
     //public class StringResult : IJobExecutionResult

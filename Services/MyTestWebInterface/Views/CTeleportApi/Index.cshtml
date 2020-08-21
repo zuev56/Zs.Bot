@@ -1,0 +1,32 @@
+﻿@model MyTestWebInterface.Models.CTeleportApiViewModel
+
+@{
+    ViewData["Title"] = "CTeleport";
+}
+
+<h1>CTeleport</h1>
+
+<form>
+    <p>
+        <label asp-for="Airport1Code" class="control-label" />
+        Airport 1 <input type="text" asp-for="Airport1Code" />
+        Airport 2 <input type="text" asp-for="Airport2Code" />
+        <input type="submit" value="Calculate Distance" />
+    </p>
+</form>
+
+@*<label asp-for="Answer" class="control-label" />*@
+<dl class="row">
+    <dt class="col-sm-2">
+        @Html.DisplayNameFor(model => model.DistanceInMiles)
+    </dt>
+    <dd class="col-sm-10">
+        @Html.DisplayFor(model => model.DistanceInMiles)
+    </dd>
+    <dt class="col-sm-2">
+        @Html.DisplayNameFor(model => model.DistanceInKiloMeters)
+    </dt>
+    <dd class="col-sm-auto">
+        @Html.DisplayFor(model => model.DistanceInKiloMeters)
+    </dd>
+</dl>

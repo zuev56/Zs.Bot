@@ -3,6 +3,7 @@ using Zs.Common.Enums;
 
 namespace Zs.Bot.Modules.Messaging
 {
+    /// <summary> Converts specific types to general types </summary>
     public interface IToGenegalItemConverter
     {
         /// <summary> Convert specific message to <see cref="IMessage"/> </summary>

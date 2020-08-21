@@ -2,18 +2,13 @@
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Zs.Bot.Helpers;
-using Zs.Common.Modules.Connectors;
 using Zs.Bot.Model.Db;
-using Microsoft.EntityFrameworkCore;
-using Zs.Bot.Messenger.Telegram;
-using Zs.Bot.Modules.Messaging;
-using Microsoft.Extensions.Configuration;
-using Zs.Common.Interfaces;
 
-namespace Zs.Service.ChatAdmin
+namespace Zs.Service.VkUserWatcher
 {
     class Program
     {
@@ -27,8 +22,7 @@ namespace Zs.Service.ChatAdmin
                 if (args?.Length == 0)
                 {
                     var localConfig = Path.Combine(Directory.GetCurrentDirectory(), "configuration.json");
-                    //if (File.Exists(localConfig))
-                        args = new[] { localConfig };
+                    args = new[] { localConfig };
                 }
 
                 if (args?.Length != 1)
@@ -54,32 +48,35 @@ namespace Zs.Service.ChatAdmin
         {
             try
             {
+                //var connectionAnalyser = new ConnectionAnalyser(Logger.GetInstance(), "https://vk.com/", "https://yandex.ru/", "https://www.google.ru/");
+                //if (configuration["ProxySocket"] is { })
+                //    connectionAnalyser.InitializeProxy(
+                //        (string)configuration["ProxySocket"],
+                //        (string)configuration["ProxyLogin"],
+                //        (string)configuration["ProxyPassword"]
+                //        );
+
+                //var messenger = new TelegramMessenger(token, webProxy);
+
                 var builder = new HostBuilder()
                     .ConfigureAppConfiguration((hostingContext, config) =>
                     {
-                        config.AddJsonFile(configPath, optional: false, reloadOnChange: true);
+                        config.AddJsonFile(
+                            configPath,
+                            optional: false, // is required
+                            reloadOnChange: true);
                     })
                     .ConfigureServices((hostContext, services) =>
                     {
                         services.AddDbContext<ZsBotDbContext>(options =>
-                            options.UseNpgsql(hostContext.Configuration.GetConnectionString("ZsBot")));
-
-                        services.AddSingleton<IConnectionAnalyser, ConnectionAnalyser>(sp =>
-                        {
-                            var ca = new ConnectionAnalyser(Logger.GetInstance(), "https://vk.com/", "https://yandex.ru/", "https://www.google.ru/");
-                            if (hostContext.Configuration["ProxySocket"] != null)
-                                ca.InitializeProxy(
-                                    hostContext.Configuration["ProxySocket"],
-                                    hostContext.Configuration["ProxyLogin"],
-                                    hostContext.Configuration["ProxyPassword"]
-                                    );
-                            return ca;
-                        });
-                        services.AddSingleton<IMessenger, TelegramMessenger>(sp => 
-                            new TelegramMessenger(hostContext.Configuration["BotToken"], sp.GetService<IConnectionAnalyser>().WebProxy));
-                        services.AddSingleton<IHostedService, ChatAdmin>(sp =>
-                            ActivatorUtilities.CreateInstance<ChatAdmin>(sp));
-                });
+                            options.UseNpgsql(hostContext.Configuration.GetConnectionString("VkUserWatcher")));
+                        
+                        services.AddSingleton<IHostedService, UserWatcher>(x =>
+                            ActivatorUtilities.CreateInstance<UserWatcher>(x));
+                        
+                        //services.AddSingleton<IHostedService, ConnectionAnalyser>(x =>
+                        //    ActivatorUtilities.CreateInstance<ConnectionAnalyser>(x));
+                    });
 
                 await builder.RunConsoleAsync().ConfigureAwait(false);
             }
@@ -100,5 +97,4 @@ namespace Zs.Service.ChatAdmin
         }
 
     }
-
 }

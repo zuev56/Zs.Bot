@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Zs.Bot.Helpers;
 using Zs.Bot.Model.Db;
 using Zs.Bot.Modules.Messaging;
@@ -25,14 +26,14 @@ namespace Zs.Service.ChatAdmin
         private DateTime? _internetRepairDate;            // Время восстановления соединения с интернетом
         private readonly IMessenger _messenger;
         private readonly IZsLogger _logger = Logger.GetInstance();
-        private readonly IZsConfiguration _configuration;
+        private readonly IConfiguration _configuration;
         private readonly bool _detailedLogging;
-        private readonly int _waitAfterConnectionRepairedSec = 5;
+        private readonly int _waitAfterConnectionRepairedSec = 60;
 
         public event Action<string> LimitsDefined;
 
 
-        internal MessageProcessor(IZsConfiguration configuration, IMessenger messenger)
+        internal MessageProcessor(IConfiguration configuration, IMessenger messenger)
         {
             try
             {
@@ -44,9 +45,9 @@ namespace Zs.Service.ChatAdmin
 
                 _configuration = configuration;
                 _messenger = messenger;
-                _defaultChatId = _configuration.Contains("DefaultChatId") ? checked((int)(long)configuration["DefaultChatId"]) : -1;
+                _defaultChatId = _configuration["DefaultChatId"] != null ? checked((int)long.Parse(configuration["DefaultChatId"])) : -1;
 
-                if (_configuration.Contains("DetailedLogging"))
+                if (_configuration["DetailedLogging"] != null)
                     bool.TryParse(_configuration["DetailedLogging"].ToString(), out _detailedLogging);
 
                 ResetLimits();
@@ -211,10 +212,10 @@ namespace Zs.Service.ChatAdmin
                 if (_configuration is null)
                     throw new ArgumentNullException(nameof(_configuration));
 
-                _limitHi = checked((int)(long)_configuration["MessageLimitHi"]);
-                _limitHiHi = checked((int)(long)_configuration["MessageLimitHiHi"]);
-                _limitAfterBan = checked((int)(long)_configuration["MessageLimitAfterBan"]);
-                _accountingStartsAfter = checked((int)(long)_configuration["AccountingStartsAfter"]);
+                _limitHi = checked((int)long.Parse(_configuration["MessageLimitHi"]));
+                _limitHiHi = checked((int)long.Parse(_configuration["MessageLimitHiHi"]));
+                _limitAfterBan = checked((int)long.Parse(_configuration["MessageLimitAfterBan"]));
+                _accountingStartsAfter = checked((int)long.Parse(_configuration["AccountingStartsAfter"]));
                 _accountingStartDate = null;
 
                 if (_detailedLogging)
@@ -331,7 +332,7 @@ namespace Zs.Service.ChatAdmin
                         _accountingStartDate = null;
 
                     // if the accounting hasn't started today, keep old limits
-                    var configAccountingStartsAfter = checked((int)(long)_configuration["AccountingStartsAfter"]);
+                    var configAccountingStartsAfter = checked((int)long.Parse(_configuration["AccountingStartsAfter"]));
 
                     if (_accountingStartDate == null
                         && _accountingStartsAfter == configAccountingStartsAfter)

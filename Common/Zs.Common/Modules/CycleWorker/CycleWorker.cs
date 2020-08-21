@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Zs.Common.Interfaces;
@@ -34,7 +33,7 @@ namespace Zs.Common.Modules.CycleWorker
 //#if DEBUG
 //                Trace.WriteLine($"{nameof(CycleWorker)} Start. ThreadId: {Thread.CurrentThread.ManagedThreadId}");
 //#endif
-                _logger?.LogInfo($"{nameof(CycleWorker)} запущен", nameof(CycleWorker));
+                _logger?.LogInfo($"{nameof(CycleWorker)} started", nameof(CycleWorker));
             }
             catch (Exception ex)
             {
@@ -47,10 +46,10 @@ namespace Zs.Common.Modules.CycleWorker
             try
             {
                 _timer.Dispose();
-#if DEBUG
-                Trace.WriteLine($"{nameof(CycleWorker)} Stop. ThreadId: {Thread.CurrentThread.ManagedThreadId}");
-#endif
-                _logger?.LogInfo($"{nameof(CycleWorker)} остановлен", nameof(CycleWorker));
+//#if DEBUG
+//                Trace.WriteLine($"{nameof(CycleWorker)} Stop. ThreadId: {Thread.CurrentThread.ManagedThreadId}");
+//#endif
+                _logger?.LogInfo($"{nameof(CycleWorker)} stopped", nameof(CycleWorker));
             }
             catch (Exception e)
             {
@@ -80,7 +79,7 @@ namespace Zs.Common.Modules.CycleWorker
                                     else
                                         _logger.LogError(task.Exception, nameof(Job));
                                 }
-                            });
+                            }, TaskContinuationOptions.OnlyOnFaulted);
                     }
                 }
             }

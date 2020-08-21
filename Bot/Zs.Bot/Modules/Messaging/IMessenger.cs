@@ -8,6 +8,7 @@ namespace Zs.Bot.Modules.Messaging
     /// </summary>
     public interface IMessenger
     {
+        /// <summary> Converts specific messages, users, chats, etc. to general types </summary>
         IToGenegalItemConverter ItemConverter { get; set; }
 
         /// <summary> Occurs when message is sent </summary>

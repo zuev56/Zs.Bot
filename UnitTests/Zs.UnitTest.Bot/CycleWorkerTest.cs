@@ -33,8 +33,11 @@ namespace Zs.UnitTest.Bot
                     await Task.Delay(10000);
                     cycleWorker.Stop();
                 }
-                ).ContinueWith(task => exception = task.Exception);
-                
+                ).ContinueWith(task =>
+                    exception = task.Exception,
+                    TaskContinuationOptions.OnlyOnFaulted
+                );
+
                 if (exception != null)
                     throw exception;
             }

@@ -1,8 +1,8 @@
 using System;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Zs.Bot.Model.Db;
 using Zs.Bot.Messenger.Telegram;
+using Zs.Bot.Model.Db;
 using Zs.Common.Extensions;
 
 namespace Zs.UnitTest.Bot
@@ -303,7 +303,7 @@ namespace Zs.UnitTest.Bot
         {
             try
             {
-                var filePath = @"C:\Users\zuev56\Documents\users_backup_20200813_1852.json";
+                var filePath = @"C:\Users\zuev56\Documents\users_backup_20200816_1853.json";
 
                 DataImporter.LoadUsersFromJson(filePath);
             }

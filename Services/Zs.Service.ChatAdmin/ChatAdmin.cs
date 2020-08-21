@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Zs.Bot;
 using Zs.Bot.Helpers;
@@ -25,29 +26,28 @@ namespace Zs.Service.ChatAdmin
 
     internal class ChatAdmin : IHostedService
     {
-        private readonly IZsConfiguration _configuration;
-        private readonly IZsLogger _logger;
+        private readonly IConfiguration _configuration;
+        private readonly IZsLogger _logger = Logger.GetInstance();
         private readonly ZsBot _bot;
         private readonly CycleWorker _cycleWorker;
         private readonly MessageProcessor _messageProcessor;
-        private readonly ConnectionAnalyser _connectionAnalyser;
+        private readonly IConnectionAnalyser _connectionAnalyser;
         private readonly bool _detailedLogging;
 
 
         public ChatAdmin(
-            IZsConfiguration configuration,
+            IConfiguration configuration,
             IMessenger messenger, 
-            ConnectionAnalyser connectionAnalyser)
+            IConnectionAnalyser connectionAnalyser)
         {
             try
             {
-                _logger = Logger.GetInstance();
                 _configuration = configuration;
 
-                if (_configuration.Contains("DetailedLogging"))
-                    bool.TryParse(_configuration["DetailedLogging"].ToString(), out _detailedLogging);
+                //if (_configuration.Contains("DetailedLogging"))
+                bool.TryParse(_configuration["DetailedLogging"]?.ToString(), out _detailedLogging);
 
-                _bot = new ZsBot(_configuration, messenger);
+                _bot = new ZsBot(_configuration, messenger, _logger);
                 _bot.Messenger.MessageReceived += Messenger_MessageReceived;
 
                 _connectionAnalyser = connectionAnalyser;
@@ -58,11 +58,6 @@ namespace Zs.Service.ChatAdmin
 
                 _cycleWorker = new CycleWorker(_logger, _detailedLogging);
                 CreateJobs();
-
-#warning Переделать инициализацию из Program.cs
-                var optionsBuilder = new DbContextOptionsBuilder<ChatAdminDbContext>();
-                optionsBuilder.UseNpgsql(_configuration["ConnectionString"].ToString());
-                ChatAdminDbContext.Initialize(optionsBuilder.Options);
             }
             catch (Exception ex)
             {
@@ -83,11 +78,12 @@ namespace Zs.Service.ChatAdmin
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
-            _bot.Messenger.AddMessageToOutbox($"Bot started", "ADMIN");
-            Task.Delay(2000);
+            //_bot.Messenger.AddMessageToOutbox($"Bot stopped", "ADMIN");
+            //Task.Delay(2000);
             _connectionAnalyser.Stop();
             _cycleWorker.Stop();
             _logger.LogInfo("Bot stopped", nameof(ChatAdmin));
+
             return Task.CompletedTask;
         }
 
@@ -101,16 +97,18 @@ namespace Zs.Service.ChatAdmin
         {
             if (status == ConnectionStatus.Ok)
                 _messageProcessor?.SetInternetRepairDate(DateTime.Now);
-            else
+
+            _messageProcessor?.SetInternetRepairDate(null);
+
+            var logMessage = status switch
             {
-                _messageProcessor?.SetInternetRepairDate(null);
+                ConnectionStatus.NoProxyConnection => "No proxy connection",
+                ConnectionStatus.NoInternetConnection => "No internet connection",
+                ConnectionStatus.Ok => "Connection restored",
+                _ => "Connection status is undefined"
+            };
 
-                var logMessage = status == ConnectionStatus.NoProxyConnection
-                    ? "No proxy connection"
-                    : "No internet connection";
-
-                _logger.LogWarning(logMessage, nameof(ConnectionAnalyser));
-            }
+            _logger.LogWarning(logMessage, nameof(ConnectionAnalyser));
         }
 
         private void Messenger_MessageReceived(MessageActionEventArgs e)
@@ -120,16 +118,16 @@ namespace Zs.Service.ChatAdmin
 
         private void Job_ExecutionCompleted(Job job, IJobExecutionResult result)
         {
-            if (_detailedLogging || result?.Show() != null)
+            if (_detailedLogging || result?.TextValue != null)
             {
                 _logger.LogInfo(
                     $"Job execution completed{(job?.Description != null ? $" [{job.Description}]" : "")}",
-                    result?.Show() ?? "<null>",
+                    result?.TextValue ?? "<null>",
                     nameof(ChatAdmin));
             }
 
             if (result != null && DateTime.Now.Hour > 9 && DateTime.Now.Hour < 23)
-                _bot.Messenger.AddMessageToOutbox(result?.Show(), "ADMIN");
+                _bot.Messenger.AddMessageToOutbox(result?.TextValue, "ADMIN");
         }
 
         /// <summary> Creating a <see cref="Job"/> list for a <see cref="CycleWorker"/> instance </summary>

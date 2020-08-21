@@ -8,22 +8,24 @@ using Zs.Common.Interfaces;
 
 namespace Zs.Common.Modules.Connectors
 {
-    /// <summary>
-    /// Analyzes internet connection
-    /// </summary>
-    public class ConnectionAnalyser
+    /// <summary> <inheritdoc/> </summary>
+    public class ConnectionAnalyser : IConnectionAnalyser
     {
         private readonly object _locker = new object();
-        private readonly IZsLogger _logger;      
+        private readonly IZsLogger _logger;
         private readonly string[] _internetServers;
         private Timer _timer;
 
+        /// <summary> <inheritdoc/> </summary>
         public WebProxy WebProxy { get; private set; }
 
+        /// <summary> <inheritdoc/> </summary>
         public DateTime? InternetRepairDate { get; private set; }
 
+        /// <summary> <inheritdoc/> </summary>
         public ConnectionStatus CurrentStatus { get; private set; } = ConnectionStatus.Undefined;
 
+        /// <summary> <inheritdoc/> </summary>
 
         public event Action<ConnectionStatus> ConnectionStatusChanged;
 
@@ -33,12 +35,13 @@ namespace Zs.Common.Modules.Connectors
             _internetServers = testHosts?.Length > 0 ? testHosts : throw new ArgumentException($"{nameof(testHosts)} must contains at least 1 element");
         }
 
-        public ConnectionAnalyser(IZsLogger logger = null, params string[] testHosts)
+        public ConnectionAnalyser(IZsLogger logger, params string[] testHosts)
             : this(testHosts)
         {
             _logger = logger;
         }
-        
+
+        /// <summary> <inheritdoc/> </summary>
         public void Start(uint dueTime, uint period)
         {
             try
@@ -54,6 +57,7 @@ namespace Zs.Common.Modules.Connectors
             }
         }
 
+        /// <summary> <inheritdoc/> </summary>
         public void Stop()
         {
             try
@@ -67,6 +71,7 @@ namespace Zs.Common.Modules.Connectors
             }
         }
 
+        /// <summary> <inheritdoc/> </summary>
         public void InitializeProxy(string socket, string userName = null, string password = null)
         {
             WebProxy = new WebProxy(socket, true);
@@ -133,12 +138,12 @@ namespace Zs.Common.Modules.Connectors
                             else
                                 analyzeResult = ConnectionStatus.NoInternetConnection;
                         }
-                    
+
                     if (InternetRepairDate == null && analyzeResult == ConnectionStatus.Ok)
                         InternetRepairDate = DateTime.Now;
                     else if (analyzeResult != ConnectionStatus.Ok)
                         InternetRepairDate = null;
-                    
+
                     if (analyzeResult != CurrentStatus)
                     {
                         CurrentStatus = analyzeResult;
@@ -163,7 +168,7 @@ namespace Zs.Common.Modules.Connectors
                               ? hostAddress.Substring(hostAddress.IndexOf("://", StringComparison.InvariantCulture) + 3)
                               : hostAddress;
 
-                hostAddress = hostAddress.Contains(":", StringComparison.InvariantCulture) 
+                hostAddress = hostAddress.Contains(":", StringComparison.InvariantCulture)
                                 && !hostAddress.Contains("://", StringComparison.InvariantCulture)
                               ? hostAddress.Substring(0, hostAddress.IndexOf(":", StringComparison.InvariantCulture))
                               : hostAddress;

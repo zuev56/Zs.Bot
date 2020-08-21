@@ -239,7 +239,9 @@ namespace Zs.Bot.Model.Db
                     originalMessage.RawDataHistory = rdHistory.ToString().NormalizeJsonString();
                 }
 
-                originalMessage.MessageText = newMessage.MessageText;
+                originalMessage.MessageText = newMessage.MessageText?.Length > 100 
+                                            ? newMessage.MessageText.Substring(0,100) 
+                                            : newMessage.MessageText;
                 originalMessage.MessageTypeCode = newMessage.MessageTypeCode;
                 originalMessage.ReplyToMessageId = newMessage.ReplyToMessageId;
                 originalMessage.RawData = newMessage.RawData;

@@ -32,7 +32,6 @@ namespace Zs.Bot.Helpers
             }
         }
 
-
         protected Logger()
         {
         }
@@ -41,7 +40,7 @@ namespace Zs.Bot.Helpers
         {
             if (_instance == null)
                 _instance = new Logger();
-
+        
             return _instance;
         }
 

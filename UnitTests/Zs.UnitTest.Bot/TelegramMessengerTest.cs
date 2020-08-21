@@ -6,8 +6,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Telegram.Bot.Types;
 using Zs.Bot.Helpers;
-using Zs.Bot.Model.Db;
 using Zs.Bot.Messenger.Telegram;
+using Zs.Bot.Model.Db;
 
 namespace Zs.UnitTest.Bot
 {
@@ -45,7 +45,10 @@ namespace Zs.UnitTest.Bot
                         _messenger.AddMessageToOutbox(GetChat(), $"TestMessage_{i}_q");
                     }
                     await Task.Delay(30000);
-                }).ContinueWith(task => exception = task.Exception);
+                }).ContinueWith(task =>
+                    exception = task.Exception,
+                    TaskContinuationOptions.OnlyOnFaulted
+                );
 
                 if (exception != null)
                     throw exception;
@@ -77,8 +80,11 @@ namespace Zs.UnitTest.Bot
                             privateInputBuffer.Enqueue(new TgMessage(message)); //tgMessenger.TestMessageToInbox(message);
                         }
                         await Task.Delay(40000);
-                    }).ContinueWith(task => exception = task.Exception);
-                    
+                    }).ContinueWith(task =>
+                        exception = task.Exception,
+                        TaskContinuationOptions.OnlyOnFaulted
+                    );
+
                     if (exception != null)
                         throw exception;
                 }

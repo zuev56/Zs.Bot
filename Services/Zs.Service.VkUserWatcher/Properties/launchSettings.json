@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Zs.Service.VkUserWatcher": {
+      "commandName": "Project",
+      "commandLineArgs": "M:\\PrivateBotConfiguration.json"
+    }
+  }
+}
