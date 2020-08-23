@@ -4,7 +4,7 @@ using System.Net;
 using System.Net.NetworkInformation;
 using System.Threading;
 using Zs.Common.Enums;
-using Zs.Common.Interfaces;
+using Zs.Common.Abstractions;
 
 namespace Zs.Common.Modules.Connectors
 {

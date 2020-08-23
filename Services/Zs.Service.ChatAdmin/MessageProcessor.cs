@@ -8,8 +8,8 @@ using Microsoft.Extensions.Configuration;
 using Zs.Bot.Helpers;
 using Zs.Bot.Model.Db;
 using Zs.Bot.Modules.Messaging;
-using Zs.Common.Interfaces;
-using Zs.Service.ChatAdmin.DbModel;
+using Zs.Common.Abstractions;
+using Zs.Service.ChatAdmin.Model;
 
 namespace Zs.Service.ChatAdmin
 {

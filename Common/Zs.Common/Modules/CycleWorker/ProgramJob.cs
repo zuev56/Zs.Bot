@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
-using System.Threading;
 
 namespace Zs.Common.Modules.CycleWorker
 {
@@ -13,13 +11,18 @@ namespace Zs.Common.Modules.CycleWorker
         private readonly object _parameter;
 
 
-        public ProgramJob(TimeSpan period, Action method, object parameter = null, DateTime? startDate = null)
+        public ProgramJob(TimeSpan period,
+            Action method,
+            object parameter = null,
+            DateTime? startDate = null,
+            string description = null)
             : base(period, startDate)
         {
             Period = period != default ? period : throw new ArgumentException($"{nameof(period)} can't have default value");
 
             _method = method ?? throw new ArgumentNullException(nameof(method));
             _parameter = parameter;
+            Description = description;
         }
 
         protected override IJobExecutionResult GetExecutionResult()

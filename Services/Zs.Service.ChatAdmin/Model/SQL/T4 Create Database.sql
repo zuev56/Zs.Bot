@@ -1,4 +1,3 @@
-
 --DROP USER IF EXISTS zuev56;
 --DROP USER IF EXISTS app;
 --CREATE USER zuev56 WITH PASSWORD 'xxx';
@@ -15,7 +14,6 @@ CREATE DATABASE "ZsBot" WITH ENCODING = 'UTF8';
 \connect "ZsBot" postgres;
 DROP SCHEMA public;
 CREATE SCHEMA bot;
-CREATE SCHEMA zl;
 CREATE SCHEMA helper;
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA helper;
 
@@ -31,12 +29,6 @@ $$ language 'plpgsql';
 COMMENT ON FUNCTION helper.reset_update_date()
     IS 'Общая триггерная функция обовления поля update_date';
     
-
-
-
-
-
---!!СДЕЛАТЬ ОБНОВЛЕНИЕ UPDATEDATE при изменении записей БД
 
 
 
@@ -142,7 +134,7 @@ CREATE TABLE bot.users (
 );
 CREATE TRIGGER users_reset_update_date BEFORE UPDATE
 ON bot.users FOR EACH ROW EXECUTE PROCEDURE helper.reset_update_date();
-COMMENT ON TABLE bot.user_roles IS 'Chat members';
+COMMENT ON TABLE bot.users IS 'Chat members';
 
 INSERT INTO bot.users(user_id, user_name, user_full_name, user_role_code, user_is_bot, raw_data, raw_data_hash, update_date, insert_date) 
 VALUES(-10, 'Unknown', 'for exported message reading', 'USER', false, '{"test":"test"}', -1063294487, now(), now());
@@ -247,8 +239,6 @@ CREATE TRIGGER commands_new_command_correct BEFORE INSERT OR UPDATE
 ON bot.commands FOR EACH ROW EXECUTE PROCEDURE bot.commands_new_command_correct();
 
 INSERT INTO bot.commands(command_name, command_script, command_default_args, command_desc, command_group) 
-VALUES('/GetUserStatistics', 'SELECT zl.sf_cmd_get_full_statistics({0}, {1}, {2})', '15; now()::Date; now()', 'Получение статистики по активности участников всех чатов за определённый период', 'adminCmdGroup');
-INSERT INTO bot.commands(command_name, command_script, command_default_args, command_desc, command_group) 
 VALUES('/Test', 'SELECT ''Test''', null, 'Тестовый запрос к боту. Возвращает ''Test''', 'moderatorCmdGroup');
 INSERT INTO bot.commands(command_name, command_script, command_default_args, command_desc, command_group) 
 VALUES('/NullTest', 'SELECT null', null, 'Тестовый запрос к боту. Возвращает NULL', 'moderatorCmdGroup');
@@ -309,12 +299,12 @@ COMMENT ON TABLE bot.sessions IS 'Сессии пользователей - обслуживают последовате
 
 
 
+CREATE SCHEMA zl;
 
-INSERT INTO bot.options(option_group, option_name, option_value, option_description) VALUES('ChatAdmin', 'ChatUserMessageCountHiHi', '-1', 'Верхняя аварийная уставка');
-INSERT INTO bot.options(option_group, option_name, option_value, option_description) VALUES('ChatAdmin', 'ChatUserMessageCountHi',   '-1', 'Верхняя предупредительная уставка');
---INSERT INTO bot.options(option_group, option_name, option_value, option_description) VALUES('ChatAdmin','DefaultChatId',            '',   '»дентификатор чата, с которым бот работает по умолчанию');
 
---DROP TABLE zl.bans;
+
+INSERT INTO bot.commands(command_name, command_script, command_default_args, command_desc, command_group) 
+VALUES('/GetUserStatistics', 'SELECT zl.sf_cmd_get_full_statistics({0}, {1}, {2})', '15; now()::Date; now()', '????????? ?????????? ?? ?????????? ?????????? ???? ????? ?? ??????????? ??????', 'adminCmdGroup');
 
 CREATE TABLE zl.bans (
     ban_id             serial      NOT NULL PRIMARY KEY,
@@ -327,69 +317,47 @@ CREATE TABLE zl.bans (
 );
 CREATE TRIGGER bans_reset_update_date BEFORE UPDATE
 ON zl.bans FOR EACH ROW EXECUTE PROCEDURE helper.reset_update_date();
-COMMENT ON TABLE zl.bans IS 'Информация о банах';
-
-
-
-
-CREATE TABLE zl.accountings (
-    accounting_id         serial      NOT NULL PRIMARY KEY,
-    accounting_start_date timestamptz NOT NULL DEFAULT now(),   
-    update_date           timestamptz NOT NULL DEFAULT now()
-);
-CREATE TRIGGER accountings_reset_update_date BEFORE UPDATE
-ON zl.accountings FOR EACH ROW EXECUTE PROCEDURE helper.reset_update_date();
-COMMENT ON TABLE zl.accountings IS 'Информация о времени начала учёта сообщений каждого отдельного пользователя';
-
-
-
-
-CREATE TABLE zl.notifications (
-    notification_id           serial        NOT NULL PRIMARY KEY,
-    notification_is_active     bool         NOT NULL DEFAULT TRUE,
-    notification_message      varchar(2000) NOT NULL,
-    notification_month        int               NULL, -- мес¤ц, если событие ежегодное; null, если событие ежемес¤чное
-    notification_day          int           NOT NULL, -- день мес¤ца
-    notification_hour         int           NOT NULL, -- врем¤ оповещени¤
-    notification_minute       int           NOT NULL, -- врем¤ оповещени¤
-    notification_exec_date    timestamptz       NULL, -- время последнего срабатывания
-    update_date               timestamptz   NOT NULL DEFAULT now(),
-    insert_date               timestamptz   NOT NULL DEFAULT now()
-);
-CREATE TRIGGER notifications_reset_update_date BEFORE UPDATE
-ON zl.notifications FOR EACH ROW EXECUTE PROCEDURE helper.reset_update_date();
-COMMENT ON TABLE zl.notifications IS 'Напоминание о событиях';
-
+COMMENT ON TABLE zl.bans IS '?????????? ? ?????';
 
 
 
 CREATE TABLE zl.auxiliary_words (
-    the_word    varchar(100)  NOT NULL PRIMARY KEY, -- word нельз¤ использовать в постгресе
+    the_word    varchar(100)  NOT NULL PRIMARY KEY, -- word ????? ???????????? ? ?????????
     insert_date timestamptz   NOT NULL DEFAULT now()
 );
-COMMENT ON TABLE zl.auxiliary_words IS 'Вспомогательные слова - то, что должно быть отсеяно из статистики';
+COMMENT ON TABLE zl.auxiliary_words IS '??????????????? ????? - ??, ??? ?????? ???? ??????? ?? ??????????';
+
+
+--CREATE TABLE zl.accountings (
+--    accounting_id         serial      NOT NULL PRIMARY KEY,
+--    accounting_start_date timestamptz NOT NULL DEFAULT now(),   
+--    update_date           timestamptz NOT NULL DEFAULT now()
+--);
+--CREATE TRIGGER accountings_reset_update_date BEFORE UPDATE
+--ON zl.accountings FOR EACH ROW EXECUTE PROCEDURE helper.reset_update_date();
+--COMMENT ON TABLE zl.accountings IS '?????????? ? ??????? ?????? ????? ????????? ??????? ?????????? ????????????';
 
 
 
 
+--CREATE TABLE zl.notifications (
+--    notification_id           serial        NOT NULL PRIMARY KEY,
+--    notification_is_active     bool         NOT NULL DEFAULT TRUE,
+--    notification_message      varchar(2000) NOT NULL,
+--    notification_month        int               NULL, -- ????, ???? ??????? ?????????; null, ???? ??????? ??????????
+--    notification_day          int           NOT NULL, -- ???? ?????
+--    notification_hour         int           NOT NULL, -- ???? ?????????
+--    notification_minute       int           NOT NULL, -- ???? ?????????
+--    notification_exec_date    timestamptz       NULL, -- ????? ?????????? ????????????
+--    update_date               timestamptz   NOT NULL DEFAULT now(),
+--    insert_date               timestamptz   NOT NULL DEFAULT now()
+--);
+--CREATE TRIGGER notifications_reset_update_date BEFORE UPDATE
+--ON zl.notifications FOR EACH ROW EXECUTE PROCEDURE helper.reset_update_date();
+--COMMENT ON TABLE zl.notifications IS '??????????? ? ????????';
 
-GRANT ALL PRIVILEGES ON DATABASE "ZsBot"            TO zuev56;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA zl  TO zuev56;
-GRANT ALL PRIVILEGES ON DATABASE "ZsBot"            TO zuev56;
-GRANT ALL PRIVILEGES ON SCHEMA zl                   TO zuev56;
-GRANT ALL PRIVILEGES ON SCHEMA bot                  TO zuev56;
-GRANT ALL PRIVILEGES ON ALL TABLES    IN SCHEMA zl  TO zuev56;
-GRANT ALL PRIVILEGES ON ALL TABLES    IN SCHEMA bot TO zuev56;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA bot TO zuev56;
 
-GRANT CONNECT        ON DATABASE "ZsBot"            TO app;
-GRANT ALL PRIVILEGES ON SCHEMA zl                   TO app;
-GRANT ALL PRIVILEGES ON SCHEMA bot                  TO app;
-GRANT ALL PRIVILEGES ON ALL TABLES    IN SCHEMA bot TO app;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA bot TO app;
-GRANT INSERT         ON ALL TABLES    IN SCHEMA bot TO app;
-GRANT ALL PRIVILEGES ON ALL TABLES    IN SCHEMA zl  TO app;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA zl  TO app;
+
 
 
 
@@ -457,7 +425,46 @@ COMMENT ON FUNCTION bot.sf_cmd_get_help(character varying)
 
 
 
-    
+
+-- Get statistics of specific chat
+CREATE OR REPLACE FUNCTION bot.sf_get_chat_statistics(
+    _chat_id     integer,
+    _users_limit integer,
+    _from_date   timestamp with time zone,
+    _to_date     timestamp with time zone DEFAULT now()
+    )
+    RETURNS table(chat_id integer, user_id integer, message_count bigint) 
+    LANGUAGE 'plpgsql'
+    ROWS 1000
+AS $BODY$
+BEGIN
+    RETURN QUERY(
+        SELECT _chat_id
+             , u.user_id
+             , count(m.*) 
+          FROM bot.messages m
+          JOIN bot.users u ON u.user_id = m.user_id
+         WHERE m.chat_id = _chat_id
+           AND m.insert_date >= _from_date AND m.insert_date <= _to_date
+           AND m.is_deleted = false
+      GROUP BY u.user_id
+      ORDER BY count(m.*) DESC
+      LIMIT _users_limit);
+END;
+$BODY$;
+ALTER FUNCTION bot.sf_get_chat_statistics(integer, integer, timestamp with time zone, timestamp with time zone)
+    OWNER TO postgres;
+COMMENT ON FUNCTION bot.sf_get_chat_statistics(integer, integer, timestamp with time zone, timestamp with time zone)
+    IS 'Returns a list of users and the number of their messages in the specified time range';
+--select * from bot.sf_get_chat_statistics(1, 10, now()::date - interval '1 day', now())
+
+
+
+
+
+
+
+
 -- Process incoming messages of specific chat
 CREATE OR REPLACE FUNCTION zl.sf_process_group_message(
     _chat_id integer,
@@ -476,15 +483,6 @@ DECLARE
    _daily_chat_msg_count integer;
    _ban_id integer;
 BEGIN
- -- При достижении лимита пользователь банится на 3 часа. 
- --     Если лимит достигнут ближе к концу дня, бан продолжает своё действие 
- --     до окончания трёхчасового периода. Если 3 часа бана прошло, 
- --     а день не закончился, позволяем пользователю отправку 5-ти сообщений 
- --     до начала следующего дня
- -- 
- -- После восстановления интернета через 1 минуту происходит 
- --     переопределение лимитов для того, чтобы не перетереть 
- --     только что полученные сообщения
     
     select user_id into _user_id from bot.messages where message_id = _message_id;
 
@@ -540,15 +538,22 @@ BEGIN
  
     -- Дата начала учёта хранится в пямяти программы и передаётся в этот метод
     -- Переопределяется после перезагрузки или восстановления соединения с сетью
-    if (_accounting_start_date is null and _daily_chat_msg_count >= _start_account_after) then
+    if (_accounting_start_date is null and _daily_chat_msg_count >= _start_account_after) 
+    then
         return '{ 
                     "Action": "SetAccountingStartDate",
                     "AccountingStartDate": "' || now()::text || E'"\n' ||',
                     "MessageText" : "В чате уже ' || _daily_chat_msg_count::text || ' сообщений. Начинаю персональный учёт." 
-               }';
+                }';
+    elsif (_accounting_start_date is null and _daily_chat_msg_count < _start_account_after)
+    then
+        return '{ 
+                    "Action": "Continue",
+                    "Info": "Учёт сообщений ещё не начался" 
+                }';
     end if;
 
-    select user_id into _user_id from bot.messages where message_id = _message_id;
+    --select user_id into _user_id from bot.messages where message_id = _message_id;
      
     select count(*) into _accounted_user_msg_count from bot.messages 
     where insert_date > _accounting_start_date 
@@ -642,41 +647,6 @@ END;
 $BODY$;
 ALTER FUNCTION zl.sf_process_group_message(integer, integer, timestamp with time zone, integer, integer, integer, integer)
     OWNER TO postgres;
-
-
-
-
--- Get statistics of specific chat
-CREATE OR REPLACE FUNCTION bot.sf_get_chat_statistics(
-    _chat_id     integer,
-    _users_limit integer,
-    _from_date   timestamp with time zone,
-    _to_date     timestamp with time zone DEFAULT now()
-    )
-    RETURNS table(chat_id integer, user_id integer, message_count bigint) 
-    LANGUAGE 'plpgsql'
-    ROWS 1000
-AS $BODY$
-BEGIN
-    RETURN QUERY(
-        SELECT _chat_id
-             , u.user_id
-             , count(m.*) 
-          FROM bot.messages m
-          JOIN bot.users u ON u.user_id = m.user_id
-         WHERE m.chat_id = _chat_id
-           AND m.insert_date >= _from_date AND m.insert_date <= _to_date
-           AND m.is_deleted = false
-      GROUP BY u.user_id
-      ORDER BY count(m.*) DESC
-      LIMIT _users_limit);
-END;
-$BODY$;
-ALTER FUNCTION bot.sf_get_chat_statistics(integer, integer, timestamp with time zone, timestamp with time zone)
-    OWNER TO postgres;
-COMMENT ON FUNCTION bot.sf_get_chat_statistics(integer, integer, timestamp with time zone, timestamp with time zone)
-    IS 'Returns a list of users and the number of their messages in the specified time range';
---select * from bot.sf_get_chat_statistics(1, 10, now()::date - interval '1 day', now())
 
 
 
@@ -803,98 +773,24 @@ COMMENT ON FUNCTION zl.sf_cmd_get_full_statistics(integer, timestamp with time z
 
 
 
-    
+GRANT ALL PRIVILEGES ON DATABASE "ZsBot"    TO zuev56;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA bot TO zuev56;
+GRANT ALL PRIVILEGES ON SCHEMA bot                  TO zuev56;
+GRANT ALL PRIVILEGES ON ALL TABLES    IN SCHEMA bot TO zuev56;
+
+GRANT CONNECT        ON DATABASE "ZsBot"    TO app;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA bot TO app;
+GRANT ALL PRIVILEGES ON SCHEMA bot                  TO app;
+GRANT ALL PRIVILEGES ON ALL TABLES    IN SCHEMA bot TO app;
 
 
 
+GRANT ALL PRIVILEGES ON DATABASE "ZsBot"   TO zuev56;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA zl TO zuev56;
+GRANT ALL PRIVILEGES ON SCHEMA zl                  TO zuev56;
+GRANT ALL PRIVILEGES ON ALL TABLES    IN SCHEMA zl TO zuev56;
 
-\connect "ZsBot" postgres;
-CREATE SCHEMA rmgr;
-CREATE EXTENSION postgres_fdw WITH SCHEMA rmgr;
-CREATE SERVER ActiveRmgrDb FOREIGN DATA WRAPPER postgres_fdw OPTIONS (host '192.168.1.12', dbname 'RemoteManagerDb', port '5632');
-CREATE USER MAPPING FOR postgres SERVER ActiveRmgrDb OPTIONS(user 'postgres', password 'postgres');
-
-
-CREATE FOREIGN TABLE rmgr."ReceivedMsg" (
-    "ReceivedMsgId"                    bigint NOT NULL,
-    "ReceivedMsgMessageId"             integer NOT NULL,
-    "UserId"                           integer NOT NULL,
-    "ChatId"                           bigint NOT NULL,
-    "MessageTypeName"                  character varying(50) COLLATE pg_catalog."default" NOT NULL,
-    "ReceivedMsgAuthorSignature"       character varying(500) COLLATE pg_catalog."default",
-    "ReceivedMsgCaption"               character varying(500) COLLATE pg_catalog."default",
-    "ReceivedMsgChannelChatCreated"    boolean,
-    "ReceivedMsgConnectedWebsite"      character varying(500) COLLATE pg_catalog."default",
-    "ReceivedMsgDate"                  timestamp with time zone,
-    "ReceivedMsgDeleteChatPhoto"       boolean,
-    "ReceivedMsgEditDate"              timestamp with time zone,
-    "ReceivedMsgForwardDate"           timestamp with time zone,
-    "ReceivedMsgForwardFromId"         integer,
-    "ReceivedMsgForwardFromChatId"     bigint,
-    "ReceivedMsgForwardFromMessageId"  integer,
-    "ReceivedMsgForwardSignature"      character varying(500) COLLATE pg_catalog."default",
-    "ReceivedMsgGroupChatCreated"      boolean,
-    "ReceivedMsgIsForwarded"           boolean,
-    "ReceivedMsgLeftChatMemberId"      integer,
-    "ReceivedMsgLocation"              character varying(500) COLLATE pg_catalog."default",
-    "ReceivedMsgMediaGroupId"          character varying(500) COLLATE pg_catalog."default",
-    "ReceivedMsgMigrateFromChatId"     bigint,
-    "ReceivedMsgMigrateToChatId"       bigint,
-    "ReceivedMsgNewChatTitle"          character varying(500) COLLATE pg_catalog."default",
-    "ReceivedMsgPinnedMessageId"       integer,
-    "ReceivedMsgReplyToMessageId"      integer,
-    "ReceivedMsgSupergroupChatCreated" boolean,
-    "ReceivedMsgText"                  character varying(5000) COLLATE pg_catalog."default",
-    "InsertDate"                       timestamp with time zone NOT NULL DEFAULT now(),
-    "UpdateDate"                       timestamp with time zone NOT NULL DEFAULT now(),
-    "IsDeleted"                        boolean DEFAULT false
-)
-SERVER ActiveRmgrDb OPTIONS(schema_name 'rmgr', table_name 'ReceivedMsg');
-
-
-CREATE FOREIGN TABLE rmgr."Chat"
-(
-    "ChatId"                          bigint NOT NULL,
-    "ChatTitle"                       character varying(50) COLLATE pg_catalog."default",
-    "ChatFirstName"                   character varying(50) COLLATE pg_catalog."default",
-    "ChatLastName"                    character varying(50) COLLATE pg_catalog."default",
-    "ChatDescription"                 character varying(100) COLLATE pg_catalog."default",
-    "ChatType"                        character varying(50) COLLATE pg_catalog."default",
-    "ChatInviteLink"                  character varying(10) COLLATE pg_catalog."default",
-    "ChatUserName"                    character varying(50) COLLATE pg_catalog."default",
-    "ChatAllMembersAreAdministrators" boolean,
-    "ChatCanSetStickerSet"            boolean,
-    "ChatStickerSetName"              character varying(50) COLLATE pg_catalog."default",
-    "PinnedMessageId"                 integer,
-    "IsSubscribed"                    boolean NOT NULL,
-    "InsertDate"                      timestamp with time zone NOT NULL DEFAULT now(),
-    "UpdateDate"                      timestamp with time zone NOT NULL DEFAULT now()
-)
-SERVER ActiveRmgrDb OPTIONS(schema_name 'rmgr', table_name 'Chat');
-
-
-
-CREATE FOREIGN TABLE rmgr."User"
-(
-    "UserId"         integer NOT NULL,
-    "UserName"       character varying(50) COLLATE pg_catalog."default",
-    "UserManualName" character varying(50) COLLATE pg_catalog."default",
-    "UserFirstName"  character varying(50) COLLATE pg_catalog."default",
-    "UserLastName"   character varying(50) COLLATE pg_catalog."default",
-    "RoleName"       character varying(50) COLLATE pg_catalog."default" NOT NULL,
-    "IsBot"          boolean,
-    "UpdateDate"     timestamp with time zone NOT NULL DEFAULT now(),
-    "InsertDate"     timestamp with time zone NOT NULL DEFAULT now()
-)
-SERVER ActiveRmgrDb OPTIONS(schema_name 'rmgr', table_name 'User');
-
-
-CREATE FOREIGN TABLE rmgr."UnInterestedWords"
-(
-    wd character varying(100) COLLATE pg_catalog."default" NOT NULL,
-    insert_date timestamp with time zone NOT NULL DEFAULT now()
-)
-SERVER ActiveRmgrDb OPTIONS(schema_name 'cas', table_name 'UnInterestedWords');
-
-insert into zl.auxiliary_words (the_word, insert_date)
-SELECT wd, insert_date from rmgr."UnInterestedWords";
+GRANT CONNECT        ON DATABASE "ZsBot"   TO app;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA zl TO app;
+GRANT ALL PRIVILEGES ON SCHEMA zl                  TO app;
+GRANT ALL PRIVILEGES ON ALL TABLES    IN SCHEMA zl TO app;

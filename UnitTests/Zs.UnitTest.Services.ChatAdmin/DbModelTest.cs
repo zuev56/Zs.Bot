@@ -2,7 +2,7 @@ using System;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zs.Bot.Model.Db;
-using Zs.Service.ChatAdmin.DbModel;
+using Zs.Service.ChatAdmin.Model;
 
 namespace Zs.UnitTest.Services.ChatAdmin
 {

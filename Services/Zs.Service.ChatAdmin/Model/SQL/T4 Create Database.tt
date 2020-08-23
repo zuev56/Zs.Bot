@@ -2,29 +2,34 @@
 <#@ output extension="sql" #>
 <#@ import namespace="System.IO" #>
 <#@ import namespace="System.Text" #>
-
 <#
     try
     {
+        var sqlProjectDir = Host.ResolveAssemblyReference(@"$(SolutionDir)SQL\Zs.Bot.Database\");
         var projectDir = Host.ResolveAssemblyReference("$(ProjectDir)");
     
         var divider = Environment.NewLine + Environment.NewLine + Environment.NewLine;
         
         var sb =  new StringBuilder();
-        sb.Append(File.ReadAllText($@"{projectDir}\DbStructure\Base.sql"));
+        sb.Append(File.ReadAllText($@"{sqlProjectDir}\DbStructure\Base_bot.sql"));
         sb.Append(divider);
-        sb.Append(File.ReadAllText($@"{projectDir}\DbStructure\Tables_bot.sql"));
+        sb.Append(File.ReadAllText($@"{sqlProjectDir}\DbStructure\Tables_bot.sql"));
         sb.Append(divider);
-        sb.Append(File.ReadAllText($@"{projectDir}\DbStructure\Tables_zl.sql"));
+        sb.Append(File.ReadAllText($@"{projectDir}\Model\SQL\Base_zl.sql"));
         sb.Append(divider);
-        sb.Append(File.ReadAllText($@"{projectDir}\DbStructure\Priveleges.sql"));
+        sb.Append(File.ReadAllText($@"{projectDir}\Model\SQL\Tables_zl.sql"));
         sb.Append(divider);
-        sb.Append(File.ReadAllText($@"{projectDir}\DbStructure\Functions_ready.sql"));
-       // sb.Append(divider);
-       // sb.Append(File.ReadAllText($@"{projectDir}\DbStructure\Functions_zl.sql"));
+        sb.Append(File.ReadAllText($@"{sqlProjectDir}\DbStructure\Functions_bot.sql"));
         sb.Append(divider);
-        sb.Append(File.ReadAllText($@"{projectDir}\DbStructure\ForeignTables.sql"));
+        sb.Append(File.ReadAllText($@"{projectDir}\Model\SQL\Functions_zl.sql"));
+        sb.Append(divider);
+        sb.Append(File.ReadAllText($@"{sqlProjectDir}\DbStructure\Priveleges_bot.sql"));
+        sb.Append(divider);
+        sb.Append(File.ReadAllText($@"{projectDir}\Model\SQL\Priveleges_zl.sql"));
         
+        // Changing DB name
+        sb.Replace("DefaultDbName", "ZsBot");
+
         Write(sb.ToString());        
     }
     catch (Exception ex)

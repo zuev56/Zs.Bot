@@ -16,7 +16,7 @@ using Zs.Bot.Helpers;
 using Zs.Bot.Model.Db;
 using Zs.Bot.Modules.Messaging;
 using Zs.Common.Enums;
-using Zs.Common.Interfaces;
+using Zs.Common.Abstractions;
 
 namespace Zs.Bot.Messenger.Telegram
 {

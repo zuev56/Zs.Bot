@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
-using System.Threading;
 using Npgsql;
 using Zs.Common.Enums;
 using Zs.Common.Extensions;
@@ -10,8 +8,6 @@ namespace Zs.Common.Modules.CycleWorker
     /// <summary>
     /// <see cref="Job"/> based on SQL script
     /// </summary>
-    // SQL NON QUERY JOB
-    // SQL READER JOB
     public sealed class SqlJob : Job
     {
         // Надо определять тип возвращаемого значения при создании  джоба
@@ -23,7 +19,12 @@ namespace Zs.Common.Modules.CycleWorker
         private QueryResultType _resultType;
 
 
-        public SqlJob(TimeSpan period, QueryResultType resultType, string sqlQuery, string connectionString, DateTime? startDate = null)
+        public SqlJob(TimeSpan period,
+            QueryResultType resultType,
+            string sqlQuery,
+            string connectionString,
+            DateTime? startDate = null,
+            string description = null)
             : base(period, startDate)
         {
             Period = period != default ? period : throw new ArgumentException($"{nameof(period)} can't have default value");
@@ -31,6 +32,7 @@ namespace Zs.Common.Modules.CycleWorker
             _connectionString = connectionString ?? throw new ArgumentNullException(nameof(sqlQuery));
             _resultType = resultType;
             _sqlQuery = sqlQuery ?? throw new ArgumentNullException(nameof(sqlQuery));
+            Description = description;
         }
 
         protected override IJobExecutionResult GetExecutionResult()

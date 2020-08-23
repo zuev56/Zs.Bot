@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 using Newtonsoft.Json;
 using Zs.Bot.Model.Db;
 using Zs.Common.Enums;
-using Zs.Common.Interfaces;
+using Zs.Common.Abstractions;
 
 namespace Zs.Bot.Helpers
 {

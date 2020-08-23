@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Zs.Common.Interfaces
+namespace Zs.Common.Abstractions
 {
 
     public interface IZsLogger

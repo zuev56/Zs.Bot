@@ -21,7 +21,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Update="DbModel\T4_DbModel.tt">
+    <None Update="Model\SQL\T4 Create Database.sql">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>T4 Create Database.tt</DependentUpon>
+    </None>
+    <None Update="Model\SQL\T4 Create Database.tt">
+      <LastGenOutput>T4 Create Database.sql</LastGenOutput>
+      <Generator>TextTemplatingFileGenerator</Generator>
+    </None>
+    <None Update="Model\T4_DbModel.tt">
       <LastGenOutput>T4_DbModel.generated.cs</LastGenOutput>
       <Generator>TextTemplatingFileGenerator</Generator>
     </None>
@@ -50,7 +59,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Update="DbModel\T4_DbModel.generated.cs">
+    <Compile Update="Model\T4_DbModel.generated.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>T4_DbModel.tt</DependentUpon>

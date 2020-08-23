@@ -5,14 +5,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Update="T4 Create Db, Tables, Views.sql">
+    <None Update="T4 Create Database.sql">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
-      <DependentUpon>T4 Create Db, Tables, Views.tt</DependentUpon>
+      <DependentUpon>T4 Create Database.tt</DependentUpon>
     </None>
-    <None Update="T4 Create Db, Tables, Views.tt">
+    <None Update="T4 Create Database.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>T4 Create Db, Tables, Views.sql</LastGenOutput>
+      <LastGenOutput>T4 Create Database.sql</LastGenOutput>
     </None>
   </ItemGroup>
 

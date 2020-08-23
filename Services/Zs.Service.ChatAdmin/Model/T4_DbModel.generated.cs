@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace Zs.Service.ChatAdmin.DbModel
+namespace Zs.Service.ChatAdmin.Model
 {
     #region Interfaces for 'zl' schema
 

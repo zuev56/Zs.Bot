@@ -9,12 +9,11 @@ DO $$ BEGIN
 END $$;
 \c postgres postgres;
 set timezone = 'Europe/Moscow';
-DROP DATABASE IF EXISTS "ZsBot";
-CREATE DATABASE "ZsBot" WITH ENCODING = 'UTF8';
-\connect "ZsBot" postgres;
+DROP DATABASE IF EXISTS "DefaultDbName";
+CREATE DATABASE "DefaultDbName" WITH ENCODING = 'UTF8';
+\connect "DefaultDbName" postgres;
 DROP SCHEMA public;
 CREATE SCHEMA bot;
-CREATE SCHEMA zl;
 CREATE SCHEMA helper;
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA helper;
 

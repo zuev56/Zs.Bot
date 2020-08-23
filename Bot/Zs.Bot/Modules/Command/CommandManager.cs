@@ -12,7 +12,7 @@ using Zs.Bot.Helpers;
 using Zs.Bot.Model.Db;
 using Zs.Common.Exceptions;
 using Zs.Common.Extensions;
-using Zs.Common.Interfaces;
+using Zs.Common.Abstractions;
 
 namespace Zs.Bot.Modules.Command
 {

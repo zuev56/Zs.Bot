@@ -1,3 +1,36 @@
+--DROP USER IF EXISTS zuev56;
+--DROP USER IF EXISTS app;
+--CREATE USER zuev56 WITH PASSWORD 'xxx';
+
+DO $$ BEGIN
+    IF NOT EXISTS (select 1 from pg_user where usename='app') THEN
+        CREATE USER app WITH PASSWORD 'app';
+    END IF;
+END $$;
+\c postgres postgres;
+set timezone = 'Europe/Moscow';
+DROP DATABASE IF EXISTS "VkUserWatcher";
+CREATE DATABASE "VkUserWatcher" WITH ENCODING = 'UTF8';
+\connect "VkUserWatcher" postgres;
+DROP SCHEMA public;
+CREATE SCHEMA bot;
+CREATE SCHEMA helper;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA helper;
+
+
+CREATE OR REPLACE FUNCTION helper.reset_update_date()
+RETURNS TRIGGER AS $$
+BEGIN
+   NEW.update_date = now(); 
+   RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+COMMENT ON FUNCTION helper.reset_update_date()
+    IS 'Общая триггерная функция обовления поля update_date';
+    
+
+
 
 CREATE TABLE bot.messengers (
     messenger_code varchar(2)  NOT NULL PRIMARY KEY,
@@ -7,10 +40,10 @@ CREATE TABLE bot.messengers (
 );
 CREATE TRIGGER messengers_reset_update_date BEFORE UPDATE
 ON bot.messengers FOR EACH ROW EXECUTE PROCEDURE helper.reset_update_date();
-COMMENT ON TABLE bot.messengers IS 'РЎРёСЃС‚РµРјР° РѕР±РјРµРЅР° СЃРѕРѕР±С‰РµРЅРёСЏРјРё';
+COMMENT ON TABLE bot.messengers IS 'Система обмена сообщениями';
 
 INSERT INTO bot.messengers(messenger_code, messenger_name) VALUES('TG', 'Telegram');
-INSERT INTO bot.messengers(messenger_code, messenger_name) VALUES('VK', 'Р’РєРѕРЅС‚Р°РєС‚Рµ');
+INSERT INTO bot.messengers(messenger_code, messenger_name) VALUES('VK', 'Вконтакте');
 INSERT INTO bot.messengers(messenger_code, messenger_name) VALUES('SK', 'Skype');
 INSERT INTO bot.messengers(messenger_code, messenger_name) VALUES('FB', 'Facebook');
 INSERT INTO bot.messengers(messenger_code, messenger_name) VALUES('DC', 'Discord');
@@ -54,7 +87,7 @@ CREATE TABLE bot.chats (
     chat_name        varchar(50)   NOT NULL,
     chat_description varchar(100)      NULL,
     chat_type_code   varchar(10)   NOT NULL REFERENCES bot.chat_types(chat_type_code) DEFAULT('UNDEFINED'),
-    raw_data         json          NOT NULL, -- РџРѕР»РЅС‹Р№ РЅР°Р±РѕСЂ РґР°РЅРЅС‹С…
+    raw_data         json          NOT NULL, -- Полный набор данных
     raw_data_hash    varchar(50)   NOT NULL,
     raw_data_history json              NULL,
     update_date      timestamptz   NOT NULL DEFAULT now(),
@@ -72,7 +105,7 @@ values(0, 'UnitTestChat', 'UnitTestChat', 'PRIVATE', '{ "test": "test" }', '123'
 CREATE TABLE bot.user_roles (
     user_role_code        varchar(10)  NOT NULL PRIMARY KEY,
     user_role_name        varchar(50)  NOT NULL,
-    user_role_permissions json         NOT NULL, -- РІ С‚.С‡. РєРѕРјР°РЅРґС‹ (command_group)
+    user_role_permissions json         NOT NULL, -- в т.ч. команды (command_group)
     update_date           timestamptz  NOT NULL DEFAULT now(),
     insert_date           timestamptz  NOT NULL DEFAULT now()
 );
@@ -118,7 +151,7 @@ CREATE TABLE bot.message_types (
 );
 CREATE TRIGGER message_types_reset_update_date BEFORE UPDATE
 ON bot.message_types FOR EACH ROW EXECUTE PROCEDURE helper.reset_update_date();
-COMMENT ON TABLE bot.message_types IS 'РўРёРїС‹ СЃРѕРѕР±С‰РµРЅРёР№';
+COMMENT ON TABLE bot.message_types IS 'Типы сообщений';
 
 INSERT INTO bot.message_types(message_type_code, message_type_name) VALUES('UKN', 'Unknown');
 INSERT INTO bot.message_types(message_type_code, message_type_name) VALUES('TXT', 'Text');
@@ -142,8 +175,8 @@ CREATE TABLE bot.messages (
     message_type_code   varchar(3)   NOT NULL REFERENCES bot.message_types(message_type_code),
     user_id             int          NOT NULL REFERENCES bot.users(user_id),
     chat_id             int          NOT NULL REFERENCES bot.chats(chat_id),
-    message_text        varchar(100)     NULL, -- РџРѕР»РЅС‹Р№ С‚РµС…С‚ РґРѕСЃС‚СѓРїРµРЅ РІ raw_data
-    raw_data            json         NOT NULL, -- РџРѕР»РЅС‹Р№ РЅР°Р±РѕСЂ РґР°РЅРЅС‹С…
+    message_text        varchar(100)     NULL, -- Полный техт доступен в raw_data
+    raw_data            json         NOT NULL, -- Полный набор данных
     raw_data_hash       varchar(50)  NOT NULL,
     raw_data_history    json             NULL,
     is_succeed          bool         NOT NULL, -- Successfuly sent/received/deleted
@@ -155,36 +188,36 @@ CREATE TABLE bot.messages (
 );
 CREATE TRIGGER messages_reset_update_date BEFORE UPDATE
 ON bot.messages FOR EACH ROW EXECUTE PROCEDURE helper.reset_update_date();
-COMMENT ON TABLE bot.messages IS 'РџСЂРёРЅСЏС‚С‹Рµ Рё РѕС‚СЂРїР°РІР»РµРЅРЅС‹Рµ СЃРѕРѕР±С‰РµРЅРёСЏ';
+COMMENT ON TABLE bot.messages IS 'Принятые и отрпавленные сообщения';
 
 
 
 CREATE TABLE bot.logs (
     log_id        bigserial     NOT NULL PRIMARY KEY,
     log_type      varchar(7)    NOT NULL,            -- Info, warning, error
-    log_initiator varchar(50)       NULL,            -- Р”Р¶РѕР±, РѕР±СЂР°Р±РѕС‚РєР° СЃРѕРѕР±С‰РµРЅРёСЏ, РёРЅРёС†РёР°Р»РёР·Р°С†РёСЏ Рё С‚.Рґ.
-    log_message   varchar(200)  NOT NULL,            -- РљСЂР°С‚РєРѕРµ РѕРїРёСЃР°РЅРёРµ
-    log_data      json              NULL,            -- Р’СЃСЏ РёРЅС„Р° Рѕ Р·Р°РїРёСЃРё
+    log_initiator varchar(50)       NULL,            -- Джоб, обработка сообщения, инициализация и т.д.
+    log_message   varchar(200)  NOT NULL,            -- Краткое описание
+    log_data      json              NULL,            -- Вся инфа о записи
     insert_date   timestamptz   NOT NULL DEFAULT now()
 );
-COMMENT ON TABLE bot.logs IS 'Р–СѓСЂРЅР°Р»';
+COMMENT ON TABLE bot.logs IS 'Журнал';
 
 
 
 CREATE TABLE bot.commands (
-    command_name         varchar(50)   PRIMARY KEY, -- РўР°Рє РјРЅРѕРіРѕ СЃРёРјРІРѕР»РѕРІ РґР»СЏ РїСЂРѕРіСЂР°РјРјРЅС‹С… Р·Р°РїСЂРѕСЃРѕРІ
-    command_script       varchar(5000) NOT NULL,    -- SQL-СЃРєСЂРёРїС‚ СЃ РїР°СЂР°РјРµС‚СЂР°РјРё    
-    command_default_args varchar(100)      NULL,    -- Р”РµС„РѕР»С‚РЅС‹Рµ Р°СЂРіСѓРјРµРЅС‚С‹, РєРѕС‚РѕСЂС‹Рµ Р±СѓРґСѓС‚ РІС‹Р·РІР°РЅРЅС‹ РїСЂРё РІС‹Р·РѕРІРµ РєРѕРјР°РЅРґС‹ Р±РµР· Р°СЂРіСѓРјРµРЅС‚РѕРІ. Р—Р°РїРёСЃС‹РІР°СЋС‚СЃСЏ С‡РµСЂРµР· С‚РѕС‡РєСѓ СЃ Р·Р°РїСЏС‚РѕР№
-    command_desc         varchar(100)      NULL,    -- РћРїРёСЃР°РЅРёРµ РґР»СЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
-    command_group        varchar(50)   NOT NULL,    -- Р’РјРµСЃС‚Рѕ "RoleList" РґР»СЏ СЃРІСЏР·Рё СЃ СЂРѕР»СЏРјРё
+    command_name         varchar(50)   PRIMARY KEY, -- Так много символов для программных запросов
+    command_script       varchar(5000) NOT NULL,    -- SQL-скрипт с параметрами    
+    command_default_args varchar(100)      NULL,    -- Дефолтные аргументы, которые будут вызванны при вызове команды без аргументов. Записываются через точку с запятой
+    command_desc         varchar(100)      NULL,    -- Описание для пользователя
+    command_group        varchar(50)   NOT NULL,    -- Вместо "RoleList" для связи с ролями
     update_date          timestamptz   NOT NULL DEFAULT now(),
     insert_date          timestamptz   NOT NULL DEFAULT now()
 );
 CREATE TRIGGER commands_reset_update_date BEFORE UPDATE
 ON bot.commands FOR EACH ROW EXECUTE PROCEDURE helper.reset_update_date();
-COMMENT ON TABLE bot.commands IS 'РљРѕРјР°РЅРґС‹ РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№';
+COMMENT ON TABLE bot.commands IS 'Команды пользователей';
 
--- РџСЂРѕРІРµСЂРєР° Рё РїСЂР°РІРєР° command_name
+-- Проверка и правка command_name
 CREATE OR REPLACE FUNCTION bot.commands_new_command_correct()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -206,19 +239,19 @@ CREATE TRIGGER commands_new_command_correct BEFORE INSERT OR UPDATE
 ON bot.commands FOR EACH ROW EXECUTE PROCEDURE bot.commands_new_command_correct();
 
 INSERT INTO bot.commands(command_name, command_script, command_default_args, command_desc, command_group) 
-VALUES('/Test', 'SELECT ''Test''', null, 'РўРµСЃС‚РѕРІС‹Р№ Р·Р°РїСЂРѕСЃ Рє Р±РѕС‚Сѓ. Р’РѕР·РІСЂР°С‰Р°РµС‚ ''Test''', 'moderatorCmdGroup');
+VALUES('/Test', 'SELECT ''Test''', null, 'Тестовый запрос к боту. Возвращает ''Test''', 'moderatorCmdGroup');
 INSERT INTO bot.commands(command_name, command_script, command_default_args, command_desc, command_group) 
-VALUES('/NullTest', 'SELECT null', null, 'РўРµСЃС‚РѕРІС‹Р№ Р·Р°РїСЂРѕСЃ Рє Р±РѕС‚Сѓ. Р’РѕР·РІСЂР°С‰Р°РµС‚ NULL', 'moderatorCmdGroup');
+VALUES('/NullTest', 'SELECT null', null, 'Тестовый запрос к боту. Возвращает NULL', 'moderatorCmdGroup');
 INSERT INTO bot.commands(command_name, command_script, command_default_args, command_desc, command_group) 
-VALUES('/Help', 'SELECT bot.sf_cmd_get_help({0})', '<UserRoleCode>', 'РџРѕР»СѓС‡РµРЅРёРµ СЃРїСЂР°РІРєРё РїРѕ РґРѕСЃС‚СѓРїРЅС‹Рј С„СѓРЅРєС†РёСЏРј', 'userCmdGroup');
+VALUES('/Help', 'SELECT bot.sf_cmd_get_help({0})', '<UserRoleCode>', 'Получение справки по доступным функциям', 'userCmdGroup');
 INSERT INTO bot.commands(command_name, command_script, command_default_args, command_desc, command_group) 
-VALUES('/SetMessageLimit', 'SELECT bot."sfCmdSetMessageLimit"({0}, {1})', '0; 0', 'РЈСЃС‚Р°РЅРѕРІРєР° Р»РёРјРёС‚Р° СЃРѕРѕР±С‰РµРЅРёР№ РґР»СЏ РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№', 'moderatorCmdGroup');
+VALUES('/SetMessageLimit', 'SELECT bot."sfCmdSetMessageLimit"({0}, {1})', '0; 0', 'Установка лимита сообщений для пользователей', 'moderatorCmdGroup');
 INSERT INTO bot.commands(command_name, command_script, command_default_args, command_desc, command_group) 
-VALUES('/SqlQuery', 'select (with userQuery as ({0}) select json_agg(q) from userQuery q)', 'select ''Pass your query as parameter in double quotes''', 'SQL-Р·Р°РїСЂРѕСЃ', 'adminCmdGroup');
+VALUES('/SqlQuery', 'select (with userQuery as ({0}) select json_agg(q) from userQuery q)', 'select ''Pass your query as parameter in double quotes''', 'SQL-запрос', 'adminCmdGroup');
 
 
 
--- РџРѕР»СЊР·РѕРІР°С‚РµР»СЊСЃРєРёРµ РЅР°СЃС‚СЂРѕР№РєРё
+-- Пользовательские настройки
 CREATE TABLE bot.options (
     option_name        varchar(50)   NOT NULL PRIMARY KEY,
     option_value       varchar(5000)     NULL,
@@ -229,7 +262,7 @@ CREATE TABLE bot.options (
 );
 CREATE TRIGGER options_reset_update_date BEFORE UPDATE
 ON bot.options FOR EACH ROW EXECUTE PROCEDURE helper.reset_update_date();
-COMMENT ON TABLE bot.commands IS 'РџР°СЂР°РјРµС‚СЂС‹ РїСЂРёР»РѕР¶РµРЅРёСЏ';
+COMMENT ON TABLE bot.commands IS 'Параметры приложения';
 
 
 
@@ -243,7 +276,7 @@ CREATE TABLE bot.sessions (
 );
 CREATE TRIGGER sessions_reset_update_date BEFORE UPDATE
 ON bot.sessions FOR EACH ROW EXECUTE PROCEDURE helper.reset_update_date();
-COMMENT ON TABLE bot.sessions IS 'РЎРµСЃСЃРёРё РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№ - РѕР±СЃР»СѓР¶РёРІР°СЋС‚ РїРѕСЃР»РµРґРѕРІР°С‚РµР»СЊРЅРѕРµ РѕР±С‰РµРЅРёРµ СЃ Р±РѕС‚РѕРј';
+COMMENT ON TABLE bot.sessions IS 'Сессии пользователей - обслуживают последовательное общение с ботом';
 
 
 
@@ -253,13 +286,242 @@ COMMENT ON TABLE bot.sessions IS 'РЎРµСЃСЃРёРё РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№ - РѕР±
 --    job_description   varchar(100)     NULL,   
 --    job_is_active     bool         NOT NULL DEFAULT FALSE,
 --    job_method_name   varchar(100) NOT NULL,
---    job_month         int              NULL, -- РјРµСЃСЏС†, РµСЃР»Рё СЃРѕР±С‹С‚РёРµ РµР¶РµРіРѕРґРЅРѕРµ; null, РµСЃР»Рё СЃРѕР±С‹С‚РёРµ РµР¶РµРјРµСЃСЏС‡РЅРѕРµ
---    job_day           int          NOT NULL, -- РґРµРЅСЊ РјРµСЃСЏС†Р°
---    job_hour          int          NOT NULL, -- РІСЂРµРјСЏ РѕРїРѕРІРµС‰РµРЅРёСЏ
---    job_minute        int          NOT NULL, -- РІСЂРµРјСЏ РѕРїРѕРІРµС‰РµРЅРёСЏ
+--    job_month         int              NULL, -- месяц, если событие ежегодное; null, если событие ежемесячное
+--    job_day           int          NOT NULL, -- день месяца
+--    job_hour          int          NOT NULL, -- время оповещения
+--    job_minute        int          NOT NULL, -- время оповещения
 --    job_last_execDate timestamptz      NULL,
 --    update_date       timestamptz  NOT NULL DEFAULT now(),
 --    insert_date       timestamptz  NOT NULL DEFAULT now()
 --);
 --CREATE TRIGGER jobs_reset_update_date BEFORE UPDATE
 --ON bot.jobs FOR EACH ROW EXECUTE PROCEDURE helper.reset_update_date();
+
+
+
+CREATE SCHEMA vk;
+    
+
+
+
+CREATE TABLE vk.users (
+    user_id      serial       NOT NULL PRIMARY KEY,
+    first_name   varchar(50)      NULL,
+    last_name    varchar(50)      NULL,
+    raw_data     json         NOT NULL,
+    update_date  timestamptz  NOT NULL DEFAULT now(),
+    insert_date  timestamptz  NOT NULL DEFAULT now()
+);
+CREATE TRIGGER users_reset_update_date BEFORE UPDATE
+ON vk.users FOR EACH ROW EXECUTE PROCEDURE helper.reset_update_date();
+COMMENT ON TABLE vk.users IS 'Vk users';
+
+CREATE TABLE vk.status_log (
+    status_log_id  serial       NOT NULL PRIMARY KEY,
+    user_id        int          NOT NULL,
+    is_online      bool             NULL, -- 0:false, 1:true, null:unknown
+    insert_date    timestamptz  NOT NULL DEFAULT now()
+);
+CREATE TRIGGER users_reset_update_date BEFORE UPDATE
+ON vk.status_log FOR EACH ROW EXECUTE PROCEDURE helper.reset_update_date();
+COMMENT ON TABLE vk.status_log IS 'Vk users status log';
+
+
+
+
+
+
+CREATE OR REPLACE VIEW vk.v_status_log
+ AS
+ SELECT (u.first_name::text || ' '::text) || u.last_name::text,
+        l.is_online,
+        l.insert_date
+   FROM vk.status_log l
+   LEFT JOIN vk.users u ON l.user_id = u.user_id;
+
+ALTER TABLE vk.v_status_log
+    OWNER TO postgres;
+
+
+
+-- Get permissions for a specific user role
+CREATE OR REPLACE FUNCTION bot.sf_get_permission_array(
+    user_role_code_ varchar(10))
+    RETURNS TEXT[]
+    LANGUAGE 'plpgsql'
+    COST 100
+    VOLATILE       
+AS $BODY$
+BEGIN
+    RETURN array(
+        with json_permissions as (select ur.user_role_permissions as col
+                                    from bot.user_roles ur 
+                                   where upper(ur.user_role_code) = upper(user_role_code_)),
+              row_Permissions as (select json_array_elements_text(col) as permissions
+                                    from json_permissions)
+        select permissions
+          from row_Permissions
+    );
+END;
+$BODY$;
+
+ALTER FUNCTION bot.sf_get_permission_array(character varying)
+    OWNER TO postgres;
+
+COMMENT ON FUNCTION bot.sf_get_permission_array(character varying)
+    IS 'Returns permission array for the role';
+
+
+
+
+-- Get list of awailable functions for a specific user role
+CREATE OR REPLACE FUNCTION bot.sf_cmd_get_help(
+    user_role_code_ varchar(10))
+    RETURNS TEXT
+    LANGUAGE 'plpgsql'
+    COST 100
+    VOLATILE       
+AS $BODY$
+DECLARE
+    role_permissions TEXT[];
+BEGIN
+    role_permissions := (select bot.sf_get_permission_array(user_role_code_));
+    RAISE NOTICE 'role_permissions: %', role_permissions;
+   
+    IF 'ALL' = any(upper(role_permissions::text)::text[]) THEN
+        RETURN (select string_agg((command_name || ' - ' || command_desc), E'\n') 
+                  from bot.commands);
+    ELSE
+        RETURN (select string_agg((command_name || ' - ' || command_desc), E'\n') 
+                  from bot.commands
+                 where command_group = any(role_permissions));	
+    END IF;	   
+END;
+$BODY$;
+
+ALTER FUNCTION bot.sf_cmd_get_help(character varying)
+    OWNER TO postgres;
+
+COMMENT ON FUNCTION bot.sf_cmd_get_help(character varying)
+    IS 'Returns help to features available for the role';
+
+
+
+
+-- Get statistics of specific chat
+CREATE OR REPLACE FUNCTION bot.sf_get_chat_statistics(
+    _chat_id     integer,
+    _users_limit integer,
+    _from_date   timestamp with time zone,
+    _to_date     timestamp with time zone DEFAULT now()
+    )
+    RETURNS table(chat_id integer, user_id integer, message_count bigint) 
+    LANGUAGE 'plpgsql'
+    ROWS 1000
+AS $BODY$
+BEGIN
+    RETURN QUERY(
+        SELECT _chat_id
+             , u.user_id
+             , count(m.*) 
+          FROM bot.messages m
+          JOIN bot.users u ON u.user_id = m.user_id
+         WHERE m.chat_id = _chat_id
+           AND m.insert_date >= _from_date AND m.insert_date <= _to_date
+           AND m.is_deleted = false
+      GROUP BY u.user_id
+      ORDER BY count(m.*) DESC
+      LIMIT _users_limit);
+END;
+$BODY$;
+ALTER FUNCTION bot.sf_get_chat_statistics(integer, integer, timestamp with time zone, timestamp with time zone)
+    OWNER TO postgres;
+COMMENT ON FUNCTION bot.sf_get_chat_statistics(integer, integer, timestamp with time zone, timestamp with time zone)
+    IS 'Returns a list of users and the number of their messages in the specified time range';
+--select * from bot.sf_get_chat_statistics(1, 10, now()::date - interval '1 day', now())
+
+
+
+
+
+
+
+--0. ФУНКЦИЯ, ОПОВЕЩАЮЩАЯ, ЕСЛИ ПОЛЬЗОВАТЕЛЬ НЕ БЫЛ В СЕТИ 24 ЧАСА
+--1. ФУНКЦИЯ, ПОЛУЧАЮЩАЯ ВРЕМЯ ОНЛАЙН ДЛЯ ОДНОГО ПОЛЬЗОВАТЕЛЯ ЗА ПЕРИОД
+--2. ФУНКЦИЯ, ПОКАЗЫВАЮЩАЯ СТАТИСТИКУ ПО ВСЕМ ПОЛЬЗОВАТЕЛЯМ НА ОСНОВЕ ФУНКЦИИ 1
+
+
+-- ФУНКЦИЯ, ОПОВЕЩАЮЩАЯ, ЕСЛИ ПОЛЬЗОВАТЕЛЬ НЕ БЫЛ В СЕТИ 24 ЧАСА
+CREATE OR REPLACE FUNCTION vk.sf_cmd_get_not_active_users(
+    _vkUserIdsStr text) 
+    RETURNS text
+    LANGUAGE 'plpgsql'
+AS $BODY$ 
+DECLARE
+    _vkUserIds int[];
+    _dbUserIds int[];
+    _activeDbUserIds int[];
+    _notActiveDbUserIds int[];
+    _result text = null;
+BEGIN
+    _vkUserIds = string_to_array(_vkUserIdsStr, ',');
+
+    RAISE NOTICE '1. _vkUserIds: %', _vkUserIds;
+
+    SELECT array_agg(user_id) INTO _dbUserIds
+    FROM vk.users
+    WHERE cast(raw_data ->> 'id' AS integer) = any(_vkUserIds);
+    RAISE NOTICE '2. _dbUserIds: %', _dbUserIds;
+   
+    SELECT array_agg(DISTINCT user_id) INTO _activeDbUserIds
+    FROM vk.status_log
+    WHERE insert_date > now() - interval '24 hours'
+      and user_id = any(_dbUserIds)
+      and is_online = true;
+    RAISE NOTICE '3. _activeDbUserIds: %', _activeDbUserIds;
+
+    SELECT array(SELECT unnest(_dbUserIds) EXCEPT SELECT unnest(_activeDbUserIds)) into _notActiveDbUserIds;
+    RAISE NOTICE '4. _notActiveUserIds: %', _notActiveDbUserIds;
+
+    IF (cardinality(_notActiveDbUserIds) > 0)
+    THEN
+        select 'В течение 24 часов не было активности от следующих пользователей: ' 
+            || (select array_to_string(array_agg(first_name || ' ' || last_name), ', ')
+                from vk.users
+                where user_id = any(_notActiveDbUserIds)) INTO _result;
+    END IF;
+
+    RETURN _result;
+END;
+$BODY$;
+ALTER FUNCTION vk.sf_cmd_get_not_active_users(text)
+    OWNER TO postgres;
+
+
+
+    
+
+
+
+GRANT ALL PRIVILEGES ON DATABASE "VkUserWatcher"    TO zuev56;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA bot TO zuev56;
+GRANT ALL PRIVILEGES ON SCHEMA bot                  TO zuev56;
+GRANT ALL PRIVILEGES ON ALL TABLES    IN SCHEMA bot TO zuev56;
+
+GRANT CONNECT        ON DATABASE "VkUserWatcher"    TO app;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA bot TO app;
+GRANT ALL PRIVILEGES ON SCHEMA bot                  TO app;
+GRANT ALL PRIVILEGES ON ALL TABLES    IN SCHEMA bot TO app;
+
+
+
+
+GRANT ALL PRIVILEGES ON DATABASE "VkUserWatcher"   TO zuev56;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA vk TO zuev56;
+GRANT ALL PRIVILEGES ON SCHEMA vk                  TO zuev56;
+GRANT ALL PRIVILEGES ON ALL TABLES    IN SCHEMA vk TO zuev56;
+
+GRANT CONNECT        ON DATABASE "VkUserWatcher"   TO app;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA vk TO app;
+GRANT ALL PRIVILEGES ON SCHEMA vk                  TO app;
+GRANT ALL PRIVILEGES ON ALL TABLES    IN SCHEMA vk TO app;

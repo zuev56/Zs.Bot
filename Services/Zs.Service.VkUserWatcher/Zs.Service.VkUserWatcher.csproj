@@ -15,4 +15,32 @@
     <ProjectReference Include="..\..\Bot\Zs.Bot.Model\Zs.Bot.Model.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="Model\SQL\T4 Create Database.sql">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>T4 Create Database.tt</DependentUpon>
+    </None>
+    <None Update="Model\SQL\T4 Create Database.tt">
+      <LastGenOutput>T4 Create Database.sql</LastGenOutput>
+      <Generator>TextTemplatingFileGenerator</Generator>
+    </None>
+    <None Update="Model\T4_DbModel.tt">
+      <LastGenOutput>T4_DbModel.generated.cs</LastGenOutput>
+      <Generator>TextTemplatingFileGenerator</Generator>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Model\T4_DbModel.generated.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>T4_DbModel.tt</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
 </Project>

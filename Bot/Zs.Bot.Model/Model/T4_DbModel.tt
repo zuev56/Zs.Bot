@@ -14,8 +14,8 @@ PushIndent("    ");
     try
     {
         var projectDir = Host.ResolveAssemblyReference("$(ProjectDir)");
-        var tableToClassMapPath = $@"{projectDir}\DbModel\TableNameToClassNameMap.txt";
-        var referenceTablesInfoPath = $@"{projectDir}\DbModel\ReferenceTables.json";
+        var tableToClassMapPath = $@"{projectDir}\Model\TableNameToClassNameMap.txt";
+        var referenceTablesInfoPath = $@"{projectDir}\Model\ReferenceTables.json";
 
         var connectionString = "Host=localhost;Port=5632;Username=app;Password=app;Database=ZsBot;";//ModelGenerator.GetConfigurationValue(@"M:\Zs.Bot\Zs.Bot\AppSettings.json", "T4_ConnectionString");
         

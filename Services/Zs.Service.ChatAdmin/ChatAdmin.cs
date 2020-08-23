@@ -4,25 +4,27 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.DependencyInjection;
 using Zs.Bot;
 using Zs.Bot.Helpers;
+using Zs.Bot.Model.Db;
 using Zs.Bot.Modules.Messaging;
+using Zs.Common.Abstractions;
 using Zs.Common.Enums;
-using Zs.Common.Interfaces;
 using Zs.Common.Modules.Connectors;
 using Zs.Common.Modules.CycleWorker;
-using Zs.Service.ChatAdmin.DbModel;
+using Zs.Service.ChatAdmin.Model;
 
 namespace Zs.Service.ChatAdmin
 {
-    // - Подробное логгирование
-    // - Проверить устойчивасть к перебоям со связью
-    // - Исправить двойную отправку сообщений от джобов в релизной версии
+    // + Подробное логгирование
+    // + Проверить устойчивасть к перебоям со связью
+    // + Исправить двойную отправку сообщений от джобов в релизной версии
     // - После бана удалять старое предупреждение от бота, чтобы не захламлять чат
-    // - Проверить пересылку больших сообщений от Бота
-    // - Проверить, будут ли удаляться сообщения забаненного пользователя после восстановления соединения с интернетом
+    // + Проверить пересылку больших сообщений от Бота
+    // + Проверить, будут ли удаляться сообщения забаненного пользователя после восстановления соединения с интернетом
     // + Сделать джоб, который утром присылает все ошибки за предыдущую ночь
-    // - !Если к моменту восстановления интернета бан уже закончился, пользователь может отправить больше сообщений, чем MessageLimitAfterBan, то есть он может заново пройти через все лимиты
+    // + Если к моменту восстановления интернета бан уже закончился, пользователь может отправить больше сообщений, чем MessageLimitAfterBan, то есть он может заново пройти через все лимиты
 
     internal class ChatAdmin : IHostedService
     {
@@ -36,6 +38,7 @@ namespace Zs.Service.ChatAdmin
 
 
         public ChatAdmin(
+            IServiceProvider serviceProvider,
             IConfiguration configuration,
             IMessenger messenger, 
             IConnectionAnalyser connectionAnalyser)
@@ -44,10 +47,12 @@ namespace Zs.Service.ChatAdmin
             {
                 _configuration = configuration;
 
-                //if (_configuration.Contains("DetailedLogging"))
+                ZsBotDbContext.Initialize(serviceProvider.GetService<DbContextOptions<ZsBotDbContext>>());
+                ChatAdminDbContext.Initialize(serviceProvider.GetService<DbContextOptions<ChatAdminDbContext>>());
+
                 bool.TryParse(_configuration["DetailedLogging"]?.ToString(), out _detailedLogging);
 
-                _bot = new ZsBot(_configuration, messenger, _logger);
+                _bot = new ZsBot(_configuration, messenger);
                 _bot.Messenger.MessageReceived += Messenger_MessageReceived;
 
                 _connectionAnalyser = connectionAnalyser;
@@ -71,18 +76,16 @@ namespace Zs.Service.ChatAdmin
             _connectionAnalyser.Start(5000, 30000);
             _cycleWorker.Start(3000, 1000);
             _bot.Messenger.AddMessageToOutbox($"Bot started", "ADMIN");
-            _logger.LogInfo("Bot started", nameof(ChatAdmin));
+            _logger.LogInfo($"{nameof(ChatAdmin)} started", nameof(ChatAdmin));
 
             return Task.CompletedTask;
         }
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
-            //_bot.Messenger.AddMessageToOutbox($"Bot stopped", "ADMIN");
-            //Task.Delay(2000);
             _connectionAnalyser.Stop();
             _cycleWorker.Stop();
-            _logger.LogInfo("Bot stopped", nameof(ChatAdmin));
+            _logger.LogInfo($"{nameof(ChatAdmin)} stopped", nameof(ChatAdmin));
 
             return Task.CompletedTask;
         }
@@ -133,14 +136,6 @@ namespace Zs.Service.ChatAdmin
         /// <summary> Creating a <see cref="Job"/> list for a <see cref="CycleWorker"/> instance </summary>
         private void CreateJobs()
         {
-            // Задачи на начало дня
-            // 2. Сбрасываем дату учёта сообщений
-            // 3. Задаём значения для ограничений из БД/конфигурации (важно, когда заданные админом значения были сдвинуты ботом, чтобы не перетереть данные)
-            // Проверка наличия интернета 
-            // Оповещение о сбоях Каждый час
-            // После 23:55 высылаем статистику
-            // Оповещение о событиях календаря
-
             var sendYesterdaysStatistics = new SqlJob(
                 TimeSpan.FromDays(1),
                 QueryResultType.String,

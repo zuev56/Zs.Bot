@@ -6,7 +6,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Zs.Bot.Helpers;
+using Zs.Bot.Messenger.Telegram;
 using Zs.Bot.Model.Db;
+using Zs.Bot.Modules.Messaging;
+using Zs.Common.Abstractions;
+using Zs.Common.Modules.Connectors;
+using Zs.Service.VkUserWatcher.Model;
 
 namespace Zs.Service.VkUserWatcher
 {
@@ -48,16 +54,6 @@ namespace Zs.Service.VkUserWatcher
         {
             try
             {
-                //var connectionAnalyser = new ConnectionAnalyser(Logger.GetInstance(), "https://vk.com/", "https://yandex.ru/", "https://www.google.ru/");
-                //if (configuration["ProxySocket"] is { })
-                //    connectionAnalyser.InitializeProxy(
-                //        (string)configuration["ProxySocket"],
-                //        (string)configuration["ProxyLogin"],
-                //        (string)configuration["ProxyPassword"]
-                //        );
-
-                //var messenger = new TelegramMessenger(token, webProxy);
-
                 var builder = new HostBuilder()
                     .ConfigureAppConfiguration((hostingContext, config) =>
                     {
@@ -68,14 +64,32 @@ namespace Zs.Service.VkUserWatcher
                     })
                     .ConfigureServices((hostContext, services) =>
                     {
-                        services.AddDbContext<ZsBotDbContext>(options =>
-                            options.UseNpgsql(hostContext.Configuration.GetConnectionString("VkUserWatcher")));
-                        
+                        services.AddDbContext<ZsBotDbContext>(options  =>
+                            options.UseNpgsql(hostContext.Configuration.GetConnectionString("VkUserWatcher"))
+                                   .EnableDetailedErrors(true)
+                                   .EnableSensitiveDataLogging(true));
+
+                        services.AddDbContext<VkUserWatcherDbContext>(options =>
+                            options.UseNpgsql(hostContext.Configuration.GetConnectionString("VkUserWatcher"))
+                                   .EnableDetailedErrors(true)
+                                   .EnableSensitiveDataLogging(true));
+
+                        services.AddSingleton<IConnectionAnalyser, ConnectionAnalyser>(sp =>
+                        {
+                            var ca = new ConnectionAnalyser(Logger.GetInstance(), "https://vk.com/", "https://yandex.ru/", "https://www.google.ru/");
+                            if (hostContext.Configuration["ProxySocket"] != null)
+                                ca.InitializeProxy(
+                                    hostContext.Configuration["ProxySocket"],
+                                    hostContext.Configuration["ProxyLogin"],
+                                    hostContext.Configuration["ProxyPassword"]
+                                    );
+                            return ca;
+                        });
+                        services.AddSingleton<IMessenger, TelegramMessenger>(sp =>
+                            new TelegramMessenger(hostContext.Configuration["BotToken"], sp.GetService<IConnectionAnalyser>().WebProxy));
+
                         services.AddSingleton<IHostedService, UserWatcher>(x =>
                             ActivatorUtilities.CreateInstance<UserWatcher>(x));
-                        
-                        //services.AddSingleton<IHostedService, ConnectionAnalyser>(x =>
-                        //    ActivatorUtilities.CreateInstance<ConnectionAnalyser>(x));
                     });
 
                 await builder.RunConsoleAsync().ConfigureAwait(false);

@@ -1,17 +1,18 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Zs.Bot.Helpers;
 using Zs.Bot.Model.Db;
 using Zs.Bot.Modules.Command;
 using Zs.Bot.Modules.Messaging;
-using Zs.Common.Interfaces;
+using Zs.Common.Abstractions;
 
 namespace Zs.Bot
 {
     public class ZsBot
     {
         private readonly IConfiguration _configuration;
-        private readonly IZsLogger _logger;// = Logger.GetInstance();
+        private readonly IZsLogger _logger = Logger.GetInstance();
         private readonly bool _detailedLogging;
 
         public CommandManager CommandManager { get; set; }
@@ -20,22 +21,20 @@ namespace Zs.Bot
 
         public ZsBot(
             IConfiguration configuration,
-            IMessenger messenger,
-            IZsLogger logger)
+            IMessenger messenger)
         {
             try
             {
-                _logger = logger ?? throw new ArgumentNullException(nameof(logger));
                 _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
                 
                 //if (_configuration["DetailedLogging"] != null)
                 bool.TryParse(_configuration["DetailedLogging"]?.ToString(), out _detailedLogging);
 
-                var optionsBuilder = new DbContextOptionsBuilder<ZsBotDbContext>();
-                optionsBuilder.UseNpgsql(_configuration["ConnectionString"].ToString());
-                optionsBuilder.EnableSensitiveDataLogging(true);
-                optionsBuilder.EnableDetailedErrors(true);
-                ZsBotDbContext.Initialize(optionsBuilder.Options);
+                //var optionsBuilder = new DbContextOptionsBuilder<ZsBotDbContext>();
+                //optionsBuilder.UseNpgsql(_configuration["ConnectionString"].ToString());
+                //optionsBuilder.EnableSensitiveDataLogging(true);
+                //optionsBuilder.EnableDetailedErrors(true);
+                //ZsBotDbContext.Initialize(optionsBuilder.Options);
 
                 Messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
                 Messenger.MessageReceived += Messenger_MessageReceived;
