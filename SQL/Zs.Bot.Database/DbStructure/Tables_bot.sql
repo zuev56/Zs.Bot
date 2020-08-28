@@ -212,8 +212,6 @@ VALUES('/NullTest', 'SELECT null', null, 'Тестовый запрос к бо�
 INSERT INTO bot.commands(command_name, command_script, command_default_args, command_desc, command_group) 
 VALUES('/Help', 'SELECT bot.sf_cmd_get_help({0})', '<UserRoleCode>', 'Получение справки по доступным функциям', 'userCmdGroup');
 INSERT INTO bot.commands(command_name, command_script, command_default_args, command_desc, command_group) 
-VALUES('/SetMessageLimit', 'SELECT bot."sfCmdSetMessageLimit"({0}, {1})', '0; 0', 'Установка лимита сообщений для пользователей', 'moderatorCmdGroup');
-INSERT INTO bot.commands(command_name, command_script, command_default_args, command_desc, command_group) 
 VALUES('/SqlQuery', 'select (with userQuery as ({0}) select json_agg(q) from userQuery q)', 'select ''Pass your query as parameter in double quotes''', 'SQL-запрос', 'adminCmdGroup');
 
 

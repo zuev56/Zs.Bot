@@ -1,5 +1,7 @@
 INSERT INTO bot.commands(command_name, command_script, command_default_args, command_desc, command_group) 
 VALUES('/GetUserStatistics', 'SELECT zl.sf_cmd_get_full_statistics({0}, {1}, {2})', '15; now()::Date; now()', 'ѕолучение статистики по активности участников всех чатов за определЄнный период', 'adminCmdGroup');
+--INSERT INTO bot.commands(command_name, command_script, command_default_args, command_desc, command_group) 
+--VALUES('/SetMessageLimit', 'SELECT bot."sfCmdSetMessageLimit"({0}, {1})', '0; 0', '”становка лимита сообщений дл€ пользователей', 'moderatorCmdGroup');
 
 CREATE TABLE zl.bans (
     ban_id             serial      NOT NULL PRIMARY KEY,
