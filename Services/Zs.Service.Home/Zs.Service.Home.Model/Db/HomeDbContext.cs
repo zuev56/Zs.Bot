@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System;
+using System.ComponentModel.DataAnnotations;
+using Microsoft.EntityFrameworkCore;
 
 namespace Zs.Service.Home.Model.Db
 {
@@ -21,4 +23,10 @@ namespace Zs.Service.Home.Model.Db
             _options = options;
         }
     }
+
+    //public partial class DbVkVActivityLog
+    //{
+    //    [Key]
+    //    public int DbVkVActivityLogId => (int)ActivityLogId;
+    //}
 }

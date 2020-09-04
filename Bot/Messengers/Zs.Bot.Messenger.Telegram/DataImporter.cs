@@ -82,7 +82,7 @@ namespace Zs.Bot.Messenger.Telegram
         /// </summary>
         /// <param name="filePath"></param>
         /// <param name="telegramChatId"></param>
-        public static void LoadMessagesFromJson(string filePath, long telegramChatId)
+        public static void LoadMessagesFromJson(string filePath, long telegramChatId, string telegramChatTitle, string telegramChatName)
         {
             try
             {
@@ -104,13 +104,13 @@ namespace Zs.Bot.Messenger.Telegram
                     var jsonChat = ("{\n"
                              +$"  \"Id\": {telegramChatId},\n"
                              + "  \"Type\": 3,\n"
-                             + "  \"Title\": \"ЖК Зима Лето Корпус 6 соседи\",\n"
+                             +$"  \"Title\": \"{telegramChatTitle}\",\n"
                              + "  \"AllMembersAreAdministrators\": false\n"
                              + "}\n").NormalizeJsonString();
                     var chat = new DbChat()
                     {
-                        ChatDescription = "ЖК Зима Лето Корпус 6 соседи",
-                        ChatName        = "zimaleto96",
+                        ChatDescription = $"{telegramChatTitle}",
+                        ChatName        = $"{telegramChatName}",
                         ChatTypeCode    = "GROUP",
                         RawData         = jsonChat,
                         RawDataHash     = jsonChat.GetMD5Hash(),

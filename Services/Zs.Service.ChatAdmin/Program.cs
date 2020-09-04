@@ -2,16 +2,16 @@
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Zs.Bot.Helpers;
-using Zs.Common.Modules.Connectors;
-using Zs.Bot.Model.Db;
-using Microsoft.EntityFrameworkCore;
 using Zs.Bot.Messenger.Telegram;
+using Zs.Bot.Model.Db;
 using Zs.Bot.Modules.Messaging;
-using Microsoft.Extensions.Configuration;
 using Zs.Common.Abstractions;
+using Zs.Common.Modules.Connectors;
 using Zs.Service.ChatAdmin.Model;
 
 namespace Zs.Service.ChatAdmin
@@ -75,10 +75,10 @@ namespace Zs.Service.ChatAdmin
                         services.AddSingleton<IConnectionAnalyser, ConnectionAnalyser>(sp =>
                         {
                             var ca = new ConnectionAnalyser(Logger.GetInstance(), "https://vk.com/", "https://yandex.ru/", "https://www.google.ru/");
-                            if (hostContext.Configuration["ProxySocket"] != null)
-                                ca.InitializeProxy(hostContext.Configuration["ProxySocket"],
-                                    hostContext.Configuration["ProxyLogin"],
-                                    hostContext.Configuration["ProxyPassword"]);
+                            if (hostContext.Configuration["Proxy:Socket"] != null)
+                                ca.InitializeProxy(hostContext.Configuration["Proxy:Socket"],
+                                    hostContext.Configuration["Proxy:Login"],
+                                    hostContext.Configuration["Proxy:Password"]);
                             return ca;
                         });
                         

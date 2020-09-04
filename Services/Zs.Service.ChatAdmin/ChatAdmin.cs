@@ -3,8 +3,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Zs.Bot;
 using Zs.Bot.Helpers;
 using Zs.Bot.Model.Db;
@@ -140,7 +140,7 @@ namespace Zs.Service.ChatAdmin
                 TimeSpan.FromDays(1),
                 QueryResultType.String,
                 $"select zl.sf_cmd_get_full_statistics(10, now()::date - interval '1 day', now()::date - interval '1 millisecond')",
-                _configuration["ConnectionString"].ToString(),
+                _configuration.GetConnectionString("ChatAdmin"),
                 startDate: DateTime.Now.Date + TimeSpan.FromHours(24+10)
                 ) { Description = "sendYesterdaysStatistics" };
 
@@ -157,7 +157,7 @@ namespace Zs.Service.ChatAdmin
                 + "\n from bot.logs"
                 + "\nwhere log_type in ('Warning', 'Error')"
                 + "\n  and insert_date > now() - interval '1 hour'",
-                _configuration["ConnectionString"].ToString(),
+                _configuration.GetConnectionString("ChatAdmin"),
                 startDate: Job.NextHour()
                 ) { Description = "sendDayErrorsAndWarnings" };
 
@@ -168,7 +168,7 @@ namespace Zs.Service.ChatAdmin
                 + "\n from bot.logs"
                 + "\nwhere log_type in ('Warning', 'Error')"
                 + "\n  and insert_date > now() - interval '12 hours'",
-                _configuration["ConnectionString"].ToString(),
+                _configuration.GetConnectionString("ChatAdmin"),
                 startDate: DateTime.Today + TimeSpan.FromHours(24+10)
                 ) { Description = "sendNightErrorsAndWarnings" };
 
@@ -182,7 +182,7 @@ namespace Zs.Service.ChatAdmin
             //    TimeSpan.FromSeconds(30),
             //    QueryResultType.Double,
             //    "select count(*) from bot.messages",
-            //    _configuration["ConnectionString"].ToString(),
+            //    _configuration.GetConnectionString("ChatAdmin"),
             //    DateTime.Now + TimeSpan.FromSeconds(25)
             //    ) {Description = "testSqlJob"};
             //testSqlJob.ExecutionCompleted += Job_ExecutionCompleted;

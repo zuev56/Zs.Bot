@@ -313,15 +313,18 @@ namespace Zs.UnitTest.Bot
             }
         }
         
-        //[TestMethod]
+        [TestMethod]
         public void LoadMessagesFromJson()
         {
             try
             {
-                var zlTelegramChatId = -1001364555739;
                 var filePath = @"C:\Users\zuev56\Documents\result.json";
 
-                DataImporter.LoadMessagesFromJson(filePath, zlTelegramChatId);
+                //var zlTelegramChatId = -1001364555739;
+                //DataImporter.LoadMessagesFromJson(filePath, zlTelegramChatId, "ЖК Зима Лето Корпус 6 соседи", "zimaleto96");
+
+                var dotNetRuChatId = 9656792576;
+                DataImporter.LoadMessagesFromJson(filePath, dotNetRuChatId, "DotNetRuChat", "DotNetRuChat");
 
             }
             catch (Exception ex)

@@ -17,7 +17,7 @@
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
-    "Zs.Service.HomeAPI": {
+    "Zs.Service.Home.Web": {
       "commandName": "Project",
       "commandLineArgs": "M:\\PrivateBotConfiguration.json",
       "launchBrowser": true,

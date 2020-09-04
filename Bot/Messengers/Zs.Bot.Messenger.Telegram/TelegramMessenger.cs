@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Threading;
@@ -15,8 +14,8 @@ using Telegram.Bot.Types.Enums;
 using Zs.Bot.Helpers;
 using Zs.Bot.Model.Db;
 using Zs.Bot.Modules.Messaging;
-using Zs.Common.Enums;
 using Zs.Common.Abstractions;
+using Zs.Common.Enums;
 
 namespace Zs.Bot.Messenger.Telegram
 {
@@ -166,18 +165,18 @@ namespace Zs.Bot.Messenger.Telegram
       
         private void InputMessageBuffer_OnEnqueue(object sender, TgMessage item)
         {
-#if DEBUG
-            Trace.WriteLine($"InputMessageEnqueue: {item?.Text}, ThreadId: {Thread.CurrentThread.ManagedThreadId}");
-#endif
+//#if DEBUG
+            //Trace.WriteLine($"InputMessageEnqueue: {item?.Text}, ThreadId: {Thread.CurrentThread.ManagedThreadId}");
+//#endif
             Task task = null;
             task = Task.Run(() => ProcessInputMessages(task));
         }
 
         private void OutputMessageBuffer_OnEnqueue(object sender, TgMessage item)
         {
-#if DEBUG
-            Trace.WriteLine($"OutputMessageEnqueue: {item?.Text}, ThreadId: {Thread.CurrentThread.ManagedThreadId}");
-#endif
+//#if DEBUG
+            //Trace.WriteLine($"OutputMessageEnqueue: {item?.Text}, ThreadId: {Thread.CurrentThread.ManagedThreadId}");
+//#endif
             Task task = null;
             task = Task.Run(() => ProcessOutputMessages(task));
         }
@@ -212,9 +211,9 @@ namespace Zs.Bot.Messenger.Telegram
                     }
 
                     msgForLog = null;
-#if DEBUG
-                    Trace.WriteLine($"InputMessageProcessed: {tgMessage?.Text}, ThreadId: {Thread.CurrentThread.ManagedThreadId}");
-#endif
+//#if DEBUG
+                    //Trace.WriteLine($"InputMessageProcessed: {tgMessage?.Text}, ThreadId: {Thread.CurrentThread.ManagedThreadId}");
+//#endif
                 }
             }
             catch (Exception ex)
@@ -258,9 +257,9 @@ namespace Zs.Bot.Messenger.Telegram
                     OnMessageSent(args);
 
                     msgForLog = null;
-#if DEBUG
-                    Trace.WriteLine($"OutputMessageProcessed: {tgMessage?.Text}, Fails: {tgMessage.SendingFails}, ThreadId: {Thread.CurrentThread.ManagedThreadId}");
-#endif
+//#if DEBUG
+//                    Trace.WriteLine($"OutputMessageProcessed: {tgMessage?.Text}, Fails: {tgMessage.SendingFails}, ThreadId: {Thread.CurrentThread.ManagedThreadId}");
+//#endif
                 }
             }
             catch (Exception e)

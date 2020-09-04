@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 
-namespace Zs.Service.HomeAPI
+namespace Zs.Service.Home.Web
 {
     public class Program
     {
@@ -28,8 +28,7 @@ namespace Zs.Service.HomeAPI
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"\n\n{ex}\nMessage:"
-                                + $"\n{ex.Message}"
+                Console.WriteLine($"\n\n{ex}\nMessage:\n{ex.Message}"
                                 + $"\n\nStackTrace:\n{ex.StackTrace}");
                 Console.ReadKey();
             }

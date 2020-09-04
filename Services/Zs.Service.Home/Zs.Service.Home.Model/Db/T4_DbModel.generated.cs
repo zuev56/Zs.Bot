@@ -18,6 +18,12 @@ namespace Zs.Service.Home.Model.Db
 
         public DateTime InsertDate { get; set; }
 
+        public Int32? OnlineApp { get; set; }
+
+        public Boolean IsOnlineMobile { get; set; }
+
+        public Int32 LastSeen { get; set; }
+
         IActivityLog DeepCopy();
     }
 
@@ -38,6 +44,32 @@ namespace Zs.Service.Home.Model.Db
         public DateTime InsertDate { get; set; }
 
         IUser DeepCopy();
+    }
+
+
+    public interface IVActivityLog
+    {
+        public Int32? ActivityLogId { get; set; }
+
+        public String UserName { get; set; }
+
+        public Int32? UserId { get; set; }
+
+        public Int32? Online { get; set; }
+
+        public Boolean? IsOnline { get; set; }
+
+        public Int32? Mobile { get; set; }
+
+        public Boolean? IsOnlineMobile { get; set; }
+
+        public String Date { get; set; }
+
+        public DateTime? LastSeen { get; set; }
+
+        public DateTime? InsertDate { get; set; }
+
+        IVActivityLog DeepCopy();
     }
 
     #endregion
@@ -63,6 +95,17 @@ namespace Zs.Service.Home.Model.Db
         [Column("insert_date", TypeName = "timestamp with time zone")]
         public DateTime InsertDate { get; set; }
 
+        [Column("online_app", TypeName = "integer")]
+        public Int32? OnlineApp { get; set; }
+
+        [Required(ErrorMessage = "Property 'IsOnlineMobile' is required")]
+        [Column("is_online_mobile", TypeName = "boolean")]
+        public Boolean IsOnlineMobile { get; set; }
+
+        [Required(ErrorMessage = "Property 'LastSeen' is required")]
+        [Column("last_seen", TypeName = "integer")]
+        public Int32 LastSeen { get; set; }
+
 
         public IActivityLog DeepCopy()
         {
@@ -72,6 +115,9 @@ namespace Zs.Service.Home.Model.Db
                 UserId = this.UserId,
                 IsOnline = this.IsOnline,
                 InsertDate = this.InsertDate,
+                OnlineApp = this.OnlineApp,
+                IsOnlineMobile = this.IsOnlineMobile,
+                LastSeen = this.LastSeen,
             };
         }
     }
@@ -121,12 +167,66 @@ namespace Zs.Service.Home.Model.Db
         }
     }
 
+
+    [Table("v_activity_log", Schema = "vk")]
+    public partial class DbVkVActivityLog : IVActivityLog
+    {
+        [Column("activity_log_id", TypeName = "integer")]
+        public Int32? ActivityLogId { get; set; }
+
+        [Column("user_name", TypeName = "text")]
+        public String UserName { get; set; }
+
+        [Column("user_id", TypeName = "integer")]
+        public Int32? UserId { get; set; }
+
+        [Column("online", TypeName = "integer")]
+        public Int32? Online { get; set; }
+
+        [Column("is_online", TypeName = "boolean")]
+        public Boolean? IsOnline { get; set; }
+
+        [Column("mobile", TypeName = "integer")]
+        public Int32? Mobile { get; set; }
+
+        [Column("is_online_mobile", TypeName = "boolean")]
+        public Boolean? IsOnlineMobile { get; set; }
+
+        [Column("date", TypeName = "text")]
+        public String Date { get; set; }
+
+        [Column("last_seen", TypeName = "timestamp with time zone")]
+        public DateTime? LastSeen { get; set; }
+
+        [Column("insert_date", TypeName = "timestamp with time zone")]
+        public DateTime? InsertDate { get; set; }
+
+
+        public IVActivityLog DeepCopy()
+        {
+            return new DbVkVActivityLog
+            {
+                ActivityLogId = this.ActivityLogId,
+                UserName = this.UserName,
+                UserId = this.UserId,
+                Online = this.Online,
+                IsOnline = this.IsOnline,
+                Mobile = this.Mobile,
+                IsOnlineMobile = this.IsOnlineMobile,
+                Date = this.Date,
+                LastSeen = this.LastSeen,
+                InsertDate = this.InsertDate,
+            };
+        }
+    }
+
     #endregion
 
     public partial class HomeDbContext : DbContext
     {
         public DbSet<DbVkActivityLog> ActivityLog { get; set; }
         public DbSet<DbVkUser> Users { get; set; }
+        //public DbSet<DbVkVActivityLog> VActivityLog { get; set; }
     }
 
 }

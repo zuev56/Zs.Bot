@@ -26,7 +26,7 @@ BEGIN
     RAISE NOTICE '2. _dbUserIds: %', _dbUserIds;
    
     SELECT array_agg(DISTINCT user_id) INTO _activeDbUserIds
-    FROM vk.status_log
+    FROM vk.activity_log
     WHERE insert_date > now() - (_offlineHours || ' hours')::interval
       and user_id = any(_dbUserIds)
       and is_online = true;
@@ -74,7 +74,7 @@ ALTER FUNCTION vk.sf_cmd_get_not_active_users(text, integer)
 --    RAISE NOTICE '2. _dbUserId: %', _dbUserId;
 --
 --    SELECT Count(*) 
---    FROM vk.status_log
+--    FROM vk.activity_log
 --    WHERE user_id = _dbUserId 
 --    AND insert_date >= _fromDate 
 --    AND insert_date <= _toDate

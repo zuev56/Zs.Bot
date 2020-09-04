@@ -20,7 +20,7 @@ namespace Zs.UnitTest.Bot
             var configuration = new ConfigurationBuilder().AddJsonFile(@"M:\PrivateBotConfiguration.json", true, true).Build();
 
             _robotOptionsBuilder = new DbContextOptionsBuilder<ZsBotDbContext>();
-            _robotOptionsBuilder.UseNpgsql(configuration["ConnectionString"]);
+            _robotOptionsBuilder.UseNpgsql(configuration.GetConnectionString("ChatAdmin"));
             _robotOptionsBuilder.EnableSensitiveDataLogging(true);
             _robotOptionsBuilder.EnableDetailedErrors(true);
             ZsBotDbContext.Initialize(_robotOptionsBuilder.Options);

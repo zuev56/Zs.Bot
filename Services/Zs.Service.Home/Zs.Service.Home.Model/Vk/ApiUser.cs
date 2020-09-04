@@ -20,11 +20,18 @@ namespace Zs.Service.Home.Model.Vk
         [JsonPropertyName("last_name")]
         public string LastName { get; set; }
 
-        [JsonPropertyName("is_closed")]
-        public bool IsClosed { get; set; }
-
         [JsonPropertyName("online")]
         public int Online { get; set; }
+        
+        [JsonPropertyName("online_mobile")]
+        public int OnlineMobile { get; set; }
+        
+        [JsonPropertyName("online_app")]
+        public int OnlineApp { get; set; }
+
+        [JsonPropertyName("last_seen")]
+        public ApiLastSeen LastSeenUnix { get; set; }
+        public DateTime LastSeen => LastSeenUnix.Time.FromUnixEpoch();
 
         [JsonExtensionData]
         public Dictionary<string, JsonElement> RawData { get; set; }
@@ -51,5 +58,11 @@ namespace Zs.Service.Home.Model.Vk
 
         public override string ToString()
             => $"{Id}  {FirstName} {LastName}";
+    }
+
+    public class ApiLastSeen
+    {
+        [JsonPropertyName("time")]
+        public int Time { get; set; }
     }
 }

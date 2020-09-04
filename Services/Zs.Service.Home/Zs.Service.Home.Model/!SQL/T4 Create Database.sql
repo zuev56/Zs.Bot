@@ -329,7 +329,7 @@ COMMENT ON TABLE vk.activity_log IS 'Vk users activity log';
 
 
 
-CREATE OR REPLACE VIEW vk.v_status_log
+CREATE OR REPLACE VIEW vk.v_activity_log
 AS
      SELECT (u.first_name::text || ' '::text) || u.last_name::text as user_name,
             u.user_id,
@@ -337,10 +337,10 @@ AS
             l.is_online,
             to_char(l.insert_date, 'DD.MM.YYYY HH24:MI:SS') as date,
             l.insert_date
-       FROM vk.status_log l
+       FROM vk.activity_log l
   LEFT JOIN vk.users u ON l.user_id = u.user_id;
 
-
+  GRANT ALL ON vk.v_activity_log TO app;
 
 
 
@@ -474,7 +474,7 @@ BEGIN
     RAISE NOTICE '2. _dbUserIds: %', _dbUserIds;
    
     SELECT array_agg(DISTINCT user_id) INTO _activeDbUserIds
-    FROM vk.status_log
+    FROM vk.activity_log
     WHERE insert_date > now() - (_offlineHours || ' hours')::interval
       and user_id = any(_dbUserIds)
       and is_online = true;
@@ -522,7 +522,7 @@ ALTER FUNCTION vk.sf_cmd_get_not_active_users(text, integer)
 --    RAISE NOTICE '2. _dbUserId: %', _dbUserId;
 --
 --    SELECT Count(*) 
---    FROM vk.status_log
+--    FROM vk.activity_log
 --    WHERE user_id = _dbUserId 
 --    AND insert_date >= _fromDate 
 --    AND insert_date <= _toDate

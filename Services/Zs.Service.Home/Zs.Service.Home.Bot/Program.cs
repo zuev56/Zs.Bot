@@ -16,7 +16,7 @@ using Zs.Common.Extensions;
 using Zs.Common.Modules.Connectors;
 using Zs.Service.Home.Model.Db;
 
-namespace Zs.Service.VkUserWatcher
+namespace Zs.Service.Home.Bot
 {
     class Program
     {
@@ -50,7 +50,6 @@ namespace Zs.Service.VkUserWatcher
                 Console.ReadKey();
             }
         }
-
 
         public static async Task ServiceLoader(string configPath)
         {
@@ -115,6 +114,5 @@ namespace Zs.Service.VkUserWatcher
                 Console.ReadLine();
             }
         }
-
     }
 }

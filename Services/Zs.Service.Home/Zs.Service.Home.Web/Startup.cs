@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Zs.Service.Home.Model.Db;
 
-namespace Zs.Service.HomeAPI
+namespace Zs.Service.Home.Web
 {
     public class Startup
     {

@@ -19,7 +19,7 @@ using Zs.Common.Modules.WebAPI;
 using Zs.Service.Home.Model.Db;
 using Zs.Service.Home.Model.Vk;
 
-namespace Zs.Service.VkUserWatcher
+namespace Zs.Service.Home.Bot
 {
     internal class UserWatcher : IHostedService
     {
@@ -154,7 +154,7 @@ namespace Zs.Service.VkUserWatcher
             {
                 //https://api.vk.com/method/users.get?user_ids=8790237,1234567&fields=online&access_token=cf11cfd68111cfe68111cf89bf1a6bb54b1a3fad6d&v=5.122
                 //var url = $"https://api.vk.com/method/users.get?user_ids={string.Join(',',_userIds)}&fields=photo_id,verified,sex,bdate,city,country,home_town,photo_max_orig,online,domain,has_mobile,contacts,site,education,universities,schools,status,last_seen,followers_count,occupation,nickname,relatives,relation,personal,connections,exports,activities,interests,music,movies,tv,books,games,about,quotes,can_post,can_see_all_posts,can_see_audio,can_write_private_message,can_send_friend_request,is_favorite,is_hidden_from_feed,timezone,screen_name,maiden_name,is_friend,friend_status,career,military,blacklisted,blacklisted_by_me,can_be_invited_group&access_token={_accessToken}&v={_version}";
-                var url = $"https://api.vk.com/method/users.get?user_ids={string.Join(',',_userIds)}&fields=online&access_token={_accessToken}&v={_version.ToString(CultureInfo.InvariantCulture)}";
+                var url = $"https://api.vk.com/method/users.get?user_ids={string.Join(',',_userIds)}&fields=online,online_mobile,online_app,last_seen&access_token={_accessToken}&v={_version.ToString(CultureInfo.InvariantCulture)}";
 
                 //var str = await ApiHelper.GetResponce(url);
                 var response = await ApiHelper.GetResponce<ApiResponse>(url, throwOnError: true);
@@ -170,6 +170,8 @@ namespace Zs.Service.VkUserWatcher
                         new DbVkActivityLog()
                         {
                             UserId = u.UserId,
+                            IsOnlineMobile = false,
+                            LastSeen = -1,
                             IsOnline = null,
                             InsertDate = DateTime.Now
                         }
@@ -180,10 +182,6 @@ namespace Zs.Service.VkUserWatcher
 
                 foreach (var user in response.Users)
                 {
-                    // Для каждого пользователя проверяем текущее состояние в status_log
-                    // и, если оно отличается, то делаем новую запись
-
-                    // Находим пользователя в БД. Если нет, то добавляем
                     var dbUser = ctx.Users.FromSqlRaw($"select * from vk.users where cast(raw_data ->> 'id' as integer) = {user.Id}").FirstOrDefault();
                     if (dbUser is null)
                     {
@@ -192,23 +190,25 @@ namespace Zs.Service.VkUserWatcher
                         dbUser = ctx.Users.FromSqlRaw($"select * from vk.users where cast(raw_data ->> 'id' as integer) = {user.Id}").FirstOrDefault();
                     }
 
-                    // Находим для него последнюю запись в status_log
                     var lastActivityDbItem = ctx.ActivityLog.OrderByDescending(l => l.ActivityLogId)
                         .FirstOrDefault(l => l.UserId == dbUser.UserId);
 
-                    var currentStatus = user.Online switch
-                    {
-                        0 => false,
-                        1 => true,
-                        _ => default(bool?)
-                    };
+                    var currentOnlineStatus = user.Online == 1 ? true : false;
+                    var currentMobileStatus = user.OnlineMobile == 1 ? true : false;
+                    var currentApp = user.OnlineApp;
 
-                    if (lastActivityDbItem == null || lastActivityDbItem.IsOnline != currentStatus)
+                    if (lastActivityDbItem == null
+                        || lastActivityDbItem.IsOnline != currentOnlineStatus
+                        || lastActivityDbItem.IsOnlineMobile != currentMobileStatus
+                        || lastActivityDbItem.OnlineApp != currentApp)
                     {
                         ctx.ActivityLog.Add(new DbVkActivityLog()
                         {
                             UserId = dbUser.UserId,
-                            IsOnline = currentStatus,
+                            IsOnline = currentOnlineStatus,
+                            IsOnlineMobile = currentMobileStatus,
+                            OnlineApp = user.OnlineApp,
+                            LastSeen = user.LastSeenUnix.Time,
                             InsertDate = DateTime.Now
                         });
                     }
