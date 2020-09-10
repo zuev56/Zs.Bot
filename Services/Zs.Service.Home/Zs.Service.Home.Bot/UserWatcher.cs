@@ -25,7 +25,9 @@ namespace Zs.Service.Home.Bot
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly IConfiguration _configuration;
-        private readonly IZsLogger _logger = Logger.GetInstance();
+        private readonly IZsLogger _logger;
+        private readonly IContextFactory<ZsBotDbContext> _botContextFactory;
+        private readonly IContextFactory<HomeDbContext> _homeContextFactory;
         private readonly ZsBot _bot;
         private readonly CycleWorker _cycleWorker;
         //private readonly IConnectionAnalyser _connectionAnalyser;
@@ -39,15 +41,36 @@ namespace Zs.Service.Home.Bot
         public UserWatcher(
             IServiceProvider serviceProvider,
             IConfiguration configuration,
-            IMessenger messenger)
+            IMessenger messenger,
+            IContextFactory<ZsBotDbContext> botContextFactory,
+            IContextFactory<HomeDbContext> homeContextFactory,
+            IZsLogger logger)
         {
             try
             {
-                _serviceProvider = serviceProvider;
-                _configuration = configuration;
+                if (serviceProvider == null)
+                    throw new ArgumentNullException(nameof(serviceProvider));
 
-                ZsBotDbContext.Initialize(_serviceProvider.GetService<DbContextOptions<ZsBotDbContext>>());
-                HomeDbContext.Initialize(_serviceProvider.GetService<DbContextOptions<HomeDbContext>>());
+                if (configuration == null)
+                    throw new ArgumentNullException(nameof(configuration));
+
+                if (messenger is null)
+                    throw new ArgumentNullException(nameof(messenger));
+
+                if (botContextFactory is null)
+                    throw new ArgumentNullException(nameof(botContextFactory));
+
+                if (homeContextFactory is null)
+                    throw new ArgumentNullException(nameof(homeContextFactory));
+
+                if (logger is null)
+                    throw new ArgumentNullException(nameof(logger));
+
+                _configuration = configuration;
+                _botContextFactory = botContextFactory;
+                _homeContextFactory = homeContextFactory;
+                _logger = logger;
+                _serviceProvider = serviceProvider;
 
                 _version = float.Parse(_configuration["Vk:Version"], CultureInfo.InvariantCulture);
                 _accessToken = _configuration["Vk:AccessToken"];
@@ -55,7 +78,7 @@ namespace Zs.Service.Home.Bot
 
                 bool.TryParse(_configuration["DetailedLogging"]?.ToString(), out _detailedLogging);
 
-                _bot = new ZsBot(_configuration, messenger);
+                _bot = new ZsBot(_configuration, messenger, _botContextFactory, _logger);
 
                 _cycleWorker = new CycleWorker(_logger, _detailedLogging);
                 CreateJobs();
@@ -159,7 +182,7 @@ namespace Zs.Service.Home.Bot
                 //var str = await ApiHelper.GetResponce(url);
                 var response = await ApiHelper.GetResponce<ApiResponse>(url, throwOnError: true);
 
-                using var ctx = new HomeDbContext();
+                using var ctx = _homeContextFactory.GetContext();
 
                 if (response is null)
                 {

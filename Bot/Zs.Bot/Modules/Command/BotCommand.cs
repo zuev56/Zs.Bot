@@ -24,16 +24,22 @@ namespace Zs.Bot.Modules.Command
 
 
         /// <summary> Create <see cref="BotCommand"/> from <see cref="IMessage"/> </summary>
-        public static async Task<BotCommand> ParseMessageAsync(IMessage message)
+        public static async Task<BotCommand> ParseMessageAsync(IMessage message, Func<string, ICommand> getDbCommand)
         {
-            return await Task.Run(() => ParseMessage(message));
+            return await Task.Run(() => ParseMessage(message, getDbCommand));
         }
 
         /// <summary> Create <see cref="BotCommand"/> from <see cref="IMessage"/> </summary>
-        public static BotCommand ParseMessage(IMessage message)
+        public static BotCommand ParseMessage(IMessage message, Func<string, ICommand> getDbCommand)
         {
             try
             {
+                if (message is null)
+                    throw new ArgumentNullException(nameof(message));
+
+                if (getDbCommand is null)
+                    throw new ArgumentNullException(nameof(getDbCommand));
+
                 if (IsCommand(message.MessageText))
                 {
                     // Если есть кавычки, их должно быть чётное количество
@@ -59,38 +65,31 @@ namespace Zs.Bot.Modules.Command
 
                     var parameters = new List<object>();
                     messageWords.ForEach(w => parameters.Add(w));
-
-                    BotCommand botCommand = null;
-
+                    
                     // 2. Проверяем наличие команды в БД
-                    using (var ctx = new ZsBotDbContext())
+                    var dbCommand = getDbCommand?.Invoke(commandName);
+                   
+                    if (dbCommand != null)
                     {
-                        //throw new NotImplementedException("Раскомментировать текст ниже после восстановления модели данных");
-
-                        var dbItem = ctx.Commands.FirstOrDefault(c => c.CommandName == commandName);
-
-                        if (dbItem != null)
+                        // Если пользователь не передавал параметры, пробуем получить дефолтный набор
+                        if (parameters.Count == 0)
                         {
-                            // Если пользователь не передавал параметры, пробуем получить дефолтный набор
-                            if (parameters.Count == 0)
-                            {
-                                var defaultArgs = dbItem.CommandDefaultArgs?.Split(';')?.ToList();
+                            var defaultArgs = dbCommand.CommandDefaultArgs?.Split(';')?.ToList();
 
-                                if (defaultArgs?.Count > 0)
-                                    defaultArgs.ForEach(a => parameters.Add(a.Trim()));
-                            }
-
-                            botCommand = new BotCommand()
-                            {
-                                Name = "/" + commandName.Trim().ToLower().Replace("/", ""),
-                                FromUserId = message.UserId,
-                                ChatIdForAnswer = message.ChatId,
-                                Parametres = parameters
-                            };
+                            if (defaultArgs?.Count > 0)
+                                defaultArgs.ForEach(a => parameters.Add(a.Trim()));
                         }
 
-                        return botCommand;
+                        return new BotCommand()
+                        {
+                            Name = "/" + commandName.Trim().ToLower().Replace("/", ""),
+                            FromUserId = message.UserId,
+                            ChatIdForAnswer = message.ChatId,
+                            Parametres = parameters
+                        };
                     }
+
+                    return null;
                 }
                 else
                     throw new ArgumentException("Сообщение не является командой для бота");

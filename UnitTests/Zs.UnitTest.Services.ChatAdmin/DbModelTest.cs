@@ -14,7 +14,7 @@ namespace Zs.UnitTest.Services.ChatAdmin
         {
             try
             {
-                using (var ctx = new ChatAdminDbContext())
+                using (var ctx = _caContextFactory.GetContext())
                 {
                     Assert.IsNotNull(ctx.Accountings.FirstOrDefault());
                     Assert.IsNotNull(ctx.AuxiliaryWords.FirstOrDefault());
@@ -33,7 +33,7 @@ namespace Zs.UnitTest.Services.ChatAdmin
         {
             try
             {
-                using var ctx = new ChatAdminDbContext();
+                using var ctx = _caContextFactory.GetContext();
                 
                 var accounting   = ctx.Accountings.FirstOrDefault();
                 var word         = ctx.AuxiliaryWords.FirstOrDefault();
@@ -71,7 +71,7 @@ namespace Zs.UnitTest.Services.ChatAdmin
             try
             {
                 int userId, chatId;
-                using (var ctx = new ZsBotDbContext())
+                using (var ctx = _botContextFactory.GetContext())
                 {
                     userId = ctx.Users.FirstOrDefault()?.UserId ?? -99;
                     chatId = ctx.Chats.FirstOrDefault()?.ChatId ?? -99;
@@ -82,7 +82,7 @@ namespace Zs.UnitTest.Services.ChatAdmin
                 var ban          = new DbBan           { BanId = -2, UserId = userId, ChatId = chatId};
                 var notification = new DbNotification  { NotificationId = -2, NotificationMessage = "UNITTEST1", NotificationDay = 1, NotificationHour = 1, NotificationMinute = 1 };
 
-                using (var ctx = new ChatAdminDbContext())
+                using (var ctx = _caContextFactory.GetContext())
                 {
                     if (!ctx.Accountings.Any(a => a.AccountingId == accounting.AccountingId))
                         ctx.Accountings.Add(accounting);
@@ -111,7 +111,7 @@ namespace Zs.UnitTest.Services.ChatAdmin
             try
             {
                 int userId, chatId;
-                using (var ctx = new ZsBotDbContext())
+                using (var ctx = _botContextFactory.GetContext())
                 {
                     userId = ctx.Users.FirstOrDefault()?.UserId ?? -99;
                     chatId = ctx.Chats.FirstOrDefault()?.ChatId ?? -99;
@@ -122,7 +122,7 @@ namespace Zs.UnitTest.Services.ChatAdmin
                 var ban          = new DbBan           { BanId = -1, UserId = userId, ChatId = chatId };
                 var notification = new DbNotification  { NotificationId = -1, NotificationMessage = "UNITTEST1", NotificationDay = 1, NotificationHour = 1, NotificationMinute = 1 };
 
-                using (var ctx = new ChatAdminDbContext())
+                using (var ctx = _caContextFactory.GetContext())
                 {
                     ctx.Accountings.Add(accounting);
                     ctx.AuxiliaryWords.Add(word);
@@ -133,7 +133,7 @@ namespace Zs.UnitTest.Services.ChatAdmin
                 }
 
                 // Удаление из БД
-                using (var ctx = new ChatAdminDbContext())
+                using (var ctx = _caContextFactory.GetContext())
                 {
                     ctx.Accountings.Remove(accounting);
                     ctx.AuxiliaryWords.Remove(word);

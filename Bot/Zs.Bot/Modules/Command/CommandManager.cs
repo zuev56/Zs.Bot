@@ -10,25 +10,31 @@ using Newtonsoft.Json.Linq;
 using Npgsql;
 using Zs.Bot.Helpers;
 using Zs.Bot.Model.Db;
+using Zs.Common.Abstractions;
 using Zs.Common.Exceptions;
 using Zs.Common.Extensions;
-using Zs.Common.Abstractions;
 
 namespace Zs.Bot.Modules.Command
 {
     /// <summary>
     /// Handles commands
     /// </summary>
-    public class CommandManager
+    public class CommandManager : ICommandManager
     {
-        private readonly IZsLogger _logger = Logger.GetInstance();
+        private readonly IZsLogger _logger;
+        private readonly IContextFactory<ZsBotDbContext> _contextFactory;
 
         private readonly Buffer<BotCommand> _commandBuffer;
-        
+
         public event Action<CommandResult> CommandCompleted;
 
-        public CommandManager()
+        public CommandManager(
+            IContextFactory<ZsBotDbContext> contextFactory,
+            IZsLogger logger)
         {
+            _contextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
+            _logger = logger;
+
             _commandBuffer = new Buffer<BotCommand>();
             _commandBuffer.OnEnqueue += CommandBuffer_OnEnqueue;
         }
@@ -65,10 +71,10 @@ namespace Zs.Bot.Modules.Command
             string cmdExecResult = null;
             try
             {
-                using (var ctx = new ZsBotDbContext())
+                using (var ctx = _contextFactory.GetContext())
                 {
                     var dbCommand = ctx.Commands.FirstOrDefault(c => c.CommandName == botCommand.Name);
-                    
+
                     if (dbCommand != null)
                     {
                         // (i) SQL-запросы могут быть любые, не только функции.
@@ -78,8 +84,8 @@ namespace Zs.Bot.Modules.Command
                         if (dbUser is null)
                             throw new ItemNotFoundException($"User with Id = {botCommand.FromUserId} not found");
 
-                        var userHasRights = DbUserRole.GetPermissionsArray(dbUser.UserRoleCode)
-                            .Any(p => p.ToUpperInvariant() == "ALL" 
+                        var userHasRights = DbUserRoleExtensions.GetPermissionsArray(dbUser.UserRoleCode, _contextFactory.GetContext())
+                            .Any(p => p.ToUpperInvariant() == "ALL"
                                    || string.Equals(p, dbCommand.CommandGroup, StringComparison.InvariantCultureIgnoreCase));
 
 
@@ -152,16 +158,16 @@ namespace Zs.Bot.Modules.Command
 
             var concreteParams = new Dictionary<string, string>(genericParams.Count());
 
-            using var ctx = new ZsBotDbContext();
+            using var ctx = _contextFactory.GetContext();
             foreach (var p in genericParams)
-            { 
+            {
                 switch (p.ToUpperInvariant())
                 {
                     case "<USERROLECODE>":
                         var userRoleCode = ctx.Users.FirstOrDefault(u => u.UserId == botCommand.FromUserId)?.UserRoleCode;
                         concreteParams.Add(p, $"'{userRoleCode}'");
                         break;
-                    default: 
+                    default:
                         concreteParams.Add(p, null);
                         break;
                 }
@@ -215,12 +221,12 @@ namespace Zs.Bot.Modules.Command
         /// </summary>
         /// <param name="userRoleCode"></param>
         /// <returns>List of commands</returns>
-        public static List<DbCommand> GetDbCommands(string userRoleCode)
+        public List<DbCommand> GetDbCommands(string userRoleCode)
         {
             if (userRoleCode is null)
                 throw new ArgumentNullException(nameof(userRoleCode));
 
-            using var ctx = new ZsBotDbContext();
+            using var ctx = _contextFactory.GetContext();
             var permissionsString = ctx.UserRoles.FirstOrDefault(r => r.UserRoleCode == userRoleCode).UserRolePermissions;
             var permissionsArray = JArray.Parse(permissionsString).ToObject<string[]>();
 
@@ -229,6 +235,12 @@ namespace Zs.Bot.Modules.Command
                 : ctx.Commands.Where(c => permissionsArray.Contains(c.CommandGroup));
 
             return dbCommands.ToList();
+        }
+
+        internal ICommand GetDbCommand(string commandName)
+        {
+            using var ctx = _contextFactory.GetContext();
+            return ctx.Commands.FirstOrDefault(c => c.CommandName == commandName);
         }
 
     }

@@ -3,16 +3,17 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using Newtonsoft.Json;
 using Zs.Bot.Model.Db;
-using Zs.Common.Enums;
 using Zs.Common.Abstractions;
+using Zs.Common.Enums;
 
-namespace Zs.Bot.Helpers
+namespace Zs.Bot.Modules.Logging
 {
     public class Logger : IZsLogger
     {
         private static Logger _instance;
         private string _emergencyLogDirrectory = AppDomain.CurrentDomain.BaseDirectory;
         private readonly object _locker = new object();
+        private readonly IContextFactory<ZsBotDbContext> _contextFactory;
 
         public string EmergencyLogDirrectory
         {
@@ -32,16 +33,9 @@ namespace Zs.Bot.Helpers
             }
         }
 
-        protected Logger()
+        public Logger(IContextFactory<ZsBotDbContext> contextFactory)
         {
-        }
-
-        public static Logger GetInstance()
-        {
-            if (_instance == null)
-                _instance = new Logger();
-        
-            return _instance;
+            _contextFactory = contextFactory;
         }
 
         public void LogError(Exception e, [CallerMemberName] string initiator = null)
@@ -76,7 +70,7 @@ namespace Zs.Bot.Helpers
         {
             try
             {
-                var isSaved = DbLog.SaveToDb(type, message, initiator, data);
+                var isSaved = DbLogExtensions.SaveToDb(type, message, _contextFactory.GetContext(), initiator, data);
 
                 if (!isSaved)
                 {

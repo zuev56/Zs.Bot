@@ -1,7 +1,5 @@
 ﻿using System;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Zs.Bot.Helpers;
 using Zs.Bot.Model.Db;
 using Zs.Bot.Modules.Command;
 using Zs.Bot.Modules.Messaging;
@@ -12,7 +10,8 @@ namespace Zs.Bot
     public class ZsBot
     {
         private readonly IConfiguration _configuration;
-        private readonly IZsLogger _logger = Logger.GetInstance();
+        private readonly IZsLogger _logger;
+        private readonly IContextFactory<ZsBotDbContext> _contextFactory;
         private readonly bool _detailedLogging;
 
         public CommandManager CommandManager { get; set; }
@@ -21,7 +20,9 @@ namespace Zs.Bot
 
         public ZsBot(
             IConfiguration configuration,
-            IMessenger messenger)
+            IMessenger messenger,
+            IContextFactory<ZsBotDbContext> contextFactory,
+            IZsLogger logger)
         {
             try
             {
@@ -30,19 +31,16 @@ namespace Zs.Bot
                 //if (_configuration["DetailedLogging"] != null)
                 bool.TryParse(_configuration["DetailedLogging"]?.ToString(), out _detailedLogging);
 
-                //var optionsBuilder = new DbContextOptionsBuilder<ZsBotDbContext>();
-                //optionsBuilder.UseNpgsql(_configuration["ConnectionString"].ToString());
-                //optionsBuilder.EnableSensitiveDataLogging(true);
-                //optionsBuilder.EnableDetailedErrors(true);
-                //ZsBotDbContext.Initialize(optionsBuilder.Options);
-
                 Messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
                 Messenger.MessageReceived += Messenger_MessageReceived;
-                Messenger.MessageSent += Messenger_MessageSent;
-                Messenger.MessageEdited += Messenger_MessageEdited;
-                Messenger.MessageDeleted += Messenger_MessageDeleted;
+                Messenger.MessageSent     += Messenger_MessageSent;
+                Messenger.MessageEdited   += Messenger_MessageEdited;
+                Messenger.MessageDeleted  += Messenger_MessageDeleted;
 
-                CommandManager = new CommandManager();
+                _contextFactory = contextFactory;
+                _logger = logger;
+
+                CommandManager = new CommandManager(_contextFactory, _logger);
                 CommandManager.CommandCompleted += CommandManager_CommandCompleted;
             }
             catch (Exception e)
@@ -54,7 +52,7 @@ namespace Zs.Bot
 
         private void CommandManager_CommandCompleted(CommandResult result)
         {
-            var chat = DbChat.GetChat(result.ChatIdForAnswer);
+            var chat = DbModelExtensions.GetChat(result.ChatIdForAnswer, _contextFactory.GetContext());
             Messenger.AddMessageToOutbox(chat, result.Text);
         }
 
@@ -62,8 +60,6 @@ namespace Zs.Bot
         {
             try
             {
-                var message = args.Message;
-
                 SaveMessageData(args);
 
                 // 1. Проверка авторизации
@@ -71,14 +67,14 @@ namespace Zs.Bot
                 //    return;
 
                 // 2. Обрабатываем в зависимости от того, команда это или данные                           
-                if (BotCommand.IsCommand(message.MessageText))
+                if (BotCommand.IsCommand(args.Message.MessageText))
                 {
-                    var botCommand = BotCommand.ParseMessage(message);
+                    var botCommand = BotCommand.ParseMessage(args.Message, CommandManager.GetDbCommand);
 
                     if (botCommand != null)
                         CommandManager.EnqueueCommand(botCommand);
                     else
-                        Messenger.AddMessageToOutbox(args.Chat, $"Unknown command '{message.MessageText}'");
+                        Messenger.AddMessageToOutbox(args.Chat, $"Unknown command '{args.Message.MessageText}'");
                 }
                 else
                 {
@@ -104,8 +100,9 @@ namespace Zs.Bot
                 {
                     if (args.Message.MessageText == null)
                         args.Message.MessageText = "[Empty]";
-                    
-                    DbMessage.UpdateRawData((int)identicalMessageId, args.Message);
+
+                    args.Message.MessageId = (int)identicalMessageId;
+                    args.Message.UpdateRawData(_contextFactory.GetContext());
                 }
                 else
                     _logger.LogWarning("The edited message is not found in the database", args.Message, nameof(ZsBot));
@@ -124,29 +121,40 @@ namespace Zs.Bot
                 if (args.User != null)
                 {
                     int? identicalUserId = Messenger.GetIdenticalUserId(args.User);
-                    
-                    if (identicalUserId != null)
-                        DbUser.UpdateRawData((int)identicalUserId, args.User);
-                    else
-                        DbUser.SaveToDb(args.User);
 
-                    args.Message.UserId = identicalUserId ?? DbUser.GetId(args.User);
+                    if (identicalUserId != null)
+                    {
+                        args.User.UserId = (int)identicalUserId;
+                        args.User.UpdateRawData(_contextFactory.GetContext());
+                    }
+                    else
+                    {
+                        args.User.SaveToDb(_contextFactory.GetContext());
+                    }
+
+                    args.Message.UserId = identicalUserId ?? args.User.GetActualId(_contextFactory.GetContext());
                 }
 
                 {
                     int? identicalChatId = Messenger.GetIdenticalChatId(args.Chat);
                     if (identicalChatId != null)
-                        DbChat.UpdateRawData((int)identicalChatId, args.Chat);
+                    {
+                        args.Chat.ChatId = (int)identicalChatId;
+                        args.Chat.UpdateRawData(_contextFactory.GetContext());
+                    }
                     else
-                        DbChat.SaveToDb(args.Chat);
-                    
-                    args.Message.ChatId = DbChat.GetId(args.Chat);
+                    {
+                        args.Chat.SaveToDb(_contextFactory.GetContext());
+                    }
+
+                    args.Message.ChatId = args.Chat.GetActualId(_contextFactory.GetContext());
                 }
 
                 {
                     if (args.Message.MessageText == null)
                         args.Message.MessageText = "Empty/service message";
-                    DbMessage.SaveToDb(args.Message);
+
+                    args.Message.SaveToDb(_contextFactory.GetContext());
                 }
             }
             catch (Exception ex)

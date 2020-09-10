@@ -6,13 +6,15 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Zs.Bot.Helpers;
 using Zs.Bot.Messenger.Telegram;
 using Zs.Bot.Model.Db;
+using Zs.Bot.Modules.Logging;
 using Zs.Bot.Modules.Messaging;
 using Zs.Common.Abstractions;
 using Zs.Common.Modules.Connectors;
 using Zs.Service.ChatAdmin.Model;
+using BotContextFactory = Zs.Bot.Model.ContextFactory;
+using ChatAdminContextFactory = Zs.Service.ChatAdmin.Model.ContextFactory;
 
 namespace Zs.Service.ChatAdmin
 {
@@ -71,19 +73,33 @@ namespace Zs.Service.ChatAdmin
                             options.UseNpgsql(hostContext.Configuration.GetConnectionString("ChatAdmin"))
                                    .EnableDetailedErrors(true)
                                    .EnableSensitiveDataLogging(true));
+                        
+                        services.AddSingleton<IContextFactory<ZsBotDbContext>, BotContextFactory>(sp =>
+                            new BotContextFactory(sp.GetService<DbContextOptions<ZsBotDbContext>>()));
+                        
+                        services.AddSingleton<IContextFactory<ChatAdminDbContext>, ChatAdminContextFactory>(sp =>
+                            new ChatAdminContextFactory(sp.GetService<DbContextOptions<ChatAdminDbContext>>()));
+
+                        services.AddSingleton<IZsLogger, Logger>(sp => new Logger(sp.GetService<IContextFactory<ZsBotDbContext>>()));
 
                         services.AddSingleton<IConnectionAnalyser, ConnectionAnalyser>(sp =>
                         {
-                            var ca = new ConnectionAnalyser(Logger.GetInstance(), "https://vk.com/", "https://yandex.ru/", "https://www.google.ru/");
+                            var ca = new ConnectionAnalyser(sp.GetService<IZsLogger>(),
+                                "https://vk.com/", "https://yandex.ru/", "https://www.google.ru/");
                             if (hostContext.Configuration["Proxy:Socket"] != null)
                                 ca.InitializeProxy(hostContext.Configuration["Proxy:Socket"],
                                     hostContext.Configuration["Proxy:Login"],
                                     hostContext.Configuration["Proxy:Password"]);
                             return ca;
                         });
-                        
+
                         services.AddSingleton<IMessenger, TelegramMessenger>(sp => 
-                            new TelegramMessenger(hostContext.Configuration["BotToken"], sp.GetService<IConnectionAnalyser>().WebProxy));
+                            new TelegramMessenger(
+                                hostContext.Configuration["BotToken"],
+                                sp.GetService<IContextFactory<ZsBotDbContext>>(),
+                                sp.GetService<IZsLogger>(),
+                                sp.GetService<IConnectionAnalyser>().WebProxy)
+                            );
                         
                         services.AddSingleton<IHostedService, ChatAdmin>(sp =>
                             ActivatorUtilities.CreateInstance<ChatAdmin>(sp));

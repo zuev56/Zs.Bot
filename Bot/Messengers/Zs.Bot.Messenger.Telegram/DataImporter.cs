@@ -25,7 +25,7 @@ namespace Zs.Bot.Messenger.Telegram
 
 
 
-        public static void LoadUsersFromJson(string filePath)
+        public static void LoadUsersFromJson(string filePath, ZsBotDbContext context)
         {
             try
             {
@@ -34,7 +34,6 @@ namespace Zs.Bot.Messenger.Telegram
                 var fileContent = File.ReadAllText(filePath);
 
                 var users = new List<DbUser>();
-                using var ctx = new ZsBotDbContext();
                 foreach (var jItem in JArray.Parse(fileContent))
                 {
                     var firstName = string.IsNullOrWhiteSpace(jItem["FirstName"]?.ToString())
@@ -65,11 +64,11 @@ namespace Zs.Bot.Messenger.Telegram
                         UpdateDate   = DateTime.Now
                     });
                 }
-                ctx.Users.AddRange(users);
-                int saved = ctx.SaveChanges();
+                context.Users.AddRange(users);
+                int saved = context.SaveChanges();
 
                 // Сдвиг SEQUENCE
-                ctx.Database.ExecuteSqlRaw($"SELECT setval('bot.users_user_id_seq', COALESCE((SELECT MAX(user_id)+1 FROM bot.users), 1), false);");
+                context.Database.ExecuteSqlRaw($"SELECT setval('bot.users_user_id_seq', COALESCE((SELECT MAX(user_id)+1 FROM bot.users), 1), false);");
             }
             catch (Exception ex)
             {
@@ -82,7 +81,7 @@ namespace Zs.Bot.Messenger.Telegram
         /// </summary>
         /// <param name="filePath"></param>
         /// <param name="telegramChatId"></param>
-        public static void LoadMessagesFromJson(string filePath, long telegramChatId, string telegramChatTitle, string telegramChatName)
+        public static void LoadMessagesFromJson(string filePath, ZsBotDbContext context, long telegramChatId, string telegramChatTitle, string telegramChatName)
         {
             try
             {
@@ -91,11 +90,10 @@ namespace Zs.Bot.Messenger.Telegram
                 var fileContent = _utf8Encoder.GetString(_utf8Encoder.GetBytes(File.ReadAllText(filePath)));
                 fileContent = new string(fileContent.Where(x => !char.IsSurrogate(x)).ToArray());
 
-                using var ctx = new ZsBotDbContext();
-                var messageId = ctx.Messages.Count() + 1;
+                var messageId = context.Messages.Count() + 1;
                 int lastSavedId = messageId;
 
-                var dbChatId = ctx.Chats
+                var dbChatId = context.Chats
                     .FromSqlRaw("SELECT * FROM bot.chats WHERE CAST(raw_data ->> 'Id' AS BIGINT) = {0}", telegramChatId)
                     .FirstOrDefault()?.ChatId;
 
@@ -117,8 +115,8 @@ namespace Zs.Bot.Messenger.Telegram
                         InsertDate      = DateTime.Parse("2018-04-14T22:49:37"),
                         UpdateDate      = DateTime.Now
                     };
-                    ctx.Chats.Add(chat);
-                    ctx.SaveChanges();
+                    context.Chats.Add(chat);
+                    context.SaveChanges();
                     dbChatId = chat.ChatId;
                 }
 
@@ -128,7 +126,7 @@ namespace Zs.Bot.Messenger.Telegram
                     .OrderBy(i => (int)i["id"]).ToList(); // Сортировка важна для корректного получения ReplyToDbMessageId
 
                 var dbMessagesDict = new ConcurrentDictionary<int, DbMessage>(Environment.ProcessorCount, 80000);
-                var dbUsers = ctx.Users.ToList()
+                var dbUsers = context.Users.ToList()
                     .Select(u => new {
                         dbUserId = u.UserId,
                         tgUserId = ((int?)JObject.Parse(u.RawData)
@@ -267,8 +265,8 @@ namespace Zs.Bot.Messenger.Telegram
 
                 try
                 {
-                    ctx.Messages.AddRange(notReplies);
-                    int saved = ctx.SaveChanges();
+                    context.Messages.AddRange(notReplies);
+                    int saved = context.SaveChanges();
                     savedMessageIds.AddRange(notReplies.Select(m => m.MessageId));
 
                     // На сообщения-ответы могут также отвечать. 
@@ -278,8 +276,8 @@ namespace Zs.Bot.Messenger.Telegram
                     // freeReplies - это сообщения, которые являются ответами на другие, но на которые уже никто не отвечаел
 
                     freeReplies = replies.Where(m => !replies.Select(p => p.MessageId).Contains((int)m.ReplyToMessageId)).ToList();
-                    ctx.Messages.AddRange(freeReplies);
-                    saved = ctx.SaveChanges();
+                    context.Messages.AddRange(freeReplies);
+                    saved = context.SaveChanges();
                     savedMessageIds.AddRange(freeReplies.Select(m => m.MessageId));
 
                     // Здесь в replies остались сообщения, которые являются ответами и на которые также кто-то отвечает
@@ -295,15 +293,15 @@ namespace Zs.Bot.Messenger.Telegram
                         part.AddRange(replies.Where(m => savedMessageIds.Contains((int)m.ReplyToMessageId)));
                         replies.RemoveAll(m => part.Contains(m));
 
-                        ctx.Messages.AddRange(part);
-                        ctx.SaveChanges();
+                        context.Messages.AddRange(part);
+                        context.SaveChanges();
 
                         savedMessageIds.AddRange(part.Select(m => m.MessageId));
                         part.Clear();
                     }
 
                     // Сдвиг SEQUENCE
-                    ctx.Database.ExecuteSqlRaw("SELECT setval('bot.messages_message_id_seq', COALESCE((SELECT MAX(message_id)+1 FROM bot.messages), 1), false);");
+                    context.Database.ExecuteSqlRaw("SELECT setval('bot.messages_message_id_seq', COALESCE((SELECT MAX(message_id)+1 FROM bot.messages), 1), false);");
                 }
                 catch (Exception ex)
                 {

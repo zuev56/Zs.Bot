@@ -8,15 +8,8 @@ using Zs.Common.Modules.CycleWorker;
 namespace Zs.UnitTest.Bot
 {
     [TestClass]
-    public class CycleWorkerTest
+    public class CycleWorkerTest : DataBaseClient
     {
-        //private readonly CycleWorker _cycleWorker = new CycleWorker();
-        private readonly string _connectionString 
-            = "Host=localhost;Port=5632;Username=app;Password=app;Database=ZsBot;";
-
-        public CycleWorkerTest()
-        {
-        }
 
         [TestMethod]
         public async Task CycleWorker_Test()
@@ -35,7 +28,7 @@ namespace Zs.UnitTest.Bot
                 }
                 ).ContinueWith(task =>
                     exception = task.Exception,
-                    TaskContinuationOptions.OnlyOnFaulted
+                    TaskContinuationOptions.NotOnRanToCompletion
                 );
 
                 if (exception != null)

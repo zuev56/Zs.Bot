@@ -2,15 +2,23 @@
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zs.Bot;
+using Zs.Bot.Model.Db;
 using Zs.Bot.Modules.Command;
+using Zs.Bot.Modules.Logging;
 
 namespace Zs.UnitTest.Bot
 {
     [TestClass]
     public class CommandManagerTests : DataBaseClient
     {
-        public CommandManagerTests()
+        private static ICommandManager _commandManager;
+        private static Func<string, ICommand> _getDbCommand;
+
+        [ClassInitialize()]
+        public static void Init(TestContext testContext)
         {
+            _commandManager = new CommandManager(_contextFactory, new Logger(_contextFactory));
+            _getDbCommand = ((CommandManager)_commandManager).GetDbCommand;
         }
 
         /// <summary> Создание команды, помещение её в очередь и вызов из очереди на обработку
@@ -21,9 +29,9 @@ namespace Zs.UnitTest.Bot
             try
             {
                 var userMessage = DbEntityFactory.NewMessage(@"/test p1 p2, p3;  p4");
-                var botCommand = await BotCommand.ParseMessageAsync(userMessage);
+                var botCommand = await BotCommand.ParseMessageAsync(userMessage, _getDbCommand);
 
-                var enqueueResult = new CommandManager().EnqueueCommand(botCommand);
+                var enqueueResult = _commandManager.EnqueueCommand(botCommand);
 
                 // На этом этапе сообщение передаётся в другой поток на обработку и тест считаем выполненным
                 Assert.IsTrue(enqueueResult);
@@ -41,9 +49,9 @@ namespace Zs.UnitTest.Bot
             try
             {
                 var userMessage = DbEntityFactory.NewMessage("/Test");
-                var botCommand = await BotCommand.ParseMessageAsync(userMessage);
+                var botCommand = await BotCommand.ParseMessageAsync(userMessage, _getDbCommand);
 
-                var result = new CommandManager().RunCommand(botCommand);
+                var result = ((CommandManager)_commandManager).RunCommand(botCommand);
 
                 Assert.AreNotEqual(result, $"Command '{botCommand.Name}' running failed!");
             }
@@ -60,9 +68,9 @@ namespace Zs.UnitTest.Bot
             try
             {
                 var userMessage = DbEntityFactory.NewMessage("/GetUserStatistics 20 \"'2019-10-29 00:00:00.0+03'\", \"'2019-10-30 00:00:00.0+03'\"; ");
-                var botCommand = await BotCommand.ParseMessageAsync(userMessage);
+                var botCommand = await BotCommand.ParseMessageAsync(userMessage, _getDbCommand);
 
-                var result = new CommandManager().RunCommand(botCommand);
+                var result = ((CommandManager)_commandManager).RunCommand(botCommand);
 
                 Assert.AreNotEqual(result, $"Command '{botCommand.Name}' running failed!");
             }
@@ -79,9 +87,9 @@ namespace Zs.UnitTest.Bot
             try
             {
                 var userMessage = DbEntityFactory.NewMessage("/GetUserStatistics");
-                var botCommand = await BotCommand.ParseMessageAsync(userMessage);
+                var botCommand = await BotCommand.ParseMessageAsync(userMessage, _getDbCommand);
 
-                var result = new CommandManager().RunCommand(botCommand);
+                var result = ((CommandManager)_commandManager).RunCommand(botCommand);
 
                 Assert.AreNotEqual(result, $"Command '{botCommand.Name}' running failed!");
             }
@@ -96,9 +104,9 @@ namespace Zs.UnitTest.Bot
         {
             try
             {
-                var commands0 = CommandManager.GetDbCommands("ADMIN");
-                var commands1 = CommandManager.GetDbCommands("MODERATOR");
-                var commands2 = CommandManager.GetDbCommands("USER");
+                var commands0 = _commandManager.GetDbCommands("ADMIN");
+                var commands1 = _commandManager.GetDbCommands("MODERATOR");
+                var commands2 = _commandManager.GetDbCommands("USER");
 
                 Assert.IsTrue(commands0.Count > 0);
                 Assert.IsTrue(commands1.Count > 0);

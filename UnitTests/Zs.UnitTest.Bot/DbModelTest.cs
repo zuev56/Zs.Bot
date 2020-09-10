@@ -15,7 +15,7 @@ namespace Zs.UnitTest.Bot
         {
             try
             {
-                using (var ctx = new ZsBotDbContext())
+                using (var ctx = _contextFactory.GetContext())
                 {
                     Assert.IsNotNull(ctx.Bots.FirstOrDefault());
                     Assert.IsNotNull(ctx.ChatTypes.FirstOrDefault());
@@ -43,7 +43,7 @@ namespace Zs.UnitTest.Bot
         {
             try
             {
-                using var ctx = new ZsBotDbContext();
+                using var ctx = _contextFactory.GetContext();
 
                 var bot             = ctx.Bots.FirstOrDefault();
                 var chatType        = ctx.ChatTypes.FirstOrDefault();
@@ -126,7 +126,7 @@ namespace Zs.UnitTest.Bot
                 var command         = new DbCommand         { CommandName = "/unittest1", CommandScript = "UnitTest1", CommandGroup = "UnitTest1" };
                 var option          = new DbOption          { OptionName = "UnitTest1", OptionGroup = "UnitTest1" };
 
-                using (var ctx = new ZsBotDbContext())
+                using (var ctx = _contextFactory.GetContext())
                 {
                     if (!ctx.Messengers.Any(m => m.MessengerCode == messenger.MessengerCode))
                         ctx.Messengers.Add(messenger);
@@ -210,7 +210,7 @@ namespace Zs.UnitTest.Bot
                 var option          = new DbOption          { OptionName = "UnitTest0", OptionGroup = "UnitTest0" };
 
                 //Сохранение
-                using (var ctx = new ZsBotDbContext())
+                using (var ctx = _contextFactory.GetContext())
                 {
                     if (!ctx.Messengers.Any(m => m.MessengerCode == messenger.MessengerCode))
                         ctx.Messengers.Add(messenger);
@@ -268,7 +268,7 @@ namespace Zs.UnitTest.Bot
                 }
 
                 // Удаление из БД
-                using (var ctx = new ZsBotDbContext())
+                using (var ctx = _contextFactory.GetContext())
                 {
                     ctx.Logs.Remove(log);
                     ctx.Commands.Remove(command);
@@ -305,7 +305,7 @@ namespace Zs.UnitTest.Bot
             {
                 var filePath = @"C:\Users\zuev56\Documents\users_backup_20200816_1853.json";
 
-                DataImporter.LoadUsersFromJson(filePath);
+                DataImporter.LoadUsersFromJson(filePath, _contextFactory.GetContext());
             }
             catch (Exception e)
             {
@@ -313,7 +313,7 @@ namespace Zs.UnitTest.Bot
             }
         }
         
-        [TestMethod]
+        //[TestMethod]
         public void LoadMessagesFromJson()
         {
             try
@@ -324,7 +324,7 @@ namespace Zs.UnitTest.Bot
                 //DataImporter.LoadMessagesFromJson(filePath, zlTelegramChatId, "ЖК Зима Лето Корпус 6 соседи", "zimaleto96");
 
                 var dotNetRuChatId = 9656792576;
-                DataImporter.LoadMessagesFromJson(filePath, dotNetRuChatId, "DotNetRuChat", "DotNetRuChat");
+                DataImporter.LoadMessagesFromJson(filePath, _contextFactory.GetContext(), dotNetRuChatId, "DotNetRuChat", "DotNetRuChat");
 
             }
             catch (Exception ex)

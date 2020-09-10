@@ -21,7 +21,8 @@ namespace Zs.Bot.Messenger.Telegram
 {
     public class TelegramMessenger : IMessenger
     {
-        private readonly IZsLogger _logger = Logger.GetInstance();
+        private readonly IZsLogger _logger; 
+        IContextFactory<ZsBotDbContext> _contextFactory;
         private readonly int _sendingRetryLimit = 5;
         private readonly TelegramBotClient _botClient;
         private readonly Buffer<TgMessage> _inputMessageBuffer = new Buffer<TgMessage>();
@@ -36,10 +37,13 @@ namespace Zs.Bot.Messenger.Telegram
         public IToGenegalItemConverter ItemConverter { get; set; } = new ItemConverter();
 
 
-        public TelegramMessenger(string token, IWebProxy webProxy = null)
+        public TelegramMessenger(string token, IContextFactory<ZsBotDbContext> contextFactory, IZsLogger logger, IWebProxy webProxy = null)
         {
             try
             {
+                _logger = logger;
+                _contextFactory = contextFactory;
+
                 _inputMessageBuffer.OnEnqueue += InputMessageBuffer_OnEnqueue;
                 _outputMessageBuffer.OnEnqueue += OutputMessageBuffer_OnEnqueue;
 
@@ -82,7 +86,10 @@ namespace Zs.Bot.Messenger.Telegram
             catch (Exception e)
             {
                 var te = new TypeInitializationException(typeof(TelegramMessenger).FullName, e);
-                _logger.LogError(te, nameof(TelegramMessenger));
+                if (_logger != null)
+                    _logger.LogError(te, nameof(TelegramMessenger));
+                else
+                    throw;
             }
         }
 
@@ -304,7 +311,7 @@ namespace Zs.Bot.Messenger.Telegram
         {
             try
             {
-                using var ctx = new ZsBotDbContext();
+                using var ctx = _contextFactory.GetContext();
                 var dbUsers = ctx.Users.Where(u => userRoleCodes.Contains(u.UserRoleCode))
                                  .ToList();// Для исключения Npgsql.NpgsqlOperationInProgressException: A command is already in progress
 
@@ -334,7 +341,7 @@ namespace Zs.Bot.Messenger.Telegram
             if (dbMessage is null)
                 throw new ArgumentNullException(nameof(dbMessage));
 
-            using var ctx = new ZsBotDbContext();
+            using var ctx = _contextFactory.GetContext();
 
             var dbChat = ctx.Chats.FirstOrDefault(c => c.ChatId == dbMessage.ChatId);
             if (dbChat == null)
@@ -354,7 +361,7 @@ namespace Zs.Bot.Messenger.Telegram
             if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
-            using var ctx = new ZsBotDbContext();
+            using var ctx = _contextFactory.GetContext();
 
             var jObject = JObject.Parse(user.RawData);
             if (jObject.ContainsKey("Id"))
@@ -376,7 +383,7 @@ namespace Zs.Bot.Messenger.Telegram
             if (chat is null)
                 throw new ArgumentNullException(nameof(chat));
 
-            using var ctx = new ZsBotDbContext();
+            using var ctx = _contextFactory.GetContext();
 
             var jObject = JObject.Parse(chat.RawData);
             if (jObject.ContainsKey("Id"))
@@ -398,7 +405,7 @@ namespace Zs.Bot.Messenger.Telegram
             if (message is null)
                 throw new ArgumentNullException(nameof(message));
 
-            using var ctx = new ZsBotDbContext();
+            using var ctx = _contextFactory.GetContext();
 
             //Вместо изменения текущего сообщения, 
             //было создано новое с некорректными ChatId и UserId

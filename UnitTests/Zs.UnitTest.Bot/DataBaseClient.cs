@@ -1,29 +1,30 @@
-﻿using System.Text;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Zs.Bot.Model;
 using Zs.Bot.Model.Db;
+using Zs.Common.Abstractions;
 
 namespace Zs.UnitTest.Bot
 {
     [TestClass]
     public class DataBaseClient
     {
-        private static DbContextOptionsBuilder<ZsBotDbContext> _robotOptionsBuilder;
-        
+        protected static IContextFactory<ZsBotDbContext> _contextFactory;
+        protected static string _connectionString;
 
         static DataBaseClient() => Init(null);
 
-        [ClassInitialize()]
         public static void Init(TestContext testContext)
         {
             var configuration = new ConfigurationBuilder().AddJsonFile(@"M:\PrivateBotConfiguration.json", true, true).Build();
+            _connectionString = configuration.GetConnectionString("ChatAdmin");
 
-            _robotOptionsBuilder = new DbContextOptionsBuilder<ZsBotDbContext>();
-            _robotOptionsBuilder.UseNpgsql(configuration.GetConnectionString("ChatAdmin"));
-            _robotOptionsBuilder.EnableSensitiveDataLogging(true);
-            _robotOptionsBuilder.EnableDetailedErrors(true);
-            ZsBotDbContext.Initialize(_robotOptionsBuilder.Options);
+            var optionsBuilder = new DbContextOptionsBuilder<ZsBotDbContext>();
+            optionsBuilder.UseNpgsql(_connectionString);
+            optionsBuilder.EnableSensitiveDataLogging(true);
+            optionsBuilder.EnableDetailedErrors(true);
+            _contextFactory = new ContextFactory(optionsBuilder.Options);
         }
 
         [ClassCleanup]

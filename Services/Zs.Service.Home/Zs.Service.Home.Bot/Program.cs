@@ -7,14 +7,16 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
-using Zs.Bot.Helpers;
 using Zs.Bot.Messenger.Telegram;
 using Zs.Bot.Model.Db;
+using Zs.Bot.Modules.Logging;
 using Zs.Bot.Modules.Messaging;
 using Zs.Common.Abstractions;
 using Zs.Common.Extensions;
 using Zs.Common.Modules.Connectors;
 using Zs.Service.Home.Model.Db;
+using BotContextFactory = Zs.Bot.Model.ContextFactory;
+using HomeContextFactory = Zs.Service.Home.Model.ContextFactory;
 
 namespace Zs.Service.Home.Bot
 {
@@ -68,6 +70,8 @@ namespace Zs.Service.Home.Bot
                     })
                     .ConfigureServices((hostContext, services) =>
                     {
+                        services.AddSingleton<IZsLogger, Logger>(sp => new Logger(sp.GetService<IContextFactory<ZsBotDbContext>>()));
+
                         services.AddDbContext<ZsBotDbContext>(options  =>
                             options.UseNpgsql(hostContext.Configuration.GetConnectionString("Home"))
                                    .EnableDetailedErrors(true)
@@ -78,9 +82,15 @@ namespace Zs.Service.Home.Bot
                                    .EnableDetailedErrors(true)
                                    .EnableSensitiveDataLogging(true));
 
-                        services.AddTransient<IConnectionAnalyser, ConnectionAnalyser>(sp =>
+                        services.AddSingleton<IContextFactory<ZsBotDbContext>, BotContextFactory>(sp =>
+                            new BotContextFactory(sp.GetService<DbContextOptions<ZsBotDbContext>>()));
+
+                        services.AddSingleton<IContextFactory<HomeDbContext>, HomeContextFactory>(sp =>
+                            new HomeContextFactory(sp.GetService<DbContextOptions<HomeDbContext>>()));
+
+                        services.AddScoped<IConnectionAnalyser, ConnectionAnalyser>(sp =>
                         {
-                            var ca = new ConnectionAnalyser(Logger.GetInstance(), "https://vk.com/", "https://yandex.ru/", "https://www.google.ru/");
+                            var ca = new ConnectionAnalyser(sp.GetService<IZsLogger>(), "https://vk.com/", "https://yandex.ru/", "https://www.google.ru/");
                             if (hostContext.Configuration["ProxySocket"] != null)
                                 ca.InitializeProxy(
                                     hostContext.Configuration["ProxySocket"],
@@ -90,8 +100,12 @@ namespace Zs.Service.Home.Bot
                             return ca;
                         });
 
-                        services.AddTransient<IMessenger, TelegramMessenger>(sp =>
-                            new TelegramMessenger(hostContext.Configuration["BotToken"], sp.GetService<IConnectionAnalyser>().WebProxy));
+                        services.AddSingleton<IMessenger, TelegramMessenger>(sp =>
+                            new TelegramMessenger(hostContext.Configuration["BotToken"],
+                                sp.GetService<IContextFactory<ZsBotDbContext>>(),
+                                sp.GetService<IZsLogger>(),
+                                sp.GetService<IConnectionAnalyser>().WebProxy)
+                            );
                         
                         services.AddSingleton<IHostedService, UserWatcher>(x =>
                             ActivatorUtilities.CreateInstance<UserWatcher>(x));

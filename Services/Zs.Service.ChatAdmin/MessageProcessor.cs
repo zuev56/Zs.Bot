@@ -5,7 +5,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Zs.Bot.Helpers;
 using Zs.Bot.Model.Db;
 using Zs.Bot.Modules.Messaging;
 using Zs.Common.Abstractions;
@@ -25,16 +24,24 @@ namespace Zs.Service.ChatAdmin
         private DateTime? _accountingStartDate;           // Время начала учёта сообщений и включения ограничений
         private DateTime? _internetRepairDate;            // Время восстановления соединения с интернетом
         private readonly IMessenger _messenger;
-        private readonly IZsLogger _logger = Logger.GetInstance();
+        private readonly IZsLogger _logger;
         private readonly IConfiguration _configuration;
         private readonly bool _detailedLogging;
         private readonly int _waitAfterConnectionRepairedSec = 60;
+        private readonly IContextFactory<ZsBotDbContext> _botContextFactory;
+        private readonly IContextFactory<ChatAdminDbContext> _caContextFactory;
 
         public event Action<string> LimitsDefined;
 
 
-        internal MessageProcessor(IConfiguration configuration, IMessenger messenger)
+        internal MessageProcessor(
+            IConfiguration configuration,
+            IMessenger messenger,
+            IContextFactory<ZsBotDbContext> botContextFactory,
+            IContextFactory<ChatAdminDbContext> caContextFactory,
+            IZsLogger logger)
         {
+
             try
             {
                 if (configuration is null)
@@ -43,8 +50,19 @@ namespace Zs.Service.ChatAdmin
                 if (messenger is null)
                     throw new ArgumentNullException(nameof(messenger));
 
+                if (botContextFactory is null)
+                    throw new ArgumentNullException(nameof(botContextFactory));
+
+                if (caContextFactory is null)
+                    throw new ArgumentNullException(nameof(caContextFactory));
+                if (logger is null)
+                    throw new ArgumentNullException(nameof(logger));
+
                 _configuration = configuration;
                 _messenger = messenger;
+                _botContextFactory = botContextFactory;
+                _caContextFactory = caContextFactory;
+                _logger = logger;
                 _defaultChatId = _configuration["DefaultChatId"] != null ? checked((int)long.Parse(configuration["DefaultChatId"])) : -1;
 
                 if (_configuration["DetailedLogging"] != null)
@@ -94,7 +112,7 @@ namespace Zs.Service.ChatAdmin
                                      $"_start_account_after => {_accountingStartsAfter}\n" +
                             ")";
 
-                var jsonResult = ZsBotDbContext.GetStringQueryResult(query);
+                var jsonResult = GetStringQueryResult(query);
 
                 if (_detailedLogging)
                 {
@@ -110,7 +128,7 @@ namespace Zs.Service.ChatAdmin
 
                 if (dictResult.ContainsKey("Action"))
                 {
-                    using var ctx = new ZsBotDbContext();
+                    using var ctx = _botContextFactory.GetContext();
                     var chat = ctx.Chats.First(c => c.ChatId == message.ChatId);
 
                     if (dictResult.ContainsKey("MessageText"))
@@ -254,7 +272,7 @@ namespace Zs.Service.ChatAdmin
                 _accountingStartDate = null;
 
                 // Remove today Bans where BanFinishDate is null (warnings before ban)
-                using var ctx = new ChatAdminDbContext();
+                using var ctx = _caContextFactory.GetContext();
                 var warnings = await ctx.Bans
                     .Where(b => b.InsertDate > DateTime.Today
                              && b.BanFinishDate == null).ToListAsync();
@@ -302,7 +320,7 @@ namespace Zs.Service.ChatAdmin
 
                 _logger.LogInfo("Limits definition started", logDataBefore, nameof(MessageProcessor));
 
-                using (var ctx = new ZsBotDbContext())
+                using (var ctx = _botContextFactory.GetContext())
                 {
                     // Telegram message date is GMT. But now everything depends on the InsertDate.
 
@@ -388,6 +406,12 @@ namespace Zs.Service.ChatAdmin
                  + accountingStatus;
         }
 
+        public string GetStringQueryResult(string query)
+        {
+            using var ctx = _botContextFactory.GetContext();
+            var fromSqlRaw = ctx.Query.FromSqlRaw($"{query} as Result").AsEnumerable();
 
+            return fromSqlRaw.ToList()?[0]?.Result ?? "NULL";
+        }
     }
 }

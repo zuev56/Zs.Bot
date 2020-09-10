@@ -29,36 +29,59 @@ namespace Zs.Service.ChatAdmin
     internal class ChatAdmin : IHostedService
     {
         private readonly IConfiguration _configuration;
-        private readonly IZsLogger _logger = Logger.GetInstance();
+        private readonly IZsLogger _logger;
         private readonly ZsBot _bot;
         private readonly CycleWorker _cycleWorker;
         private readonly MessageProcessor _messageProcessor;
         private readonly IConnectionAnalyser _connectionAnalyser;
+        private readonly IContextFactory<ZsBotDbContext> _botContextFactory;
+        private readonly IContextFactory<ChatAdminDbContext> _caContextFactory;
+
         private readonly bool _detailedLogging;
 
 
         public ChatAdmin(
-            IServiceProvider serviceProvider,
             IConfiguration configuration,
             IMessenger messenger, 
-            IConnectionAnalyser connectionAnalyser)
+            IConnectionAnalyser connectionAnalyser,
+            IContextFactory<ZsBotDbContext> botContextFactory,
+            IContextFactory<ChatAdminDbContext> caContextFactory,
+            IZsLogger logger)
         {
             try
             {
-                _configuration = configuration;
+                if (configuration is null)
+                    throw new ArgumentNullException(nameof(configuration));
 
-                ZsBotDbContext.Initialize(serviceProvider.GetService<DbContextOptions<ZsBotDbContext>>());
-                ChatAdminDbContext.Initialize(serviceProvider.GetService<DbContextOptions<ChatAdminDbContext>>());
+                if (messenger is null)
+                    throw new ArgumentNullException(nameof(messenger));
+
+                if (connectionAnalyser is null)
+                    throw new ArgumentNullException(nameof(connectionAnalyser));
+
+                if (botContextFactory is null)
+                    throw new ArgumentNullException(nameof(botContextFactory));
+
+                if (caContextFactory is null)
+                    throw new ArgumentNullException(nameof(caContextFactory));
+
+                if (logger is null)
+                    throw new ArgumentNullException(nameof(logger));
+
+                _configuration = configuration;
+                _botContextFactory = botContextFactory;
+                _caContextFactory = caContextFactory;
+                _logger = logger;
 
                 bool.TryParse(_configuration["DetailedLogging"]?.ToString(), out _detailedLogging);
 
-                _bot = new ZsBot(_configuration, messenger);
+                _bot = new ZsBot(_configuration, messenger, _botContextFactory, _logger);
                 _bot.Messenger.MessageReceived += Messenger_MessageReceived;
 
                 _connectionAnalyser = connectionAnalyser;
                 _connectionAnalyser.ConnectionStatusChanged += СonnectionAnalyser_StatusChanged;
 
-                _messageProcessor = new MessageProcessor(_configuration, messenger);
+                _messageProcessor = new MessageProcessor(_configuration, messenger, _botContextFactory, _caContextFactory, _logger);
                 _messageProcessor.LimitsDefined += MessageProcessor_LimitsDefined;
 
                 _cycleWorker = new CycleWorker(_logger, _detailedLogging);

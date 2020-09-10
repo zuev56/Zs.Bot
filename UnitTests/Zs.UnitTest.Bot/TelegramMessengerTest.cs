@@ -8,11 +8,12 @@ using Telegram.Bot.Types;
 using Zs.Bot.Helpers;
 using Zs.Bot.Messenger.Telegram;
 using Zs.Bot.Model.Db;
+using Zs.Bot.Modules.Logging;
 
 namespace Zs.UnitTest.Bot
 {
     [TestClass]
-    public class TelegramMessengerTest
+    public class TelegramMessengerTest : DataBaseClient
     {
         private Zs.Bot.Modules.Messaging.IMessenger _messenger;
 
@@ -26,7 +27,7 @@ namespace Zs.UnitTest.Bot
             //IWebProxy webProxy = new WebProxy(_proxySocket, true);
             //webProxy.Credentials = new NetworkCredential(_proxyUserName, _proxyPassword);
 
-            _messenger = new TelegramMessenger(_botToken);
+            _messenger = new TelegramMessenger(_botToken, _contextFactory, new Logger(_contextFactory));
             _messenger.MessageReceived += (_) => HeavyMethod(10);
         }
 
