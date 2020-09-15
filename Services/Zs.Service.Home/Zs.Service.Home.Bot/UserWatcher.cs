@@ -4,12 +4,9 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Zs.Bot;
-using Zs.Bot.Helpers;
 using Zs.Bot.Model.Db;
 using Zs.Bot.Modules.Messaging;
 using Zs.Common.Abstractions;
@@ -140,22 +137,42 @@ namespace Zs.Service.Home.Bot
                 description: "informAboutNotActiveUsers12h"
                 );
 
-            //var sendYesterdaysStatistics = new SqlJob(
-            //    TimeSpan.FromDays(1),
-            //    QueryResultType.String,
-            //    $"select vk.sf_cmd_get_full_statistics(10, now()::date - interval '1 day', now()::date - interval '1 millisecond')",
-            //    _configuration["Home"].ToString(),
-            //    startDate: DateTime.Now.Date + TimeSpan.FromHours(24+9.5)
-            //    )
-            //{ Description = "sendYesterdaysStatistics" };
+            var sendDayErrorsAndWarnings = new SqlJob(
+                TimeSpan.FromHours(1),
+                QueryResultType.String,
+                 @" select string_agg('**' || log_type || '**  ' || to_char(insert_date, 'HH24:MI:SS') || E'\n' || log_initiator || ':  ' || log_message, E'\n\n' order by insert_date desc)"
+                + "\n from bot.logs"
+                + "\nwhere log_type in ('Warning', 'Error')"
+                + "\n  and insert_date > now() - interval '1 hour'",
+                _configuration.GetConnectionString("Home"),
+                startDate: Job.NextHour(),
+                description: "sendDayErrorsAndWarnings"
+                );
+
+            var sendNightErrorsAndWarnings = new SqlJob(
+                TimeSpan.FromDays(1),
+                QueryResultType.String,
+                 @" select string_agg('**' || log_type || '**  ' || to_char(insert_date, 'HH24:MI:SS') || E'\n' || log_initiator || ':  ' || log_message, E'\n\n' order by insert_date desc)"
+                + "\n from bot.logs"
+                + "\nwhere log_type in ('Warning', 'Error')"
+                + "\n  and insert_date > now() - interval '12 hours'",
+                _configuration.GetConnectionString("Home"),
+                startDate: DateTime.Today + TimeSpan.FromHours(24+10),
+                description: "sendNightErrorsAndWarnings"
+                );
+
 
 
             informAboutNotActiveUsers24h.ExecutionCompleted += Job_ExecutionCompleted;
             informAboutNotActiveUsers12h.ExecutionCompleted += Job_ExecutionCompleted;
+            sendDayErrorsAndWarnings.ExecutionCompleted += Job_ExecutionCompleted;
+            sendNightErrorsAndWarnings.ExecutionCompleted += Job_ExecutionCompleted;
 
             _cycleWorker.Jobs.Add(logUserStatus);
             _cycleWorker.Jobs.Add(informAboutNotActiveUsers24h);
             _cycleWorker.Jobs.Add(informAboutNotActiveUsers12h);
+            _cycleWorker.Jobs.Add(sendDayErrorsAndWarnings);
+            _cycleWorker.Jobs.Add(sendNightErrorsAndWarnings);
         }
 
         private void Job_ExecutionCompleted(Job job, IJobExecutionResult result)
@@ -231,7 +248,7 @@ namespace Zs.Service.Home.Bot
                             IsOnline = currentOnlineStatus,
                             IsOnlineMobile = currentMobileStatus,
                             OnlineApp = user.OnlineApp,
-                            LastSeen = user.LastSeenUnix.Time,
+                            LastSeen = user.LastSeenUnix?.Time ?? 0,
                             InsertDate = DateTime.Now
                         });
                     }

@@ -31,7 +31,9 @@ namespace Zs.Service.Home.Model.Vk
 
         [JsonPropertyName("last_seen")]
         public ApiLastSeen LastSeenUnix { get; set; }
-        public DateTime LastSeen => LastSeenUnix.Time.FromUnixEpoch();
+        public DateTime LastSeen => LastSeenUnix is null
+                                  ? DateTime.MinValue 
+                                  : LastSeenUnix.Time.FromUnixEpoch();
 
         [JsonExtensionData]
         public Dictionary<string, JsonElement> RawData { get; set; }
