@@ -9,7 +9,8 @@ using Microsoft.EntityFrameworkCore.Internal;
 using Newtonsoft.Json.Linq;
 using Npgsql;
 using Zs.Bot.Helpers;
-using Zs.Bot.Model.Db;
+using Zs.Bot.Model;
+using Zs.Bot.Model.Abstractions;
 using Zs.Common.Abstractions;
 using Zs.Common.Exceptions;
 using Zs.Common.Extensions;
@@ -22,14 +23,14 @@ namespace Zs.Bot.Modules.Command
     public class CommandManager : ICommandManager
     {
         private readonly IZsLogger _logger;
-        private readonly IContextFactory<ZsBotDbContext> _contextFactory;
+        private readonly IContextFactory<BotContext> _contextFactory;
 
         private readonly Buffer<BotCommand> _commandBuffer;
 
         public event Action<CommandResult> CommandCompleted;
 
         public CommandManager(
-            IContextFactory<ZsBotDbContext> contextFactory,
+            IContextFactory<BotContext> contextFactory,
             IZsLogger logger)
         {
             _contextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
@@ -73,26 +74,26 @@ namespace Zs.Bot.Modules.Command
             {
                 using (var ctx = _contextFactory.GetContext())
                 {
-                    var dbCommand = ctx.Commands.FirstOrDefault(c => c.CommandName == botCommand.Name);
+                    var dbCommand = ctx.Commands.FirstOrDefault(c => c.Name == botCommand.Name);
 
                     if (dbCommand != null)
                     {
                         // (i) SQL-запросы могут быть любые, не только функции.
                         // (i) Должны содержать параметры типа object, иначе будут проблемы при форматировании строки {0}
 
-                        var dbUser = ctx.Users.FirstOrDefault(u => u.UserId == botCommand.FromUserId);
+                        var dbUser = ctx.Users.FirstOrDefault(u => u.Id == botCommand.FromUserId);
                         if (dbUser is null)
                             throw new ItemNotFoundException($"User with Id = {botCommand.FromUserId} not found");
 
                         var userHasRights = DbUserRoleExtensions.GetPermissionsArray(dbUser.UserRoleCode, _contextFactory.GetContext())
                             .Any(p => p.ToUpperInvariant() == "ALL"
-                                   || string.Equals(p, dbCommand.CommandGroup, StringComparison.InvariantCultureIgnoreCase));
+                                   || string.Equals(p, dbCommand.Group, StringComparison.InvariantCultureIgnoreCase));
 
 
                         if (userHasRights)
                         {
                             // Т.о. исключаются проблемы с форматированием строки
-                            var sqlCommandStr = $"{dbCommand.CommandScript} as \"Result\"";
+                            var sqlCommandStr = $"{dbCommand.Script} as \"Result\"";
                             var parameters = ProcessParameters(botCommand);
 
                             var queryWithParams = string.Format(sqlCommandStr, parameters);
@@ -164,7 +165,7 @@ namespace Zs.Bot.Modules.Command
                 switch (p.ToUpperInvariant())
                 {
                     case "<USERROLECODE>":
-                        var userRoleCode = ctx.Users.FirstOrDefault(u => u.UserId == botCommand.FromUserId)?.UserRoleCode;
+                        var userRoleCode = ctx.Users.FirstOrDefault(u => u.Id == botCommand.FromUserId)?.UserRoleCode;
                         concreteParams.Add(p, $"'{userRoleCode}'");
                         break;
                     default:
@@ -221,26 +222,26 @@ namespace Zs.Bot.Modules.Command
         /// </summary>
         /// <param name="userRoleCode"></param>
         /// <returns>List of commands</returns>
-        public List<DbCommand> GetDbCommands(string userRoleCode)
+        public List<ICommand> GetDbCommands(string userRoleCode)
         {
             if (userRoleCode is null)
                 throw new ArgumentNullException(nameof(userRoleCode));
 
             using var ctx = _contextFactory.GetContext();
-            var permissionsString = ctx.UserRoles.FirstOrDefault(r => r.UserRoleCode == userRoleCode).UserRolePermissions;
+            var permissionsString = ctx.UserRoles.FirstOrDefault(r => r.Code == userRoleCode).Permissions;
             var permissionsArray = JArray.Parse(permissionsString).ToObject<string[]>();
 
             var dbCommands = permissionsArray.Any(p => string.Equals(p, "All", StringComparison.InvariantCultureIgnoreCase))
                 ? ctx.Commands
-                : ctx.Commands.Where(c => permissionsArray.Contains(c.CommandGroup));
+                : ctx.Commands.Where(c => permissionsArray.Contains(c.Group));
 
-            return dbCommands.ToList();
+            return dbCommands.Cast<ICommand>().ToList();
         }
 
         internal ICommand GetDbCommand(string commandName)
         {
             using var ctx = _contextFactory.GetContext();
-            return ctx.Commands.FirstOrDefault(c => c.CommandName == commandName);
+            return ctx.Commands.FirstOrDefault(c => c.Name == commandName);
         }
 
     }

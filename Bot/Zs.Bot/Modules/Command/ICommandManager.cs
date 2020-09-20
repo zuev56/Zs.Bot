@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using Zs.Bot.Model.Db;
+using Zs.Bot.Model;
+using Zs.Bot.Model.Abstractions;
 
 namespace Zs.Bot.Modules.Command
 {
@@ -9,6 +10,6 @@ namespace Zs.Bot.Modules.Command
         event Action<CommandResult> CommandCompleted;
 
         bool EnqueueCommand(BotCommand command);
-        List<DbCommand> GetDbCommands(string userRoleCode);
+        List<ICommand> GetDbCommands(string userRoleCode);
     }
 }

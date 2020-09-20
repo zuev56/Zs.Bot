@@ -12,17 +12,22 @@ using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Zs.Bot.Helpers;
-using Zs.Bot.Model.Db;
+using Zs.Bot.Model.Abstractions;
+using Zs.Bot.Model;
 using Zs.Bot.Modules.Messaging;
 using Zs.Common.Abstractions;
 using Zs.Common.Enums;
+using TelegramChat = Telegram.Bot.Types.Chat;
+using TelegramMessage = Telegram.Bot.Types.Message;
+using TelegramMessageType = Telegram.Bot.Types.Enums.MessageType;
+using TelegramUser = Telegram.Bot.Types.User;
 
 namespace Zs.Bot.Messenger.Telegram
 {
     public class TelegramMessenger : IMessenger
     {
         private readonly IZsLogger _logger; 
-        IContextFactory<ZsBotDbContext> _contextFactory;
+        IContextFactory<BotContext> _contextFactory;
         private readonly int _sendingRetryLimit = 5;
         private readonly TelegramBotClient _botClient;
         private readonly Buffer<TgMessage> _inputMessageBuffer = new Buffer<TgMessage>();
@@ -37,7 +42,7 @@ namespace Zs.Bot.Messenger.Telegram
         public IToGenegalItemConverter ItemConverter { get; set; } = new ItemConverter();
 
 
-        public TelegramMessenger(string token, IContextFactory<ZsBotDbContext> contextFactory, IZsLogger logger, IWebProxy webProxy = null)
+        public TelegramMessenger(string token, IContextFactory<BotContext> contextFactory, IZsLogger logger, IWebProxy webProxy = null)
         {
             try
             {
@@ -287,9 +292,9 @@ namespace Zs.Bot.Messenger.Telegram
                 if (string.IsNullOrEmpty(messageText))
                     throw new ArgumentNullException(nameof(messageText), "Message must have a body!");
 
-                var tgChat = System.Text.Json.JsonSerializer.Deserialize<Chat>(chat.RawData);
+                var tgChat = System.Text.Json.JsonSerializer.Deserialize<TelegramChat>(chat.RawData);
                 var tgMessage = messageToReply is { }
-                              ? System.Text.Json.JsonSerializer.Deserialize<Message>(messageToReply.RawData)
+                              ? System.Text.Json.JsonSerializer.Deserialize<TelegramMessage>(messageToReply.RawData)
                               : null;
 
                 var msg = new TgMessage(tgChat, messageText)
@@ -315,9 +320,9 @@ namespace Zs.Bot.Messenger.Telegram
                 var dbUsers = ctx.Users.Where(u => userRoleCodes.Contains(u.UserRoleCode))
                                  .ToList();// Для исключения Npgsql.NpgsqlOperationInProgressException: A command is already in progress
 
-                var tgUsers = dbUsers.Select(u => System.Text.Json.JsonSerializer.Deserialize<User>(u.RawData));
+                var tgUsers = dbUsers.Select(u => System.Text.Json.JsonSerializer.Deserialize<TelegramUser>(u.RawData));
 
-                var tgChats = ctx.Chats.ToList().Select(c => System.Text.Json.JsonSerializer.Deserialize<Chat>(c.RawData))
+                var tgChats = ctx.Chats.ToList().Select(c => System.Text.Json.JsonSerializer.Deserialize<TelegramChat>(c.RawData))
                     .Where(c => c.Id >= int.MinValue && c.Id <= int.MaxValue 
                              && tgUsers.Select(u => u.Id).Contains((int)c.Id)).ToList();
 
@@ -343,7 +348,7 @@ namespace Zs.Bot.Messenger.Telegram
 
             using var ctx = _contextFactory.GetContext();
 
-            var dbChat = ctx.Chats.FirstOrDefault(c => c.ChatId == dbMessage.ChatId);
+            var dbChat = ctx.Chats.FirstOrDefault(c => c.Id == dbMessage.ChatId);
             if (dbChat == null)
             {
                 _logger.LogWarning($"Chat with ChatId = {dbMessage.ChatId} not found in database", nameof(TelegramMessenger));
@@ -369,7 +374,7 @@ namespace Zs.Bot.Messenger.Telegram
                 var tgUserId = (int)jObject["Id"];
                 var identicalUser = ctx.Users.FromSqlRaw($"select * from bot.users where cast(raw_data ->> 'Id' as integer) = {tgUserId}").FirstOrDefault();
 
-                return identicalUser?.UserId;
+                return identicalUser?.Id;
             }
             else
             {
@@ -391,7 +396,7 @@ namespace Zs.Bot.Messenger.Telegram
                 var tgChatId = (long)jObject["Id"];
                 var identicalChat = ctx.Chats.FromSqlRaw($"select * from bot.chats where cast(raw_data ->> 'Id' as bigint) = {tgChatId}").FirstOrDefault();
 
-                return identicalChat?.ChatId;
+                return identicalChat?.Id;
             }
             else
             {
@@ -420,7 +425,7 @@ namespace Zs.Bot.Messenger.Telegram
                     $" where cast(raw_data ->> 'MessageId' as integer) = {tgMessageId}" +
                     $"   and cast(raw_data ->> 'ChatId' as bigint) = {tgChatId}").FirstOrDefault();
 
-                return identicalMessage?.MessageId;
+                return identicalMessage?.Id;
             }
             else
             {
@@ -438,8 +443,8 @@ namespace Zs.Bot.Messenger.Telegram
                 if (message == null)
                     throw new ArgumentNullException(nameof(message));
 
-                var tgChat = System.Text.Json.JsonSerializer.Deserialize<Chat>(chat.RawData);
-                var tgMessage = System.Text.Json.JsonSerializer.Deserialize<Message>(message.RawData);
+                var tgChat = System.Text.Json.JsonSerializer.Deserialize<TelegramChat>(chat.RawData);
+                var tgMessage = System.Text.Json.JsonSerializer.Deserialize<TelegramMessage>(message.RawData);
                 
                 _botClient.DeleteMessageAsync(tgChat.Id, tgMessage.MessageId).GetAwaiter().GetResult();
 
@@ -469,15 +474,15 @@ namespace Zs.Bot.Messenger.Telegram
             // содержащие текст вида */command@botName*
             try
             {
-                Message tgMessage = null;
+                TelegramMessage tgMessage = null;
 
                 switch (message.Type)
                 {
-                    case MessageType.Text:
+                    case TelegramMessageType.Text:
                         if (string.IsNullOrWhiteSpace(message.Text))
                             throw new Exception("Text message have no text");
 #warning Make awaitable!
-                        Message tmp = message.ReplyToMessage is null
+                        TelegramMessage tmp = message.ReplyToMessage is null
                                 ? _botClient.SendTextMessageAsync(
                                     message.Chat.Id,
                                     message.Text,

@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Zs.Bot;
-using Zs.Bot.Model.Db;
+using Zs.Bot.Model;
 using Zs.Bot.Modules.Messaging;
 using Zs.Common.Abstractions;
 using Zs.Common.Enums;
@@ -23,7 +23,7 @@ namespace Zs.Service.Home.Bot
         private readonly IServiceProvider _serviceProvider;
         private readonly IConfiguration _configuration;
         private readonly IZsLogger _logger;
-        private readonly IContextFactory<ZsBotDbContext> _botContextFactory;
+        private readonly IContextFactory<BotContext> _botContextFactory;
         private readonly IContextFactory<HomeDbContext> _homeContextFactory;
         private readonly ZsBot _bot;
         private readonly CycleWorker _cycleWorker;
@@ -39,7 +39,7 @@ namespace Zs.Service.Home.Bot
             IServiceProvider serviceProvider,
             IConfiguration configuration,
             IMessenger messenger,
-            IContextFactory<ZsBotDbContext> botContextFactory,
+            IContextFactory<BotContext> botContextFactory,
             IContextFactory<HomeDbContext> homeContextFactory,
             IZsLogger logger)
         {

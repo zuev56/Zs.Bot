@@ -27,8 +27,7 @@ namespace Zs.UnitTest.Bot
                     cycleWorker.Stop();
                 }
                 ).ContinueWith(task =>
-                    exception = task.Exception,
-                    TaskContinuationOptions.NotOnRanToCompletion
+                    exception = task.Exception
                 );
 
                 if (exception != null)
@@ -36,7 +35,7 @@ namespace Zs.UnitTest.Bot
             }
             catch (Exception ex)
             {
-                throw ex;
+                throw;
             }
         }
 
@@ -59,7 +58,7 @@ namespace Zs.UnitTest.Bot
             var job5 = new SqlJob(
                 TimeSpan.FromSeconds(3),
                 QueryResultType.Double,
-                "SELECT Count(*) FROM bot.options", 
+                "SELECT Count(*) FROM bot.users", 
                 _connectionString);
 
             return new List<Job> { job0, job1, job2, job3, job4, job5 };

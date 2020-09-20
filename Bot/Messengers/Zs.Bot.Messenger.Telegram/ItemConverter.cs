@@ -4,7 +4,7 @@ using System.Text.Json;
 using System.Text.Unicode;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
-using Zs.Bot.Model.Db;
+using Zs.Bot.Model.Abstractions;
 using Zs.Bot.Modules.Messaging;
 using Zs.Common.Extensions;
 using TgChatType = Telegram.Bot.Types.Enums.ChatType;
@@ -32,7 +32,7 @@ namespace Zs.Bot.Messenger.Telegram
                 //message.UserId        -> define when saving
                 message.MessengerCode = "TG";
                 message.MessageTypeCode = GetGeneralMessageTypeCode(telegramMessage.Type);
-                message.MessageText = telegramMessage.Text;
+                message.Text = telegramMessage.Text;
                 message.RawData = JsonSerializer.Serialize(telegramMessage, options).NormalizeJsonString();
                 message.RawDataHash = message.RawData.GetMD5Hash();
                 message.IsSucceed = telegramMessage.IsSucceed;
@@ -61,8 +61,8 @@ namespace Zs.Bot.Messenger.Telegram
 
                 
                 //chat.ChatId -> Auto
-                chat.ChatDescription = telegramChat.Description;
-                chat.ChatName = telegramChat.Title ?? telegramChat.Username ?? $"{telegramChat.FirstName} {telegramChat.LastName}";
+                chat.Description = telegramChat.Description;
+                chat.Name = telegramChat.Title ?? telegramChat.Username ?? $"{telegramChat.FirstName} {telegramChat.LastName}";
                 chat.ChatTypeCode = ToGeneralChatType(telegramChat.Type).ToString().ToUpperInvariant();
                 chat.RawData = JsonSerializer.Serialize(telegramChat, options).NormalizeJsonString();
                 chat.RawDataHash = chat.RawData.GetMD5Hash();
@@ -89,9 +89,9 @@ namespace Zs.Bot.Messenger.Telegram
 
                 //user.UserId -> Auto
                 user.UserRoleCode = "USER";
-                user.UserName = telegramUser.Username;
-                user.UserFullName = $"{telegramUser.FirstName} {telegramUser.LastName}".Trim();
-                user.UserIsBot = telegramUser.IsBot;
+                user.Name = telegramUser.Username;
+                user.FullName = $"{telegramUser.FirstName} {telegramUser.LastName}".Trim();
+                user.IsBot = telegramUser.IsBot;
                 user.RawData = JsonSerializer.Serialize(telegramUser, options).NormalizeJsonString();
                 user.RawDataHash = user.RawData.GetMD5Hash();
 

@@ -2,7 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Zs.Bot.Model.Db;
+using Zs.Bot.Model.Abstractions;
+using Zs.Bot.Model;
 
 namespace Zs.Bot.Modules.Command
 {
@@ -40,10 +41,10 @@ namespace Zs.Bot.Modules.Command
                 if (getDbCommand is null)
                     throw new ArgumentNullException(nameof(getDbCommand));
 
-                if (IsCommand(message.MessageText))
+                if (IsCommand(message.Text))
                 {
                     // Если есть кавычки, их должно быть чётное количество
-                    if (message.MessageText.Count(c => c == '"') % 2 != 0)
+                    if (message.Text.Count(c => c == '"') % 2 != 0)
                     {
                         var aex = new ArgumentException("Кавычек должно быть чётное количество!");
                         aex.Data.Add("Message", message);
@@ -51,7 +52,7 @@ namespace Zs.Bot.Modules.Command
                     }
 
                     // 1. Получаем команду и её параметры из текста сообщения
-                    var messageWords = MessageSplitter(message.MessageText);
+                    var messageWords = MessageSplitter(message.Text);
 
                     if (messageWords?.Count > 1 && messageWords[0].ToUpper() == "ERROR")
                         throw new Exception(messageWords[1]); // TODO: Сделать нормальный вывод для пользователя
@@ -74,7 +75,7 @@ namespace Zs.Bot.Modules.Command
                         // Если пользователь не передавал параметры, пробуем получить дефолтный набор
                         if (parameters.Count == 0)
                         {
-                            var defaultArgs = dbCommand.CommandDefaultArgs?.Split(';')?.ToList();
+                            var defaultArgs = dbCommand.DefaultArgs?.Split(';')?.ToList();
 
                             if (defaultArgs?.Count > 0)
                                 defaultArgs.ForEach(a => parameters.Add(a.Trim()));

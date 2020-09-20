@@ -1,6 +1,7 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using Zs.Bot.Model.Db;
+using Zs.Bot.Model;
+using Zs.Bot.Model.Abstractions;
 using Zs.Common.Abstractions;
 using Zs.Service.ChatAdmin;
 
@@ -16,6 +17,7 @@ namespace Zs.UnitTest.Services.ChatAdmin
         //{
         //    try
         //    {
+        //var solutionDir = Common.Helpers.Path.TryGetSolutionPath();
         //        var config = new Configuration(@"M:\PrivateBotConfiguration.json");
         //        var messenger = 
         //
@@ -32,16 +34,16 @@ namespace Zs.UnitTest.Services.ChatAdmin
 
 
 
-        private DbMessage GetTestMessage()
+        private IMessage GetTestMessage()
         {
-            return new DbMessage()
+            return new Message()
             {
-                MessageId = 8,
+                Id = 8,
                 ChatId = 4,
                 UserId = 2,
                 MessengerCode = "TG",
                 MessageTypeCode = "TXT",
-                MessageText = "test",
+                Text = "test",
                 IsSucceed = true,
                 RawData = "test",
                 IsDeleted = false,

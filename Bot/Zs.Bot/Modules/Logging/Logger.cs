@@ -2,7 +2,7 @@
 using System.IO;
 using System.Runtime.CompilerServices;
 using Newtonsoft.Json;
-using Zs.Bot.Model.Db;
+using Zs.Bot.Model;
 using Zs.Common.Abstractions;
 using Zs.Common.Enums;
 
@@ -13,7 +13,7 @@ namespace Zs.Bot.Modules.Logging
         private static Logger _instance;
         private string _emergencyLogDirrectory = AppDomain.CurrentDomain.BaseDirectory;
         private readonly object _locker = new object();
-        private readonly IContextFactory<ZsBotDbContext> _contextFactory;
+        private readonly IContextFactory<BotContext> _contextFactory;
 
         public string EmergencyLogDirrectory
         {
@@ -33,7 +33,7 @@ namespace Zs.Bot.Modules.Logging
             }
         }
 
-        public Logger(IContextFactory<ZsBotDbContext> contextFactory)
+        public Logger(IContextFactory<BotContext> contextFactory)
         {
             _contextFactory = contextFactory;
         }

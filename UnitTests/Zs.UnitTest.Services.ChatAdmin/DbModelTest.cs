@@ -1,7 +1,7 @@
 using System;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Zs.Bot.Model.Db;
+using Zs.Bot.Model;
 using Zs.Service.ChatAdmin.Model;
 
 namespace Zs.UnitTest.Services.ChatAdmin
@@ -14,7 +14,7 @@ namespace Zs.UnitTest.Services.ChatAdmin
         {
             try
             {
-                using (var ctx = _caContextFactory.GetContext())
+                using (var ctx = _contextFactory.GetChatAdminContext())
                 {
                     Assert.IsNotNull(ctx.Accountings.FirstOrDefault());
                     Assert.IsNotNull(ctx.AuxiliaryWords.FirstOrDefault());
@@ -33,17 +33,17 @@ namespace Zs.UnitTest.Services.ChatAdmin
         {
             try
             {
-                using var ctx = _caContextFactory.GetContext();
+                using var ctx = _contextFactory.GetChatAdminContext();
                 
                 var accounting   = ctx.Accountings.FirstOrDefault();
                 var word         = ctx.AuxiliaryWords.FirstOrDefault();
                 var ban          = ctx.Bans.FirstOrDefault();
                 var notification = ctx.Notifications.FirstOrDefault();
 
-                var accountingId   = accounting.AccountingId;
+                var accountingId   = accounting.Id;
                 var theWord        = word.TheWord;
-                var banId          = ban.BanId;
-                var notificationId = notification.NotificationId;
+                var banId          = ban.Id;
+                var notificationId = notification.Id;
 
                 var newUpdateDate = DateTime.Now;
                 accounting.UpdateDate      = newUpdateDate;
@@ -53,10 +53,10 @@ namespace Zs.UnitTest.Services.ChatAdmin
 
                 ctx.SaveChanges();
 
-                Assert.IsTrue(newUpdateDate == ctx.Accountings.First(a => a.AccountingId == accountingId).UpdateDate);
+                Assert.IsTrue(newUpdateDate == ctx.Accountings.First(a => a.Id == accountingId).UpdateDate);
                 //Assert.IsTrue(newUpdateDate == ctx.AuxiliaryWords.First(w => w.TheWord == theWord).UpdateDate);
-                Assert.IsTrue(newUpdateDate == ctx.Bans.First(b => b.BanId == banId).UpdateDate);
-                Assert.IsTrue(newUpdateDate == ctx.Notifications.First(r => r.NotificationId == notificationId).UpdateDate);
+                Assert.IsTrue(newUpdateDate == ctx.Bans.First(b => b.Id == banId).UpdateDate);
+                Assert.IsTrue(newUpdateDate == ctx.Notifications.First(r => r.Id == notificationId).UpdateDate);
                 
             }
             catch (Exception ex)
@@ -71,29 +71,29 @@ namespace Zs.UnitTest.Services.ChatAdmin
             try
             {
                 int userId, chatId;
-                using (var ctx = _botContextFactory.GetContext())
+                using (var ctx = _contextFactory.GetBotContext())
                 {
-                    userId = ctx.Users.FirstOrDefault()?.UserId ?? -99;
-                    chatId = ctx.Chats.FirstOrDefault()?.ChatId ?? -99;
+                    userId = ctx.Users.FirstOrDefault()?.Id ?? -99;
+                    chatId = ctx.Chats.FirstOrDefault()?.Id ?? -99;
                 }
 
-                var accounting   = new DbAccounting    { AccountingId = -2, AccountingStartDate = DateTime.Now };
-                var word         = new DbAuxiliaryWord { TheWord = "UNITTEST1" };
-                var ban          = new DbBan           { BanId = -2, UserId = userId, ChatId = chatId};
-                var notification = new DbNotification  { NotificationId = -2, NotificationMessage = "UNITTEST1", NotificationDay = 1, NotificationHour = 1, NotificationMinute = 1 };
+                var accounting   = new Accounting    { Id = -2, StartDate = DateTime.Now };
+                var word         = new AuxiliaryWord { TheWord = "UNITTEST1" };
+                var ban          = new Ban           { Id = -2, UserId = userId, ChatId = chatId};
+                var notification = new Notification  { Id = -2, Message = "UNITTEST1", Day = 1, Hour = 1, Minute = 1 };
 
-                using (var ctx = _caContextFactory.GetContext())
+                using (var ctx = _contextFactory.GetChatAdminContext())
                 {
-                    if (!ctx.Accountings.Any(a => a.AccountingId == accounting.AccountingId))
+                    if (!ctx.Accountings.Any(a => a.Id == accounting.Id))
                         ctx.Accountings.Add(accounting);
 
                     if (!ctx.AuxiliaryWords.Any(w => w.TheWord == word.TheWord))
                         ctx.AuxiliaryWords.Add(word);
 
-                    if (!ctx.Bans.Any(b => b.BanId == ban.BanId))
+                    if (!ctx.Bans.Any(b => b.Id == ban.Id))
                         ctx.Bans.Add(ban);
 
-                    if (!ctx.Notifications.Any(n => n.NotificationId == notification.NotificationId))
+                    if (!ctx.Notifications.Any(n => n.Id == notification.Id))
                         ctx.Notifications.Add(notification);
 
                         ctx.SaveChanges();
@@ -111,18 +111,18 @@ namespace Zs.UnitTest.Services.ChatAdmin
             try
             {
                 int userId, chatId;
-                using (var ctx = _botContextFactory.GetContext())
+                using (var ctx = _contextFactory.GetBotContext())
                 {
-                    userId = ctx.Users.FirstOrDefault()?.UserId ?? -99;
-                    chatId = ctx.Chats.FirstOrDefault()?.ChatId ?? -99;
+                    userId = ctx.Users.FirstOrDefault()?.Id ?? -99;
+                    chatId = ctx.Chats.FirstOrDefault()?.Id ?? -99;
                 }
 
-                var accounting   = new DbAccounting    { AccountingId = -1, AccountingStartDate = DateTime.Now };
-                var word         = new DbAuxiliaryWord { TheWord = "UNITTEST0" };
-                var ban          = new DbBan           { BanId = -1, UserId = userId, ChatId = chatId };
-                var notification = new DbNotification  { NotificationId = -1, NotificationMessage = "UNITTEST1", NotificationDay = 1, NotificationHour = 1, NotificationMinute = 1 };
+                var accounting   = new Accounting    { Id = -1, StartDate = DateTime.Now };
+                var word         = new AuxiliaryWord { TheWord = "UNITTEST0" };
+                var ban          = new Ban           { Id = -1, UserId = userId, ChatId = chatId };
+                var notification = new Notification  { Id = -1, Message = "UNITTEST1", Day = 1, Hour = 1, Minute = 1 };
 
-                using (var ctx = _caContextFactory.GetContext())
+                using (var ctx = _contextFactory.GetChatAdminContext())
                 {
                     ctx.Accountings.Add(accounting);
                     ctx.AuxiliaryWords.Add(word);
@@ -133,7 +133,7 @@ namespace Zs.UnitTest.Services.ChatAdmin
                 }
 
                 // Удаление из БД
-                using (var ctx = _caContextFactory.GetContext())
+                using (var ctx = _contextFactory.GetChatAdminContext())
                 {
                     ctx.Accountings.Remove(accounting);
                     ctx.AuxiliaryWords.Remove(word);

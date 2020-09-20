@@ -29,7 +29,7 @@ namespace Zs.UnitTest.Tools
     [TestClass]
     public class AlgorithmsTest
     {
-        
+
         public AlgorithmsTest()
         {
         }
@@ -85,7 +85,7 @@ namespace Zs.UnitTest.Tools
             {
                 var singleFlags1 = EntityTypes.AllInterfaces.ToSingleFlagList<EntityTypes>();
                 var singleFlags2 = EntityTypes.All.ToSingleFlagList<EntityTypes>();
-                
+
                 Assert.IsTrue(singleFlags1.Count == 3
                     && singleFlags1.Contains(EntityTypes.DbInterface)
                     && singleFlags1.Contains(EntityTypes.VmInterface)
@@ -105,25 +105,25 @@ namespace Zs.UnitTest.Tools
             }
         }
 
-        [TestMethod]
-        public void JsonParse_Test()
-        {
-            try
-            {
-                var filePath = @"M:\Zs.Bot\Zs.Bot.Model\DbModel\ReferenceTables.json";
-                if (!File.Exists(filePath))
-                    throw new FileNotFoundException("Не удалось найти файл", filePath);
-                var fileContent = File.ReadAllText(filePath);
-
-                foreach (var jItem in JArray.Parse(fileContent))
-                {
-                }
-            }
-            catch (Exception ex)
-            {
-                throw;
-            }
-        }
+        //[TestMethod]
+        //public void JsonParse_Test()
+        //{
+        //    try
+        //    {
+        //        var filePath = @"M:\Zs.Bot\Zs.Bot.Model\DbModel\ReferenceTables.json";
+        //        if (!File.Exists(filePath))
+        //            throw new FileNotFoundException("Не удалось найти файл", filePath);
+        //        var fileContent = File.ReadAllText(filePath);
+        //
+        //        foreach (var jItem in JArray.Parse(fileContent))
+        //        {
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        throw;
+        //    }
+        //}
 
         [TestMethod]
         public void JsonSerialize_Test()

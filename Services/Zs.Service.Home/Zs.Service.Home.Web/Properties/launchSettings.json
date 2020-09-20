@@ -19,7 +19,7 @@
     },
     "Zs.Service.Home.Web": {
       "commandName": "Project",
-      "commandLineArgs": "M:\\PrivateBotConfiguration.json",
+      "commandLineArgs": "M:\\Zs.Bot\\PrivateConfiguration.json",
       "launchBrowser": true,
       "launchUrl": "api/activitylog",
       "environmentVariables": {

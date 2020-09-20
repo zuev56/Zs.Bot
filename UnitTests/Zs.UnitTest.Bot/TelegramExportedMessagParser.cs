@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Zs.Bot.Model.Db;
+using Zs.Bot.Model;
+using Zs.Bot.Model.Abstractions;
 
 namespace Zs.UnitTest.Bot
 {
@@ -25,10 +26,10 @@ namespace Zs.UnitTest.Bot
 
         private IChat GetChat()
         {
-            return new DbChat()
+            return new Chat()
             {
-                ChatId = 1,
-                ChatName = "Message",
+                Id = 1,
+                Name = "Message",
                 ChatTypeCode = "GROUP",
                 RawData = "{"
                         +     "\"Id\": -1001259605660,"

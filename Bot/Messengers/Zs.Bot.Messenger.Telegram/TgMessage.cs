@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Text.Json.Serialization;
 using Telegram.Bot.Types;
+using Zs.Bot.Model.Abstractions;
 
 namespace Zs.Bot.Messenger.Telegram
 {

@@ -1,19 +1,16 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Zs.Bot;
-using Zs.Bot.Helpers;
-using Zs.Bot.Model.Db;
+using Zs.Bot.Model;
 using Zs.Bot.Modules.Messaging;
 using Zs.Common.Abstractions;
 using Zs.Common.Enums;
 using Zs.Common.Modules.Connectors;
 using Zs.Common.Modules.CycleWorker;
-using Zs.Service.ChatAdmin.Model;
+using Zs.Service.ChatAdmin.Abstractions;
 
 namespace Zs.Service.ChatAdmin
 {
@@ -30,58 +27,38 @@ namespace Zs.Service.ChatAdmin
     {
         private readonly IConfiguration _configuration;
         private readonly IZsLogger _logger;
-        private readonly ZsBot _bot;
+        private readonly IZsBot _bot;
         private readonly CycleWorker _cycleWorker;
         private readonly MessageProcessor _messageProcessor;
         private readonly IConnectionAnalyser _connectionAnalyser;
-        private readonly IContextFactory<ZsBotDbContext> _botContextFactory;
-        private readonly IContextFactory<ChatAdminDbContext> _caContextFactory;
+        private readonly IContextFactory<BotContext> _botContextFactory;
+        private readonly IContextFactory _contextFactory;
 
         private readonly bool _detailedLogging;
 
 
         public ChatAdmin(
             IConfiguration configuration,
-            IMessenger messenger, 
             IConnectionAnalyser connectionAnalyser,
-            IContextFactory<ZsBotDbContext> botContextFactory,
-            IContextFactory<ChatAdminDbContext> caContextFactory,
+            IZsBot zsBot,
+            IContextFactory contextFactory,
             IZsLogger logger)
         {
             try
             {
-                if (configuration is null)
-                    throw new ArgumentNullException(nameof(configuration));
-
-                if (messenger is null)
-                    throw new ArgumentNullException(nameof(messenger));
-
-                if (connectionAnalyser is null)
-                    throw new ArgumentNullException(nameof(connectionAnalyser));
-
-                if (botContextFactory is null)
-                    throw new ArgumentNullException(nameof(botContextFactory));
-
-                if (caContextFactory is null)
-                    throw new ArgumentNullException(nameof(caContextFactory));
-
-                if (logger is null)
-                    throw new ArgumentNullException(nameof(logger));
-
-                _configuration = configuration;
-                _botContextFactory = botContextFactory;
-                _caContextFactory = caContextFactory;
-                _logger = logger;
+                _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+                _contextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
+                _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
                 bool.TryParse(_configuration["DetailedLogging"]?.ToString(), out _detailedLogging);
 
-                _bot = new ZsBot(_configuration, messenger, _botContextFactory, _logger);
+                _bot = zsBot ?? throw new ArgumentNullException(nameof(zsBot));
                 _bot.Messenger.MessageReceived += Messenger_MessageReceived;
 
-                _connectionAnalyser = connectionAnalyser;
+                _connectionAnalyser = connectionAnalyser ?? throw new ArgumentNullException(nameof(connectionAnalyser));
                 _connectionAnalyser.ConnectionStatusChanged += СonnectionAnalyser_StatusChanged;
 
-                _messageProcessor = new MessageProcessor(_configuration, messenger, _botContextFactory, _caContextFactory, _logger);
+                _messageProcessor = new MessageProcessor(_configuration, _bot.Messenger, _contextFactory, _logger);
                 _messageProcessor.LimitsDefined += MessageProcessor_LimitsDefined;
 
                 _cycleWorker = new CycleWorker(_logger, _detailedLogging);
@@ -164,14 +141,16 @@ namespace Zs.Service.ChatAdmin
                 QueryResultType.String,
                 $"select zl.sf_cmd_get_full_statistics(10, now()::date - interval '1 day', now()::date - interval '1 millisecond')",
                 _configuration.GetConnectionString("ChatAdmin"),
-                startDate: DateTime.Now.Date + TimeSpan.FromHours(24+10)
-                ) { Description = "sendYesterdaysStatistics" };
+                startDate: DateTime.Now.Date + TimeSpan.FromHours(24+10),
+                description: "sendYesterdaysStatistics"
+            );
 
             var resetLimits = new ProgramJob(
                 TimeSpan.FromDays(1),
                 _messageProcessor.ResetLimits,
-                startDate: DateTime.Now.Date + TimeSpan.FromDays(1)
-                ) { Description = "resetLimits" };
+                startDate: DateTime.Now.Date + TimeSpan.FromDays(1),
+                description: "resetLimits"
+            );
 
             var sendDayErrorsAndWarnings = new SqlJob(
                 TimeSpan.FromHours(1),
@@ -181,8 +160,9 @@ namespace Zs.Service.ChatAdmin
                 + "\nwhere log_type in ('Warning', 'Error')"
                 + "\n  and insert_date > now() - interval '1 hour'",
                 _configuration.GetConnectionString("ChatAdmin"),
-                startDate: Job.NextHour()
-                ) { Description = "sendDayErrorsAndWarnings" };
+                startDate: Job.NextHour(),
+                description: "sendDayErrorsAndWarnings"
+            );
 
             var sendNightErrorsAndWarnings = new SqlJob(
                 TimeSpan.FromDays(1),
@@ -192,23 +172,9 @@ namespace Zs.Service.ChatAdmin
                 + "\nwhere log_type in ('Warning', 'Error')"
                 + "\n  and insert_date > now() - interval '12 hours'",
                 _configuration.GetConnectionString("ChatAdmin"),
-                startDate: DateTime.Today + TimeSpan.FromHours(24+10)
-                ) { Description = "sendNightErrorsAndWarnings" };
-
-            //var testException = new ProgramJob(
-            //    TimeSpan.FromSeconds(25),
-            //    () => throw new Exception("Test exception"));
-            //var testNOException = new ProgramJob(
-            //    TimeSpan.FromSeconds(25),
-            //    () => { });
-            //var testSqlJob = new SqlJob(
-            //    TimeSpan.FromSeconds(30),
-            //    QueryResultType.Double,
-            //    "select count(*) from bot.messages",
-            //    _configuration.GetConnectionString("ChatAdmin"),
-            //    DateTime.Now + TimeSpan.FromSeconds(25)
-            //    ) {Description = "testSqlJob"};
-            //testSqlJob.ExecutionCompleted += Job_ExecutionCompleted;
+                startDate: DateTime.Today + TimeSpan.FromHours(24+10),
+                description: "sendNightErrorsAndWarnings"
+            );
 
             sendYesterdaysStatistics.ExecutionCompleted += Job_ExecutionCompleted;
             sendDayErrorsAndWarnings.ExecutionCompleted += Job_ExecutionCompleted;
@@ -218,9 +184,6 @@ namespace Zs.Service.ChatAdmin
             _cycleWorker.Jobs.Add(resetLimits);
             _cycleWorker.Jobs.Add(sendDayErrorsAndWarnings);
             _cycleWorker.Jobs.Add(sendNightErrorsAndWarnings);
-            //_cycleWorker.Jobs.Add(testSqlJob);
-            //_cycleWorker.Jobs.Add(testException);
-            //_cycleWorker.Jobs.Add(testNOException);
         }
     }
 }

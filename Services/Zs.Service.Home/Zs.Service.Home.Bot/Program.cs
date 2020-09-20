@@ -8,14 +8,14 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
 using Zs.Bot.Messenger.Telegram;
-using Zs.Bot.Model.Db;
+using Zs.Bot.Model;
 using Zs.Bot.Modules.Logging;
 using Zs.Bot.Modules.Messaging;
 using Zs.Common.Abstractions;
 using Zs.Common.Extensions;
 using Zs.Common.Modules.Connectors;
 using Zs.Service.Home.Model.Db;
-using BotContextFactory = Zs.Bot.Model.ContextFactory;
+using BotContextFactory = Zs.Bot.Model.Factories.ContextFactory;
 using HomeContextFactory = Zs.Service.Home.Model.ContextFactory;
 
 namespace Zs.Service.Home.Bot
@@ -70,9 +70,9 @@ namespace Zs.Service.Home.Bot
                     })
                     .ConfigureServices((hostContext, services) =>
                     {
-                        services.AddSingleton<IZsLogger, Logger>(sp => new Logger(sp.GetService<IContextFactory<ZsBotDbContext>>()));
+                        services.AddSingleton<IZsLogger, Logger>(sp => new Logger(sp.GetService<IContextFactory<BotContext>>()));
 
-                        services.AddDbContext<ZsBotDbContext>(options  =>
+                        services.AddDbContext<BotContext>(options  =>
                             options.UseNpgsql(hostContext.Configuration.GetConnectionString("Home"))
                                    .EnableDetailedErrors(true)
                                    .EnableSensitiveDataLogging(true));
@@ -82,8 +82,8 @@ namespace Zs.Service.Home.Bot
                                    .EnableDetailedErrors(true)
                                    .EnableSensitiveDataLogging(true));
 
-                        services.AddSingleton<IContextFactory<ZsBotDbContext>, BotContextFactory>(sp =>
-                            new BotContextFactory(sp.GetService<DbContextOptions<ZsBotDbContext>>()));
+                        services.AddSingleton<IContextFactory<BotContext>, BotContextFactory>(sp =>
+                            new BotContextFactory(sp.GetService<DbContextOptions<BotContext>>()));
 
                         services.AddSingleton<IContextFactory<HomeDbContext>, HomeContextFactory>(sp =>
                             new HomeContextFactory(sp.GetService<DbContextOptions<HomeDbContext>>()));
@@ -102,7 +102,7 @@ namespace Zs.Service.Home.Bot
 
                         services.AddSingleton<IMessenger, TelegramMessenger>(sp =>
                             new TelegramMessenger(hostContext.Configuration["BotToken"],
-                                sp.GetService<IContextFactory<ZsBotDbContext>>(),
+                                sp.GetService<IContextFactory<BotContext>>(),
                                 sp.GetService<IZsLogger>(),
                                 sp.GetService<IConnectionAnalyser>().WebProxy)
                             );

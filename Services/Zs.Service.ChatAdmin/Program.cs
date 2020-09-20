@@ -6,15 +6,16 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Zs.Bot;
 using Zs.Bot.Messenger.Telegram;
-using Zs.Bot.Model.Db;
+using Zs.Bot.Model;
 using Zs.Bot.Modules.Logging;
 using Zs.Bot.Modules.Messaging;
 using Zs.Common.Abstractions;
 using Zs.Common.Modules.Connectors;
-using Zs.Service.ChatAdmin.Model;
-using BotContextFactory = Zs.Bot.Model.ContextFactory;
-using ChatAdminContextFactory = Zs.Service.ChatAdmin.Model.ContextFactory;
+using Zs.Service.ChatAdmin.Abstractions;
+using Zs.Service.ChatAdmin.Data;
+using ChatAdminContextFactory = Zs.Service.ChatAdmin.Data.ContextFactory;
 
 namespace Zs.Service.ChatAdmin
 {
@@ -30,8 +31,7 @@ namespace Zs.Service.ChatAdmin
                 if (args?.Length == 0)
                 {
                     var localConfig = Path.Combine(Directory.GetCurrentDirectory(), "configuration.json");
-                    //if (File.Exists(localConfig))
-                        args = new[] { localConfig };
+                    args = new[] { localConfig };
                 }
 
                 if (args?.Length != 1)
@@ -64,23 +64,21 @@ namespace Zs.Service.ChatAdmin
                     })
                     .ConfigureServices((hostContext, services) =>
                     {
-                        services.AddDbContext<ZsBotDbContext>(options =>
-                            options.UseNpgsql(hostContext.Configuration.GetConnectionString("ChatAdmin"))
+                        services.AddDbContext<ChatAdminContext>(options =>
+                            options.UseNpgsql(hostContext.Configuration.GetConnectionString("ChatAdminTestCF"))
                                    .EnableDetailedErrors(true)
                                    .EnableSensitiveDataLogging(true));
 
-                        services.AddDbContext<ChatAdminDbContext>(options =>
-                            options.UseNpgsql(hostContext.Configuration.GetConnectionString("ChatAdmin"))
+                        services.AddDbContext<BotContext>(options =>
+                            options.UseNpgsql(hostContext.Configuration.GetConnectionString("ChatAdminTestCF"))
                                    .EnableDetailedErrors(true)
                                    .EnableSensitiveDataLogging(true));
-                        
-                        services.AddSingleton<IContextFactory<ZsBotDbContext>, BotContextFactory>(sp =>
-                            new BotContextFactory(sp.GetService<DbContextOptions<ZsBotDbContext>>()));
-                        
-                        services.AddSingleton<IContextFactory<ChatAdminDbContext>, ChatAdminContextFactory>(sp =>
-                            new ChatAdminContextFactory(sp.GetService<DbContextOptions<ChatAdminDbContext>>()));
 
-                        services.AddSingleton<IZsLogger, Logger>(sp => new Logger(sp.GetService<IContextFactory<ZsBotDbContext>>()));
+                        
+                        services.AddSingleton<IContextFactory, ChatAdminContextFactory>(sp =>
+                            new ChatAdminContextFactory(sp.GetService<DbContextOptions<BotContext>>(), sp.GetService<DbContextOptions<ChatAdminContext>>()));
+
+                        services.AddSingleton<IZsLogger, Logger>(sp => new Logger(sp.GetService<IContextFactory<BotContext>>()));
 
                         services.AddSingleton<IConnectionAnalyser, ConnectionAnalyser>(sp =>
                         {
@@ -96,11 +94,19 @@ namespace Zs.Service.ChatAdmin
                         services.AddSingleton<IMessenger, TelegramMessenger>(sp => 
                             new TelegramMessenger(
                                 hostContext.Configuration["BotToken"],
-                                sp.GetService<IContextFactory<ZsBotDbContext>>(),
+                                sp.GetService<IContextFactory<BotContext>>(),
                                 sp.GetService<IZsLogger>(),
                                 sp.GetService<IConnectionAnalyser>().WebProxy)
                             );
-                        
+
+                        services.AddSingleton<IZsBot, ZsBot>(sp => 
+                            new ZsBot(
+                                sp.GetService<IConfiguration>(),
+                                sp.GetService<IMessenger>(),
+                                sp.GetService<IContextFactory<BotContext>>(),
+                                sp.GetService<IZsLogger>())
+                            );
+
                         services.AddSingleton<IHostedService, ChatAdmin>(sp =>
                             ActivatorUtilities.CreateInstance<ChatAdmin>(sp));
                 });
@@ -122,7 +128,5 @@ namespace Zs.Service.ChatAdmin
                 Console.ReadLine();
             }
         }
-
     }
-
 }

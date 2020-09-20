@@ -5,10 +5,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Zs.Bot.Model.Db;
+using Zs.Bot.Model.Abstractions;
 using Zs.Bot.Modules.Messaging;
 using Zs.Common.Abstractions;
-using Zs.Service.ChatAdmin.Model;
+using Zs.Service.ChatAdmin.Abstractions;
 
 namespace Zs.Service.ChatAdmin
 {
@@ -28,8 +28,7 @@ namespace Zs.Service.ChatAdmin
         private readonly IConfiguration _configuration;
         private readonly bool _detailedLogging;
         private readonly int _waitAfterConnectionRepairedSec = 60;
-        private readonly IContextFactory<ZsBotDbContext> _botContextFactory;
-        private readonly IContextFactory<ChatAdminDbContext> _caContextFactory;
+        private readonly IContextFactory _contextFactory;
 
         public event Action<string> LimitsDefined;
 
@@ -37,32 +36,18 @@ namespace Zs.Service.ChatAdmin
         internal MessageProcessor(
             IConfiguration configuration,
             IMessenger messenger,
-            IContextFactory<ZsBotDbContext> botContextFactory,
-            IContextFactory<ChatAdminDbContext> caContextFactory,
+            IContextFactory contextFactory,
             IZsLogger logger)
         {
 
             try
             {
-                if (configuration is null)
-                    throw new ArgumentNullException(nameof(configuration));
+                _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+                _messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
+                _contextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
 
-                if (messenger is null)
-                    throw new ArgumentNullException(nameof(messenger));
-
-                if (botContextFactory is null)
-                    throw new ArgumentNullException(nameof(botContextFactory));
-
-                if (caContextFactory is null)
-                    throw new ArgumentNullException(nameof(caContextFactory));
-                if (logger is null)
-                    throw new ArgumentNullException(nameof(logger));
-
-                _configuration = configuration;
-                _messenger = messenger;
-                _botContextFactory = botContextFactory;
-                _caContextFactory = caContextFactory;
-                _logger = logger;
+                _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+                
                 _defaultChatId = _configuration["DefaultChatId"] != null ? checked((int)long.Parse(configuration["DefaultChatId"])) : -1;
 
                 if (_configuration["DetailedLogging"] != null)
@@ -91,7 +76,7 @@ namespace Zs.Service.ChatAdmin
 
                 if ((DateTime.Now - _internetRepairDate)?.TotalSeconds <= _waitAfterConnectionRepairedSec)
                 {
-                    _logger.LogInfo($"The message [{message.MessageId}] won't be processed. Internet was restored less then {_waitAfterConnectionRepairedSec} seconds ago", nameof(MessageProcessor));
+                    _logger.LogInfo($"The message [{message.Id}] won't be processed. Internet was restored less then {_waitAfterConnectionRepairedSec} seconds ago", nameof(MessageProcessor));
                     return;
                 }
                 
@@ -104,7 +89,7 @@ namespace Zs.Service.ChatAdmin
 
                 var query = "select zl.sf_process_group_message(\n" +
                                      $"_chat_id => {message.ChatId},\n" +
-                                     $"_message_id => {message.MessageId},\n" +
+                                     $"_message_id => {message.Id},\n" +
                                      $"_accounting_start_date => {accountingStartDate},\n" +
                                      $"_msg_limit_hi => {_limitHi},\n" +
                                      $"_msg_limit_hihi => {_limitHiHi},\n" +
@@ -119,7 +104,7 @@ namespace Zs.Service.ChatAdmin
                     var logData = new Dictionary<string, object>
                     {
                         { "JsonResult", jsonResult },
-                        { "MessageId", message.MessageId }
+                        { "MessageId", message.Id }
                     };
                     _logger.LogInfo("Incoming message sql-processing result", logData, nameof(MessageProcessor));
                 }
@@ -128,17 +113,17 @@ namespace Zs.Service.ChatAdmin
 
                 if (dictResult.ContainsKey("Action"))
                 {
-                    using var ctx = _botContextFactory.GetContext();
-                    var chat = ctx.Chats.First(c => c.ChatId == message.ChatId);
+                    using var ctx = _contextFactory.GetBotContext();
+                    var chat = ctx.Chats.First(c => c.Id == message.ChatId);
 
                     if (dictResult.ContainsKey("MessageText"))
                     {
                         if (dictResult["MessageText"].Contains("<UserName>", StringComparison.InvariantCultureIgnoreCase))
                         {
-                            var dbUser = ctx.Users.FirstOrDefault(u => u.UserId == message.UserId);
-                            var userName = dbUser?.UserName != null
-                                ? $"@{dbUser.UserName}"
-                                : dbUser?.UserFullName ?? "UserName";
+                            var dbUser = ctx.Users.FirstOrDefault(u => u.Id == message.UserId);
+                            var userName = dbUser?.Name != null
+                                ? $"@{dbUser.Name}"
+                                : dbUser?.FullName ?? "UserName";
                             dictResult["MessageText"] = dictResult["MessageText"].Replace("<UserName>", userName, StringComparison.InvariantCultureIgnoreCase);
                         }
                     }
@@ -272,10 +257,10 @@ namespace Zs.Service.ChatAdmin
                 _accountingStartDate = null;
 
                 // Remove today Bans where BanFinishDate is null (warnings before ban)
-                using var ctx = _caContextFactory.GetContext();
+                using var ctx = _contextFactory.GetChatAdminContext();
                 var warnings = await ctx.Bans
                     .Where(b => b.InsertDate > DateTime.Today
-                             && b.BanFinishDate == null).ToListAsync();
+                             && b.FinishDate == null).ToListAsync();
                 if (warnings.Count > 0)
                 {
                     ctx.Bans.RemoveRange(warnings);
@@ -320,7 +305,7 @@ namespace Zs.Service.ChatAdmin
 
                 _logger.LogInfo("Limits definition started", logDataBefore, nameof(MessageProcessor));
 
-                using (var ctx = _botContextFactory.GetContext())
+                using (var ctx = _contextFactory.GetBotContext())
                 {
                     // Telegram message date is GMT. But now everything depends on the InsertDate.
 
@@ -408,7 +393,7 @@ namespace Zs.Service.ChatAdmin
 
         public string GetStringQueryResult(string query)
         {
-            using var ctx = _botContextFactory.GetContext();
+            using var ctx = _contextFactory.GetBotContext();
             var fromSqlRaw = ctx.Query.FromSqlRaw($"{query} as Result").AsEnumerable();
 
             return fromSqlRaw.ToList()?[0]?.Result ?? "NULL";

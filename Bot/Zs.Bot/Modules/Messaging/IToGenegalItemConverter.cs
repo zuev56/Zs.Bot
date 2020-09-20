@@ -1,4 +1,4 @@
-﻿using Zs.Bot.Model.Db;
+﻿using Zs.Bot.Model.Abstractions;
 using Zs.Common.Enums;
 
 namespace Zs.Bot.Modules.Messaging
