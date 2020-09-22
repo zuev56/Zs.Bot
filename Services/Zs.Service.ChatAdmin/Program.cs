@@ -8,7 +8,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Zs.Bot;
 using Zs.Bot.Messenger.Telegram;
-using Zs.Bot.Model;
+using Zs.Bot.Model.Data;
+using Zs.Bot.Model.Factories;
 using Zs.Bot.Modules.Logging;
 using Zs.Bot.Modules.Messaging;
 using Zs.Common.Abstractions;
@@ -65,18 +66,20 @@ namespace Zs.Service.ChatAdmin
                     .ConfigureServices((hostContext, services) =>
                     {
                         services.AddDbContext<ChatAdminContext>(options =>
-                            options.UseNpgsql(hostContext.Configuration.GetConnectionString("ChatAdminTestCF"))
+                            options.UseNpgsql(hostContext.Configuration.GetConnectionString("ChatAdmin"))
                                    .EnableDetailedErrors(true)
                                    .EnableSensitiveDataLogging(true));
 
                         services.AddDbContext<BotContext>(options =>
-                            options.UseNpgsql(hostContext.Configuration.GetConnectionString("ChatAdminTestCF"))
+                            options.UseNpgsql(hostContext.Configuration.GetConnectionString("ChatAdmin"))
                                    .EnableDetailedErrors(true)
                                    .EnableSensitiveDataLogging(true));
 
-                        
                         services.AddSingleton<IContextFactory, ChatAdminContextFactory>(sp =>
                             new ChatAdminContextFactory(sp.GetService<DbContextOptions<BotContext>>(), sp.GetService<DbContextOptions<ChatAdminContext>>()));
+
+                        services.AddSingleton<IContextFactory<BotContext>, BotContextFactory>(sp =>
+                            new BotContextFactory(sp.GetService<DbContextOptions<BotContext>>()));
 
                         services.AddSingleton<IZsLogger, Logger>(sp => new Logger(sp.GetService<IContextFactory<BotContext>>()));
 

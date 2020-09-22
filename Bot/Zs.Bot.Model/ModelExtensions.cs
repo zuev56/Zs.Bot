@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text.Json;
 using Newtonsoft.Json.Linq;
 using Zs.Bot.Model.Abstractions;
+using Zs.Bot.Model.Data;
 using Zs.Common.Enums;
 using Zs.Common.Exceptions;
 using Zs.Common.Extensions;

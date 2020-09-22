@@ -9,8 +9,8 @@ using System.Text.Json;
 using System.Text.Unicode;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json.Linq;
-using Telegram.Bot.Types.Enums;
 using Zs.Bot.Model;
+using Zs.Bot.Model.Data;
 using Zs.Common.Extensions;
 using TelegramMessageType = Telegram.Bot.Types.Enums.MessageType;
 

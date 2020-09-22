@@ -1,4 +1,4 @@
-﻿using Zs.Bot.Model;
+﻿using Zs.Bot.Model.Data;
 using Zs.Service.ChatAdmin.Data;
 
 namespace Zs.Service.ChatAdmin.Abstractions

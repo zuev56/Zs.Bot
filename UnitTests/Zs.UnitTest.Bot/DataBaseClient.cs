@@ -6,6 +6,7 @@ using Zs.Bot.Model;
 using Zs.Bot.Model.Data;
 using Zs.Bot.Model.Factories;
 using Zs.Common.Abstractions;
+using Zs.Bot.Model.Abstractions;
 
 namespace Zs.UnitTest.Bot
 {
@@ -21,13 +22,13 @@ namespace Zs.UnitTest.Bot
         {
             var solutionDir = Common.Helpers.Path.TryGetSolutionPath();
             var configuration = new ConfigurationBuilder().AddJsonFile(Path.Combine(solutionDir,"PrivateConfiguration.json"), true, true).Build();
-            _connectionString = configuration.GetConnectionString("BotTestCF");
+            _connectionString = configuration.GetConnectionString("Default");
 
             var optionsBuilder = new DbContextOptionsBuilder<BotContext>();
             optionsBuilder.UseNpgsql(_connectionString);
             optionsBuilder.EnableSensitiveDataLogging(true);
             optionsBuilder.EnableDetailedErrors(true);
-            _contextFactory = new ContextFactory(optionsBuilder.Options);
+            _contextFactory = new BotContextFactory(optionsBuilder.Options);
 
             //DbInitializer.Initialize(_contextFactory.GetContext());
         }

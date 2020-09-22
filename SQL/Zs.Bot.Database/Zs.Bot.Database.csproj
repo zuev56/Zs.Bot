@@ -5,12 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Update="T4 Create Database.sql">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>T4 Create Database.tt</DependentUpon>
-    </None>
-    <None Update="T4 Create Database.tt">
+    <None Update="OLD (DatabaseFirst)\T4 Create Database.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>T4 Create Database.sql</LastGenOutput>
     </None>
@@ -18,6 +13,21 @@
 
   <ItemGroup>
     <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="OLD %2528DatabaseFirst%2529\Commands\sfCmdGetDailyGroupStatistics.sql" />
+    <None Include="OLD %2528DatabaseFirst%2529\Commands\sfCmdGetHelp.sql" />
+    <None Include="OLD %2528DatabaseFirst%2529\Commands\sfCmdGetStatistics.sql" />
+    <None Include="OLD %2528DatabaseFirst%2529\Commands\sfGetGroupStatistics.sql" />
+    <None Include="OLD %2528DatabaseFirst%2529\Commands\sfGetWarningsAndBans.sql" />
+    <None Include="OLD %2528DatabaseFirst%2529\DbStructure\Base_bot.sql" />
+    <None Include="OLD %2528DatabaseFirst%2529\DbStructure\Functions_bot.sql" />
+    <None Include="OLD %2528DatabaseFirst%2529\DbStructure\Priveleges_bot.sql" />
+    <None Include="OLD %2528DatabaseFirst%2529\DbStructure\Tables_bot.sql" />
+    <None Include="OLD %2528DatabaseFirst%2529\DbStructure\z_ForeignTables.sql" />
+    <None Include="OLD %2528DatabaseFirst%2529\DbStructure\z_Functions_test.sql" />
+    <None Include="OLD %2528DatabaseFirst%2529\DbStructure\z_Other.sql" />
   </ItemGroup>
 
 </Project>

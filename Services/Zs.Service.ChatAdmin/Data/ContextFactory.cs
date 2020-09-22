@@ -3,7 +3,7 @@ using System.IO;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
-using Zs.Bot.Model;
+using Zs.Bot.Model.Data;
 using Zs.Service.ChatAdmin.Abstractions;
 
 namespace Zs.Service.ChatAdmin.Data
@@ -37,7 +37,7 @@ namespace Zs.Service.ChatAdmin.Data
             var configuration = new ConfigurationBuilder()
                 .AddJsonFile(Path.Combine(solutionDir, "PrivateConfiguration.json"), optional: true)
                 .Build();
-            var connectionString = configuration.GetConnectionString("Default");
+            var connectionString = configuration.GetConnectionString("ChatAdmin");
 
             var optionsBuilder = new DbContextOptionsBuilder<ChatAdminContext>();
             optionsBuilder.UseNpgsql(connectionString);

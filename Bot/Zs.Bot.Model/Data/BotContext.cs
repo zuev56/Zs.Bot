@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Zs.Bot.Model.Data;
 
-namespace Zs.Bot.Model
+namespace Zs.Bot.Model.Data
 {
     public class BotContext : DbContext
     {
@@ -57,7 +57,7 @@ namespace Zs.Bot.Model
             //modelBuilder.Entity<User>().ToTable("users", "bot");
         }
 
-        private void SetDefaultValues(ModelBuilder modelBuilder)
+        public static void SetDefaultValues(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<MessengerInfo>().Property(b => b.UpdateDate).HasDefaultValueSql("now()");
             modelBuilder.Entity<MessengerInfo>().Property(b => b.InsertDate).HasDefaultValueSql("now()");
@@ -90,7 +90,7 @@ namespace Zs.Bot.Model
 
         }
 
-        private void SeedData(ModelBuilder modelBuilder)
+        public static void SeedData(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<MessengerInfo>().HasData(new[]
             {
@@ -108,10 +108,11 @@ namespace Zs.Bot.Model
                 new ChatType() { Code = "PRIVATE", Name = "Private", InsertDate = DateTime.Now },
                 new ChatType() { Code = "UNDEFINED", Name = "Undefined", InsertDate = DateTime.Now }
             });
-
+            //НАДО ДОБАВИТЬ РЕАЛЬНЫЕ RAW_DATA для чата и пользователя
             modelBuilder.Entity<Chat>().HasData(new[]
             {
-                new Chat() { Id = -1, Name = "UnitTestChat", Description = "UnitTestChat", ChatTypeCode = "PRIVATE", RawData = "{ \"test\": \"test\" }", RawDataHash = "-1063294487", InsertDate = DateTime.Now }
+                new Chat() { Id = -1, Name = "UnitTestChat", Description = "UnitTestChat", ChatTypeCode = "PRIVATE", RawData = "{ \"test\": \"test\" }", RawDataHash = "-1063294487", InsertDate = DateTime.Now },
+                new Chat() { Id = 1, Name = "zuev56", ChatTypeCode = "PRIVATE", RawData = "{ \"test\": \"test\" }", RawDataHash = "-1063294487", InsertDate = DateTime.Now }
             });
 
             modelBuilder.Entity<UserRole>().HasData(new[]
@@ -125,7 +126,8 @@ namespace Zs.Bot.Model
             modelBuilder.Entity<User>().HasData(new[]
             {
                 new User() { Id = -10, Name = "Unknown", FullName = "for exported message reading", UserRoleCode = "USER", IsBot = false, RawData = "{ \"test\": \"test\" }", RawDataHash = "-1063294487", InsertDate = DateTime.Now },
-                new User() { Id = -1, Name = "UnitTestUser", FullName = "UnitTest", UserRoleCode = "USER", IsBot = false, RawData = "{ \"test\": \"test\" }", RawDataHash = "-1063294487", InsertDate = DateTime.Now }
+                new User() { Id = -1, Name = "UnitTestUser", FullName = "UnitTest", UserRoleCode = "USER", IsBot = false, RawData = "{ \"test\": \"test\" }", RawDataHash = "-1063294487", InsertDate = DateTime.Now },
+                new User() { Id = 1, Name = "zuev56", FullName = "Сергей Зуев", UserRoleCode = "ADMIN", IsBot = false, RawData = "{ \"test\": \"test\" }", RawDataHash = "-1063294487", InsertDate = DateTime.Now }
             });
 
             modelBuilder.Entity<MessageType>().HasData(new[]

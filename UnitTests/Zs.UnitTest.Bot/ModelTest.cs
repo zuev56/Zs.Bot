@@ -8,7 +8,7 @@ using ZsBot = Zs.Bot.Model.Bot;
 namespace Zs.UnitTest.Bot
 {
     [TestClass]
-    public class DbModelTest : DataBaseClient
+    public class ModelTest : DataBaseClient
     {
         [TestMethod]
         public void DbModel_SelectTest()

@@ -3,6 +3,7 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using Newtonsoft.Json;
 using Zs.Bot.Model;
+using Zs.Bot.Model.Data;
 using Zs.Common.Abstractions;
 using Zs.Common.Enums;
 
@@ -41,32 +42,32 @@ namespace Zs.Bot.Modules.Logging
         public void LogError(Exception e, [CallerMemberName] string initiator = null)
         {
             var jsonData = JsonConvert.SerializeObject(e, Formatting.Indented);
-            TrySave(LogType.Error, e.Message, initiator, jsonData);
+            TrySaveToDatabase(LogType.Error, e.Message, initiator, jsonData);
         }
 
         public void LogInfo(string message, [CallerMemberName] string initiator = null)
         {
-            TrySave(LogType.Info, message, initiator);
+            TrySaveToDatabase(LogType.Info, message, initiator);
         }
 
         public void LogInfo<T>(string message, T data, [CallerMemberName] string initiator = null)
         {
             var jsonData = JsonConvert.SerializeObject(data, Formatting.Indented);
-            TrySave(LogType.Info, message, initiator, jsonData);
+            TrySaveToDatabase(LogType.Info, message, initiator, jsonData);
         }
 
         public void LogWarning(string message = null, [CallerMemberName] string initiator = null)
         {
-            TrySave(LogType.Warning, message, initiator);
+            TrySaveToDatabase(LogType.Warning, message, initiator);
         }
 
         public void LogWarning<T>(string message, T data, [CallerMemberName] string initiator = null)
         {
             var jsonData = JsonConvert.SerializeObject(data, Formatting.Indented);
-            TrySave(LogType.Warning, message, initiator, jsonData);
+            TrySaveToDatabase(LogType.Warning, message, initiator, jsonData);
         }
 
-        private void TrySave(LogType type, string message, string initiator = null, string data = null)
+        private void TrySaveToDatabase(LogType type, string message, string initiator = null, string data = null)
         {
             try
             {
@@ -74,27 +75,30 @@ namespace Zs.Bot.Modules.Logging
 
                 if (!isSaved)
                 {
-                    var formattedType = type switch
-                    {
-                        LogType.Warning => "Warning",
-                        LogType.Error   => "ERROR  ",
-                        _               => "Info   "
-                    };
-
-                    var text = $"{formattedType}  {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}  {initiator}   {message}"
-                             + $"{(data is {} ? $"\n{data}" : "")}\n";
-
-                    var fileName = $"log_{DateTime.Now.Date:yyyy-MM-dd}.log";
-
-                    lock (_locker)
-                    {
-                        File.AppendAllText(fileName, text);
-                    }
+                    TrySaveInFile(type, message, initiator, data);
                 }
             }
             catch (Exception ex)
             {
+                TrySaveInFile(type, message, initiator, data);
             }
+        }
+
+        private void TrySaveInFile(LogType type, string message, string initiator, string data)
+        {
+            var formattedType = type switch
+            {
+                LogType.Warning => "Warning",
+                LogType.Error   => "ERROR  ",
+                _               => "Info   "
+            };
+
+            var text = $"{formattedType}  {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}  {initiator}   {message}"
+                             + $"{(data is {} ? $"\n{data}" : "")}\n";
+
+            var fileName = $"log_{DateTime.Now.Date:yyyy-MM-dd}.log";
+
+            File.AppendAllText(fileName, text);
         }
     }
 }

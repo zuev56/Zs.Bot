@@ -1,21 +1,21 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
+using Zs.Bot.Model.Data;
 using Zs.Common.Abstractions;
 
 namespace Zs.Bot.Model.Factories
 {
-    public class ContextFactory : IContextFactory<BotContext>, IDesignTimeDbContextFactory<BotContext>
+    public class BotContextFactory : IContextFactory<BotContext>, IDesignTimeDbContextFactory<BotContext>
     {
         private static DbContextOptions<BotContext> _options;
 
-        public ContextFactory()
+        public BotContextFactory()
         {
         }
 
-        public ContextFactory(DbContextOptions<BotContext> options)
+        public BotContextFactory(DbContextOptions<BotContext> options)
         {
             _options = options;
         }

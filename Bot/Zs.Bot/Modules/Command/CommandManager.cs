@@ -11,6 +11,7 @@ using Npgsql;
 using Zs.Bot.Helpers;
 using Zs.Bot.Model;
 using Zs.Bot.Model.Abstractions;
+using Zs.Bot.Model.Data;
 using Zs.Common.Abstractions;
 using Zs.Common.Exceptions;
 using Zs.Common.Extensions;
