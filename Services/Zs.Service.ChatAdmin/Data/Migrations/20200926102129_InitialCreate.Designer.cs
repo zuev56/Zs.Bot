@@ -5,79 +5,29 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
-using Zs.Bot.Model;
+using Zs.Service.ChatAdmin.Data;
 
-namespace Zs.Bot.Model.Data.Migrations
+namespace Zs.Service.ChatAdmin.Data.Migrations
 {
-    [DbContext(typeof(BotContext))]
-    [Migration("20200920170000_InitialCreate")]
+    [DbContext(typeof(ChatAdminContext))]
+    [Migration("20200926102129_InitialCreate")]
     partial class InitialCreate
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn)
+                .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.SerialColumn)
                 .HasAnnotation("ProductVersion", "3.1.8")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
-
-            modelBuilder.Entity("Zs.Bot.Model.Bot", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnName("bot_id")
-                        .HasColumnType("integer")
-                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
-
-                    b.Property<string>("Description")
-                        .HasColumnName("bot_description")
-                        .HasColumnType("character varying(300)")
-                        .HasMaxLength(300);
-
-                    b.Property<DateTime>("InsertDate")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnName("insert_date")
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("now()");
-
-                    b.Property<string>("MessengerCode")
-                        .IsRequired()
-                        .HasColumnName("messenger_code")
-                        .HasColumnType("character varying(2)")
-                        .HasMaxLength(2);
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnName("bot_name")
-                        .HasColumnType("character varying(20)")
-                        .HasMaxLength(20);
-
-                    b.Property<string>("Token")
-                        .IsRequired()
-                        .HasColumnName("bot_token")
-                        .HasColumnType("character varying(100)")
-                        .HasMaxLength(100);
-
-                    b.Property<DateTime>("UpdateDate")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnName("update_date")
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("now()");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("MessengerCode");
-
-                    b.ToTable("bots","bot");
-                });
 
             modelBuilder.Entity("Zs.Bot.Model.Chat", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnName("chat_id")
-                        .HasColumnType("integer")
-                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+                        .HasColumnType("int")
+                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.SerialColumn);
 
                     b.Property<string>("ChatTypeCode")
                         .IsRequired()
@@ -135,9 +85,19 @@ namespace Zs.Bot.Model.Data.Migrations
                             Id = -1,
                             ChatTypeCode = "PRIVATE",
                             Description = "UnitTestChat",
-                            InsertDate = new DateTime(2020, 9, 20, 20, 0, 0, 97, DateTimeKind.Local).AddTicks(597),
+                            InsertDate = new DateTime(2020, 9, 26, 13, 21, 29, 135, DateTimeKind.Local).AddTicks(8351),
                             Name = "UnitTestChat",
                             RawData = "{ \"test\": \"test\" }",
+                            RawDataHash = "-1063294487",
+                            UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                        },
+                        new
+                        {
+                            Id = 1,
+                            ChatTypeCode = "PRIVATE",
+                            InsertDate = new DateTime(2020, 9, 26, 13, 21, 29, 136, DateTimeKind.Local).AddTicks(2),
+                            Name = "zuev56",
+                            RawData = "{ \"Id\": 210281448 }",
                             RawDataHash = "-1063294487",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         });
@@ -176,28 +136,28 @@ namespace Zs.Bot.Model.Data.Migrations
                         new
                         {
                             Code = "CHANNEL",
-                            InsertDate = new DateTime(2020, 9, 20, 20, 0, 0, 96, DateTimeKind.Local).AddTicks(6546),
+                            InsertDate = new DateTime(2020, 9, 26, 13, 21, 29, 135, DateTimeKind.Local).AddTicks(932),
                             Name = "Channel",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Code = "GROUP",
-                            InsertDate = new DateTime(2020, 9, 20, 20, 0, 0, 96, DateTimeKind.Local).AddTicks(7175),
+                            InsertDate = new DateTime(2020, 9, 26, 13, 21, 29, 135, DateTimeKind.Local).AddTicks(1877),
                             Name = "Group",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Code = "PRIVATE",
-                            InsertDate = new DateTime(2020, 9, 20, 20, 0, 0, 96, DateTimeKind.Local).AddTicks(7180),
+                            InsertDate = new DateTime(2020, 9, 26, 13, 21, 29, 135, DateTimeKind.Local).AddTicks(1887),
                             Name = "Private",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Code = "UNDEFINED",
-                            InsertDate = new DateTime(2020, 9, 20, 20, 0, 0, 96, DateTimeKind.Local).AddTicks(7181),
+                            InsertDate = new DateTime(2020, 9, 26, 13, 21, 29, 135, DateTimeKind.Local).AddTicks(1889),
                             Name = "Undefined",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         });
@@ -251,51 +211,61 @@ namespace Zs.Bot.Model.Data.Migrations
                     b.HasData(
                         new
                         {
-                            Name = "/Test",
+                            Name = "/test",
                             Description = "Тестовый запрос к боту. Возвращает ''Test''",
                             Group = "moderatorCmdGroup",
-                            InsertDate = new DateTime(2020, 9, 20, 20, 0, 0, 98, DateTimeKind.Local).AddTicks(3107),
-                            Script = "SELECT ''Test''",
+                            InsertDate = new DateTime(2020, 9, 26, 13, 21, 29, 138, DateTimeKind.Local).AddTicks(1883),
+                            Script = "SELECT 'Test'",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
-                            Name = "/NullTest",
+                            Name = "/nulltest",
                             Description = "Тестовый запрос к боту. Возвращает NULL",
                             Group = "moderatorCmdGroup",
-                            InsertDate = new DateTime(2020, 9, 20, 20, 0, 0, 98, DateTimeKind.Local).AddTicks(3583),
+                            InsertDate = new DateTime(2020, 9, 26, 13, 21, 29, 138, DateTimeKind.Local).AddTicks(2825),
                             Script = "SELECT null",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
-                            Name = "/Help",
+                            Name = "/help",
                             DefaultArgs = "<UserRoleCode>",
                             Description = "Получение справки по доступным функциям",
                             Group = "userCmdGroup",
-                            InsertDate = new DateTime(2020, 9, 20, 20, 0, 0, 98, DateTimeKind.Local).AddTicks(4035),
+                            InsertDate = new DateTime(2020, 9, 26, 13, 21, 29, 138, DateTimeKind.Local).AddTicks(3609),
                             Script = "SELECT bot.sf_cmd_get_help({0})",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
-                            Name = "/SqlQuery",
-                            DefaultArgs = "select ''Pass your query as parameter in double quotes''",
+                            Name = "/sqlquery",
+                            DefaultArgs = "select 'Pass your query as parameter in double quotes'",
                             Description = "SQL-запрос",
                             Group = "adminCmdGroup",
-                            InsertDate = new DateTime(2020, 9, 20, 20, 0, 0, 98, DateTimeKind.Local).AddTicks(4040),
+                            InsertDate = new DateTime(2020, 9, 26, 13, 21, 29, 138, DateTimeKind.Local).AddTicks(3624),
                             Script = "select (with userQuery as ({0}) select json_agg(q) from userQuery q)",
+                            UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                        },
+                        new
+                        {
+                            Name = "/getuserstatistics",
+                            DefaultArgs = "15; now()::Date; now()",
+                            Description = "Получение статистики по активности участников всех чатов за определённый период",
+                            Group = "adminCmdGroup",
+                            InsertDate = new DateTime(2020, 9, 26, 13, 21, 29, 141, DateTimeKind.Local).AddTicks(744),
+                            Script = "SELECT zl.sf_cmd_get_full_statistics({0}, {1}, {2})",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         });
                 });
 
             modelBuilder.Entity("Zs.Bot.Model.Log", b =>
                 {
-                    b.Property<long>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnName("log_id")
-                        .HasColumnType("bigint")
-                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+                        .HasColumnType("int")
+                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.SerialColumn);
 
                     b.Property<string>("Data")
                         .HasColumnName("log_data")
@@ -334,8 +304,8 @@ namespace Zs.Bot.Model.Data.Migrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnName("message_id")
-                        .HasColumnType("integer")
-                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+                        .HasColumnType("int")
+                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.SerialColumn);
 
                     b.Property<int>("ChatId")
                         .HasColumnName("chat_id")
@@ -457,84 +427,84 @@ namespace Zs.Bot.Model.Data.Migrations
                         new
                         {
                             Code = "UKN",
-                            InsertDate = new DateTime(2020, 9, 20, 20, 0, 0, 98, DateTimeKind.Local).AddTicks(140),
+                            InsertDate = new DateTime(2020, 9, 26, 13, 21, 29, 137, DateTimeKind.Local).AddTicks(5892),
                             Name = "Unknown",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Code = "TXT",
-                            InsertDate = new DateTime(2020, 9, 20, 20, 0, 0, 98, DateTimeKind.Local).AddTicks(693),
+                            InsertDate = new DateTime(2020, 9, 26, 13, 21, 29, 137, DateTimeKind.Local).AddTicks(6729),
                             Name = "Text",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Code = "PHT",
-                            InsertDate = new DateTime(2020, 9, 20, 20, 0, 0, 98, DateTimeKind.Local).AddTicks(698),
+                            InsertDate = new DateTime(2020, 9, 26, 13, 21, 29, 137, DateTimeKind.Local).AddTicks(6738),
                             Name = "Photo",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Code = "AUD",
-                            InsertDate = new DateTime(2020, 9, 20, 20, 0, 0, 98, DateTimeKind.Local).AddTicks(699),
+                            InsertDate = new DateTime(2020, 9, 26, 13, 21, 29, 137, DateTimeKind.Local).AddTicks(6740),
                             Name = "Audio",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Code = "VID",
-                            InsertDate = new DateTime(2020, 9, 20, 20, 0, 0, 98, DateTimeKind.Local).AddTicks(701),
+                            InsertDate = new DateTime(2020, 9, 26, 13, 21, 29, 137, DateTimeKind.Local).AddTicks(6742),
                             Name = "Video",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Code = "VOI",
-                            InsertDate = new DateTime(2020, 9, 20, 20, 0, 0, 98, DateTimeKind.Local).AddTicks(702),
+                            InsertDate = new DateTime(2020, 9, 26, 13, 21, 29, 137, DateTimeKind.Local).AddTicks(6744),
                             Name = "Voice",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Code = "DOC",
-                            InsertDate = new DateTime(2020, 9, 20, 20, 0, 0, 98, DateTimeKind.Local).AddTicks(703),
+                            InsertDate = new DateTime(2020, 9, 26, 13, 21, 29, 137, DateTimeKind.Local).AddTicks(6746),
                             Name = "Document",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Code = "STK",
-                            InsertDate = new DateTime(2020, 9, 20, 20, 0, 0, 98, DateTimeKind.Local).AddTicks(705),
+                            InsertDate = new DateTime(2020, 9, 26, 13, 21, 29, 137, DateTimeKind.Local).AddTicks(6748),
                             Name = "Sticker",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Code = "LOC",
-                            InsertDate = new DateTime(2020, 9, 20, 20, 0, 0, 98, DateTimeKind.Local).AddTicks(706),
+                            InsertDate = new DateTime(2020, 9, 26, 13, 21, 29, 137, DateTimeKind.Local).AddTicks(6750),
                             Name = "Location",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Code = "CNT",
-                            InsertDate = new DateTime(2020, 9, 20, 20, 0, 0, 98, DateTimeKind.Local).AddTicks(708),
+                            InsertDate = new DateTime(2020, 9, 26, 13, 21, 29, 137, DateTimeKind.Local).AddTicks(6752),
                             Name = "Contact",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Code = "SRV",
-                            InsertDate = new DateTime(2020, 9, 20, 20, 0, 0, 98, DateTimeKind.Local).AddTicks(709),
+                            InsertDate = new DateTime(2020, 9, 26, 13, 21, 29, 137, DateTimeKind.Local).AddTicks(6754),
                             Name = "Service message",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Code = "OTH",
-                            InsertDate = new DateTime(2020, 9, 20, 20, 0, 0, 98, DateTimeKind.Local).AddTicks(710),
+                            InsertDate = new DateTime(2020, 9, 26, 13, 21, 29, 137, DateTimeKind.Local).AddTicks(6756),
                             Name = "Other",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         });
@@ -573,35 +543,35 @@ namespace Zs.Bot.Model.Data.Migrations
                         new
                         {
                             Code = "TG",
-                            InsertDate = new DateTime(2020, 9, 20, 20, 0, 0, 94, DateTimeKind.Local).AddTicks(2694),
+                            InsertDate = new DateTime(2020, 9, 26, 13, 21, 29, 131, DateTimeKind.Local).AddTicks(1198),
                             Name = "Telegram",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Code = "VK",
-                            InsertDate = new DateTime(2020, 9, 20, 20, 0, 0, 95, DateTimeKind.Local).AddTicks(3226),
+                            InsertDate = new DateTime(2020, 9, 26, 13, 21, 29, 132, DateTimeKind.Local).AddTicks(7703),
                             Name = "Вконтакте",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Code = "SK",
-                            InsertDate = new DateTime(2020, 9, 20, 20, 0, 0, 95, DateTimeKind.Local).AddTicks(3247),
+                            InsertDate = new DateTime(2020, 9, 26, 13, 21, 29, 132, DateTimeKind.Local).AddTicks(7726),
                             Name = "Skype",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Code = "FB",
-                            InsertDate = new DateTime(2020, 9, 20, 20, 0, 0, 95, DateTimeKind.Local).AddTicks(3249),
+                            InsertDate = new DateTime(2020, 9, 26, 13, 21, 29, 132, DateTimeKind.Local).AddTicks(7728),
                             Name = "Facebook",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Code = "DC",
-                            InsertDate = new DateTime(2020, 9, 20, 20, 0, 0, 95, DateTimeKind.Local).AddTicks(3251),
+                            InsertDate = new DateTime(2020, 9, 26, 13, 21, 29, 132, DateTimeKind.Local).AddTicks(7730),
                             Name = "Discord",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         });
@@ -612,8 +582,8 @@ namespace Zs.Bot.Model.Data.Migrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnName("user_id")
-                        .HasColumnType("integer")
-                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+                        .HasColumnType("int")
+                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.SerialColumn);
 
                     b.Property<string>("FullName")
                         .HasColumnName("user_full_name")
@@ -673,7 +643,7 @@ namespace Zs.Bot.Model.Data.Migrations
                         {
                             Id = -10,
                             FullName = "for exported message reading",
-                            InsertDate = new DateTime(2020, 9, 20, 20, 0, 0, 97, DateTimeKind.Local).AddTicks(7923),
+                            InsertDate = new DateTime(2020, 9, 26, 13, 21, 29, 137, DateTimeKind.Local).AddTicks(2146),
                             IsBot = false,
                             Name = "Unknown",
                             RawData = "{ \"test\": \"test\" }",
@@ -685,13 +655,25 @@ namespace Zs.Bot.Model.Data.Migrations
                         {
                             Id = -1,
                             FullName = "UnitTest",
-                            InsertDate = new DateTime(2020, 9, 20, 20, 0, 0, 97, DateTimeKind.Local).AddTicks(8399),
+                            InsertDate = new DateTime(2020, 9, 26, 13, 21, 29, 137, DateTimeKind.Local).AddTicks(3122),
                             IsBot = false,
                             Name = "UnitTestUser",
                             RawData = "{ \"test\": \"test\" }",
                             RawDataHash = "-1063294487",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             UserRoleCode = "USER"
+                        },
+                        new
+                        {
+                            Id = 1,
+                            FullName = "Сергей Зуев",
+                            InsertDate = new DateTime(2020, 9, 26, 13, 21, 29, 137, DateTimeKind.Local).AddTicks(3134),
+                            IsBot = false,
+                            Name = "zuev56",
+                            RawData = "{ \"Id\": 210281448 }",
+                            RawDataHash = "-1063294487",
+                            UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            UserRoleCode = "ADMIN"
                         });
                 });
 
@@ -733,7 +715,7 @@ namespace Zs.Bot.Model.Data.Migrations
                         new
                         {
                             Code = "OWNER",
-                            InsertDate = new DateTime(2020, 9, 20, 20, 0, 0, 97, DateTimeKind.Local).AddTicks(3683),
+                            InsertDate = new DateTime(2020, 9, 26, 13, 21, 29, 136, DateTimeKind.Local).AddTicks(3731),
                             Name = "Owner",
                             Permissions = "[ \"All\" ]",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
@@ -741,7 +723,7 @@ namespace Zs.Bot.Model.Data.Migrations
                         new
                         {
                             Code = "ADMIN",
-                            InsertDate = new DateTime(2020, 9, 20, 20, 0, 0, 97, DateTimeKind.Local).AddTicks(4186),
+                            InsertDate = new DateTime(2020, 9, 26, 13, 21, 29, 136, DateTimeKind.Local).AddTicks(4618),
                             Name = "Administrator",
                             Permissions = "[ \"adminCmdGroup\", \"moderatorCmdGroup\", \"userCmdGroup\" ]",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
@@ -749,7 +731,7 @@ namespace Zs.Bot.Model.Data.Migrations
                         new
                         {
                             Code = "MODERATOR",
-                            InsertDate = new DateTime(2020, 9, 20, 20, 0, 0, 97, DateTimeKind.Local).AddTicks(4191),
+                            InsertDate = new DateTime(2020, 9, 26, 13, 21, 29, 136, DateTimeKind.Local).AddTicks(4630),
                             Name = "Moderator",
                             Permissions = "[ \"moderatorCmdGroup\", \"userCmdGroup\" ]",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
@@ -757,20 +739,159 @@ namespace Zs.Bot.Model.Data.Migrations
                         new
                         {
                             Code = "USER",
-                            InsertDate = new DateTime(2020, 9, 20, 20, 0, 0, 97, DateTimeKind.Local).AddTicks(4192),
+                            InsertDate = new DateTime(2020, 9, 26, 13, 21, 29, 136, DateTimeKind.Local).AddTicks(4634),
                             Name = "User",
                             Permissions = "[ \"userCmdGroup\" ]",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         });
                 });
 
-            modelBuilder.Entity("Zs.Bot.Model.Bot", b =>
+            modelBuilder.Entity("Zs.Service.ChatAdmin.Model.Accounting", b =>
                 {
-                    b.HasOne("Zs.Bot.Model.MessengerInfo", "Messenger")
-                        .WithMany("Bots")
-                        .HasForeignKey("MessengerCode")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnName("accounting_id")
+                        .HasColumnType("integer")
+                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.SerialColumn);
+
+                    b.Property<DateTime>("StartDate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnName("accounting_start_date")
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<DateTime>("UpdateDate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnName("update_date")
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("now()");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("accountings","zl");
+                });
+
+            modelBuilder.Entity("Zs.Service.ChatAdmin.Model.AuxiliaryWord", b =>
+                {
+                    b.Property<string>("TheWord")
+                        .HasColumnName("the_word")
+                        .HasColumnType("character varying(100)")
+                        .HasMaxLength(100);
+
+                    b.Property<DateTime>("InsertDate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnName("insert_date")
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("now()");
+
+                    b.HasKey("TheWord");
+
+                    b.ToTable("auxiliary_words","zl");
+                });
+
+            modelBuilder.Entity("Zs.Service.ChatAdmin.Model.Ban", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnName("ban_id")
+                        .HasColumnType("integer")
+                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.SerialColumn);
+
+                    b.Property<int>("ChatId")
+                        .HasColumnName("chat_id")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("FinishDate")
+                        .HasColumnName("ban_finish_date")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("InsertDate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnName("insert_date")
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<int?>("MessageId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdateDate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnName("update_date")
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<int>("UserId")
+                        .HasColumnName("user_id")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("WarningMessageId")
+                        .HasColumnName("warning_message_id")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChatId");
+
+                    b.HasIndex("MessageId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("bans","zl");
+                });
+
+            modelBuilder.Entity("Zs.Service.ChatAdmin.Model.Notification", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnName("notification_id")
+                        .HasColumnType("integer")
+                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.SerialColumn);
+
+                    b.Property<int>("Day")
+                        .HasColumnName("notification_day")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("ExecDate")
+                        .HasColumnName("notification_exec_date")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Hour")
+                        .HasColumnName("notification_hour")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("InsertDate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnName("insert_date")
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnName("notification_is_active")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnName("notification_message")
+                        .HasColumnType("character varying(2000)")
+                        .HasMaxLength(2000);
+
+                    b.Property<int>("Minute")
+                        .HasColumnName("notification_minute")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("Month")
+                        .HasColumnName("notification_month")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdateDate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnName("update_date")
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("now()");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("notifications","zl");
                 });
 
             modelBuilder.Entity("Zs.Bot.Model.Chat", b =>
@@ -818,6 +939,25 @@ namespace Zs.Bot.Model.Data.Migrations
                     b.HasOne("Zs.Bot.Model.UserRole", "UserRoles")
                         .WithMany("Users")
                         .HasForeignKey("UserRoleCode")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Zs.Service.ChatAdmin.Model.Ban", b =>
+                {
+                    b.HasOne("Zs.Bot.Model.Chat", "Chat")
+                        .WithMany()
+                        .HasForeignKey("ChatId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Zs.Bot.Model.Message", "Message")
+                        .WithMany()
+                        .HasForeignKey("MessageId");
+
+                    b.HasOne("Zs.Bot.Model.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

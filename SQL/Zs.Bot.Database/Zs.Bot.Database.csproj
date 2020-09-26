@@ -16,18 +16,18 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="OLD %2528DatabaseFirst%2529\Commands\sfCmdGetDailyGroupStatistics.sql" />
-    <None Include="OLD %2528DatabaseFirst%2529\Commands\sfCmdGetHelp.sql" />
-    <None Include="OLD %2528DatabaseFirst%2529\Commands\sfCmdGetStatistics.sql" />
-    <None Include="OLD %2528DatabaseFirst%2529\Commands\sfGetGroupStatistics.sql" />
-    <None Include="OLD %2528DatabaseFirst%2529\Commands\sfGetWarningsAndBans.sql" />
-    <None Include="OLD %2528DatabaseFirst%2529\DbStructure\Base_bot.sql" />
-    <None Include="OLD %2528DatabaseFirst%2529\DbStructure\Functions_bot.sql" />
-    <None Include="OLD %2528DatabaseFirst%2529\DbStructure\Priveleges_bot.sql" />
-    <None Include="OLD %2528DatabaseFirst%2529\DbStructure\Tables_bot.sql" />
-    <None Include="OLD %2528DatabaseFirst%2529\DbStructure\z_ForeignTables.sql" />
-    <None Include="OLD %2528DatabaseFirst%2529\DbStructure\z_Functions_test.sql" />
-    <None Include="OLD %2528DatabaseFirst%2529\DbStructure\z_Other.sql" />
+    <None Include="OLD (DatabaseFirst)\Commands\sfCmdGetDailyGroupStatistics.sql" />
+    <None Include="OLD (DatabaseFirst)\Commands\sfCmdGetHelp.sql" />
+    <None Include="OLD (DatabaseFirst)\Commands\sfCmdGetStatistics.sql" />
+    <None Include="OLD (DatabaseFirst)\Commands\sfGetGroupStatistics.sql" />
+    <None Include="OLD (DatabaseFirst)\Commands\sfGetWarningsAndBans.sql" />
+    <None Include="OLD (DatabaseFirst)\DbStructure\Base_bot.sql" />
+    <None Include="OLD (DatabaseFirst)\DbStructure\Functions_bot.sql" />
+    <None Include="OLD (DatabaseFirst)\DbStructure\Priveleges_bot.sql" />
+    <None Include="OLD (DatabaseFirst)\DbStructure\Tables_bot.sql" />
+    <None Include="OLD (DatabaseFirst)\DbStructure\z_ForeignTables.sql" />
+    <None Include="OLD (DatabaseFirst)\DbStructure\z_Functions_test.sql" />
+    <None Include="OLD (DatabaseFirst)\DbStructure\z_Other.sql" />
   </ItemGroup>
 
 </Project>

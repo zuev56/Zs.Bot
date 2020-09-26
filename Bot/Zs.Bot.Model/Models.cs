@@ -9,47 +9,7 @@ using Zs.Bot.Model.Abstractions;
 
 namespace Zs.Bot.Model
 {
-    /// <summary> Bots info </summary>
-    [Table("bots", Schema = "bot")]
-    public class Bot : IBot
-    {
-        [Key]
-        [Required(ErrorMessage = "Property 'BotId' is required")]
-        [Column("bot_id", TypeName = "integer")]
-        public int Id { get; set; }
-
-        [StringLength(2)]
-        [Required(ErrorMessage = "Property 'MessengerCode' is required")]
-        [Column("messenger_code", TypeName = "character varying(2)")]
-        public string MessengerCode { get; set; }
-
-        [StringLength(20)]
-        [Required(ErrorMessage = "Property 'BotName' is required")]
-        [Column("bot_name", TypeName = "character varying(20)")]
-        public string Name { get; set; }
-
-        [StringLength(100)]
-        [Required(ErrorMessage = "Property 'BotToken' is required")]
-        [Column("bot_token", TypeName = "character varying(100)")]
-        public string Token { get; set; }
-
-        [StringLength(300)]
-        [Column("bot_description", TypeName = "character varying(300)")]
-        public string Description { get; set; }
-
-        [Required(ErrorMessage = "Property 'UpdateDate' is required")]
-        [Column("update_date", TypeName = "timestamp with time zone")]
-        public DateTime UpdateDate { get; set; }
-
-        [Required(ErrorMessage = "Property 'InsertDate' is required")]
-        [Column("insert_date", TypeName = "timestamp with time zone")]
-        public DateTime InsertDate { get; set; }
-
-        public MessengerInfo Messenger { get; set; }
-    }
-
-
-    /// <summary> Chat types (group, private, etc.) </summary>
+    /// <summary> <inheritdoc/> </summary>
     [Table("chat_types", Schema = "bot")]
     public class ChatType : IChatType
     {
@@ -75,14 +35,13 @@ namespace Zs.Bot.Model
         public ICollection<Chat> Chats { get; set; }
     }
 
-
-    /// <summary> Chats info </summary>
+    /// <summary> <inheritdoc/> </summary>
     [Table("chats", Schema = "bot")]
     public class Chat : IChat
     {
         [Key]
         [Required(ErrorMessage = "Property 'ChatId' is required")]
-        [Column("chat_id", TypeName = "integer")]
+        [Column("chat_id", TypeName = "int")]
         public int Id { get; set; }
 
         [StringLength(50)]
@@ -123,8 +82,7 @@ namespace Zs.Bot.Model
         public ICollection<Message> Messages { get; set; }
     }
 
-
-    /// <summary> Параметры приложения </summary>
+    /// <summary> <inheritdoc/> </summary>
     [Table("commands", Schema = "bot")]
     public class Command : ICommand
     {
@@ -162,15 +120,14 @@ namespace Zs.Bot.Model
 
     }
 
-
-    /// <summary> Журнал </summary>
+    /// <summary> <inheritdoc/> </summary>
     [Table("logs", Schema = "bot")]
     public class Log : ILog
     {
         [Key]
         [Required(ErrorMessage = "Property 'LogId' is required")]
-        [Column("log_id", TypeName = "bigint")]
-        public long Id { get; set; }
+        [Column("log_id", TypeName = "int")]
+        public int Id { get; set; }
 
         [StringLength(7)]
         [Required(ErrorMessage = "Property 'LogType' is required")]
@@ -194,9 +151,8 @@ namespace Zs.Bot.Model
         public DateTime InsertDate { get; set; }
 
     }
-
-
-    /// <summary> Типы сообщений </summary>
+    
+    /// <summary> <inheritdoc/> </summary>
     [Table("message_types", Schema = "bot")]
     public class MessageType : IMessageType
     {
@@ -222,14 +178,13 @@ namespace Zs.Bot.Model
         public ICollection<Message> Messages { get; set; }
     }
 
-
-    /// <summary> Принятые и отрпавленные сообщения </summary>
+    /// <summary> <inheritdoc/> </summary>
     [Table("messages", Schema = "bot")]
     public class Message : IMessage
     {
         [Key]
         [Required(ErrorMessage = "Property 'MessageId' is required")]
-        [Column("message_id", TypeName = "integer")]
+        [Column("message_id", TypeName = "int")]
         public int Id { get; set; }
 
         [Column("reply_to_message_id", TypeName = "integer")]
@@ -301,8 +256,7 @@ namespace Zs.Bot.Model
 
     }
 
-
-    /// <summary> Система обмена сообщениями </summary>
+    /// <summary> <inheritdoc/> </summary>
     [Table("messengers", Schema = "bot")]
     public class MessengerInfo : IMessengerInfo
     {
@@ -325,13 +279,11 @@ namespace Zs.Bot.Model
         [Column("insert_date", TypeName = "timestamp with time zone")]
         public DateTime InsertDate { get; set; }
 
-        public ICollection<Bot> Bots { get; set; }
         public ICollection<Message> Messages { get; set; }
 
     }
 
-
-    /// <summary> Chat members </summary>
+    /// <summary> <inheritdoc/> </summary>
     [Table("user_roles", Schema = "bot")]
     public class UserRole : IUserRole
     {
@@ -361,13 +313,13 @@ namespace Zs.Bot.Model
         public ICollection<User> Users { get; set; }
     }
 
-
+    /// <summary> <inheritdoc/> </summary>
     [Table("users", Schema = "bot")]
     public class User : IUser
     {
         [Key]
         [Required(ErrorMessage = "Property 'UserId' is required")]
-        [Column("user_id", TypeName = "integer")]
+        [Column("user_id", TypeName = "int")]
         public int Id { get; set; }
 
         [StringLength(50)]
@@ -411,11 +363,4 @@ namespace Zs.Bot.Model
         public UserRole UserRoles { get; set; }
     }
 
-    /// <summary> SQL-query result. Not a table </summary>
-    [NotMapped]
-    public partial class DbQuery
-    {
-        [Key]
-        public string Result { get; set; }
-    }
 }

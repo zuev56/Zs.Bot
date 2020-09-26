@@ -8,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Zs.Bot.Model.Abstractions;
 using Zs.Bot.Modules.Messaging;
 using Zs.Common.Abstractions;
+using Zs.Common.Helpers;
 using Zs.Service.ChatAdmin.Abstractions;
 
 namespace Zs.Service.ChatAdmin
@@ -68,6 +69,9 @@ namespace Zs.Service.ChatAdmin
                 if (message is null)
                     throw new ArgumentNullException(nameof(message));
 
+                if (message.ChatId != _defaultChatId)
+                    return;
+
                 if (!_limitsAreDefined)
                 {
                     _logger.LogInfo($"Limits are not defined. Group message won't be processed", nameof(MessageProcessor));
@@ -80,8 +84,6 @@ namespace Zs.Service.ChatAdmin
                     return;
                 }
                 
-                if (message.ChatId != _defaultChatId)
-                    return;
 
                 var accountingStartDate = _accountingStartDate is null
                     ? "null"
@@ -97,7 +99,12 @@ namespace Zs.Service.ChatAdmin
                                      $"_start_account_after => {_accountingStartsAfter}\n" +
                             ")";
 
-                var jsonResult = GetStringQueryResult(query);
+
+                using var ctx = _contextFactory.GetBotContext();
+
+                var jsonResult = DbHelper.GetQueryResult(
+                                     ctx.Database.GetDbConnection().ConnectionString, 
+                                     query);
 
                 if (_detailedLogging)
                 {
@@ -113,7 +120,6 @@ namespace Zs.Service.ChatAdmin
 
                 if (dictResult.ContainsKey("Action"))
                 {
-                    using var ctx = _contextFactory.GetBotContext();
                     var chat = ctx.Chats.First(c => c.Id == message.ChatId);
 
                     if (dictResult.ContainsKey("MessageText"))
@@ -391,12 +397,5 @@ namespace Zs.Service.ChatAdmin
                  + accountingStatus;
         }
 
-        public string GetStringQueryResult(string query)
-        {
-            using var ctx = _contextFactory.GetBotContext();
-            var fromSqlRaw = ctx.Query.FromSqlRaw($"{query} as Result").AsEnumerable();
-
-            return fromSqlRaw.ToList()?[0]?.Result ?? "NULL";
-        }
     }
 }

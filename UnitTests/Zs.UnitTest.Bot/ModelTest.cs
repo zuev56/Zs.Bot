@@ -3,7 +3,6 @@ using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zs.Bot.Model;
 using Zs.Common.Extensions;
-using ZsBot = Zs.Bot.Model.Bot;
 
 namespace Zs.UnitTest.Bot
 {
@@ -17,7 +16,6 @@ namespace Zs.UnitTest.Bot
             {
                 using (var ctx = _contextFactory.GetContext())
                 {
-                    Assert.IsNotNull(ctx.Bots.FirstOrDefault());
                     Assert.IsNotNull(ctx.ChatTypes.FirstOrDefault());
                     Assert.IsNotNull(ctx.Chats.FirstOrDefault());
                     Assert.IsNotNull(ctx.UserRoles.FirstOrDefault());
@@ -42,7 +40,6 @@ namespace Zs.UnitTest.Bot
             {
                 using var ctx = _contextFactory.GetContext();
 
-                var bot         = ctx.Bots.FirstOrDefault();
                 var chatType    = ctx.ChatTypes.FirstOrDefault();
                 var chat        = ctx.Chats.FirstOrDefault();
                 var role        = ctx.UserRoles.FirstOrDefault();
@@ -53,7 +50,6 @@ namespace Zs.UnitTest.Bot
                 var log         = ctx.Logs.FirstOrDefault();
                 var command     = ctx.Commands.FirstOrDefault();
 
-                var botId           = bot.Id;
                 var chatTypeCode    = chatType.Code;
                 var chatId          = chat.Id;
                 var roleCode        = role.Code;
@@ -65,7 +61,6 @@ namespace Zs.UnitTest.Bot
                 var commandName     = command.Name;
 
                 var newUpdateDate      = DateTime.Now;
-                bot.UpdateDate         = newUpdateDate;
                 chatType.UpdateDate    = newUpdateDate;
                 chat.UpdateDate        = newUpdateDate;
                 role.UpdateDate        = newUpdateDate;
@@ -78,7 +73,6 @@ namespace Zs.UnitTest.Bot
 
                 ctx.SaveChanges();
 
-                Assert.IsTrue(newUpdateDate == ctx.Bots.First(b => b.Id == botId).UpdateDate);
                 Assert.IsTrue(newUpdateDate == ctx.ChatTypes.First(t => t.Code == chatTypeCode).UpdateDate);
                 Assert.IsTrue(newUpdateDate == ctx.Chats.First(c => c.Id == chatId).UpdateDate);
                 Assert.IsTrue(newUpdateDate == ctx.UserRoles.First(r => r.Code == roleCode).UpdateDate);
@@ -103,7 +97,6 @@ namespace Zs.UnitTest.Bot
                 var testJsonValue = "{\"value\": \"UnitTest1\"}";
 
                 var messenger       = new MessengerInfo   { Code = "U1", Name = "UnitTest1" };
-                var bot             = new ZsBot           { Id = -2, MessengerCode = "U1", Name = "UnitTest1", Token = "UnitTest1" };
                 var chatType        = new ChatType        { Code = "UNITTEST1", Name = "UnitTest1"};
                 var chat            = new Chat            { Id = -2, ChatTypeCode = "UNITTEST1", Name = "UnitTest1", RawData = testJsonValue, RawDataHash = testJsonValue.GetMD5Hash()};
                 var role            = new UserRole        { Code = "UNITTEST1", Name = "UnitTest1", Permissions = "[ \"UnitTest1\" ]" };
@@ -129,12 +122,6 @@ namespace Zs.UnitTest.Bot
 
                     if (ctx.ChangeTracker.HasChanges())
                         ctx.SaveChanges();
-
-                    if (!ctx.Bots.Any(b => b.Id == bot.Id))
-                    {
-                        ctx.Bots.Add(bot);
-                        ctx.SaveChanges();
-                    }
 
                     if (!ctx.Chats.Any(c => c.Id == chat.Id))
                     {
@@ -178,7 +165,6 @@ namespace Zs.UnitTest.Bot
                 var testJsonValue = "{\"value\": \"UnitTest0\"}";
 
                 var messenger       = new MessengerInfo   { Code = "U0", Name = "UnitTest0" };
-                var bot             = new ZsBot           { Id = -1, MessengerCode = "U0", Name = "UnitTest0", Token = "UnitTest0" };
                 var chatType        = new ChatType        { Code = "UNITTEST0", Name = "UnitTest0"};
                 var chat            = new Chat            { Id = -1, ChatTypeCode = "UNITTEST0", Name = "UnitTest0", RawData = testJsonValue, RawDataHash = testJsonValue.GetMD5Hash()};
                 var role            = new UserRole        { Code = "UNITTEST0", Name = "UnitTest0", Permissions = "[ \"UnitTest0\" ]" };
@@ -204,12 +190,6 @@ namespace Zs.UnitTest.Bot
 
                     if (ctx.ChangeTracker.HasChanges())
                         ctx.SaveChanges();
-
-                    if (!ctx.Bots.Any(b => b.Id == bot.Id))
-                    {
-                        ctx.Bots.Add(bot);
-                        ctx.SaveChanges();
-                    }
 
                     if (!ctx.Chats.Any(c => c.Id == chat.Id))
                     {
@@ -254,7 +234,6 @@ namespace Zs.UnitTest.Bot
                     ctx.MessageTypes.Remove(messageType);
                     ctx.UserRoles.Remove(role);
                     ctx.ChatTypes.Remove(chatType);
-                    ctx.Bots.Remove(bot);
                     ctx.SaveChanges();
                     ctx.Messengers.Remove(messenger);
 

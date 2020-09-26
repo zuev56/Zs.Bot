@@ -1,17 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Zs.Bot.Model.Data;
+using Zs.Common.Extensions;
 
 namespace Zs.Bot.Model.Data
 {
     public class BotContext : DbContext
     {
-        public DbSet<Bot> Bots { get; set; }
         public DbSet<ChatType> ChatTypes { get; set; }
         public DbSet<Chat> Chats { get; set; }
         public DbSet<Command> Commands { get; set; }
@@ -21,9 +23,7 @@ namespace Zs.Bot.Model.Data
         public DbSet<MessengerInfo> Messengers { get; set; }
         public DbSet<UserRole> UserRoles { get; set; }
         public DbSet<User> Users { get; set; }
-        public DbSet<DbQuery> Query { get; set; }
-
-        //public Action<DbContextOptionsBuilder> OnConfiguringAction { get; set; }
+        //public DbSet<DbQuery> Query { get; set; }
 
         public BotContext()
         {
@@ -41,6 +41,8 @@ namespace Zs.Bot.Model.Data
         
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.ForNpgsqlUseSerialColumns();
+
             SetDefaultValues(modelBuilder);
             
             SeedData(modelBuilder);
@@ -61,9 +63,6 @@ namespace Zs.Bot.Model.Data
         {
             modelBuilder.Entity<MessengerInfo>().Property(b => b.UpdateDate).HasDefaultValueSql("now()");
             modelBuilder.Entity<MessengerInfo>().Property(b => b.InsertDate).HasDefaultValueSql("now()");
-
-            modelBuilder.Entity<Bot>().Property(b => b.UpdateDate).HasDefaultValueSql("now()");
-            modelBuilder.Entity<Bot>().Property(b => b.InsertDate).HasDefaultValueSql("now()");
 
             modelBuilder.Entity<ChatType>().Property(b => b.UpdateDate).HasDefaultValueSql("now()");
             modelBuilder.Entity<ChatType>().Property(b => b.InsertDate).HasDefaultValueSql("now()");
@@ -108,11 +107,11 @@ namespace Zs.Bot.Model.Data
                 new ChatType() { Code = "PRIVATE", Name = "Private", InsertDate = DateTime.Now },
                 new ChatType() { Code = "UNDEFINED", Name = "Undefined", InsertDate = DateTime.Now }
             });
-            //НАДО ДОБАВИТЬ РЕАЛЬНЫЕ RAW_DATA для чата и пользователя
+
             modelBuilder.Entity<Chat>().HasData(new[]
             {
                 new Chat() { Id = -1, Name = "UnitTestChat", Description = "UnitTestChat", ChatTypeCode = "PRIVATE", RawData = "{ \"test\": \"test\" }", RawDataHash = "-1063294487", InsertDate = DateTime.Now },
-                new Chat() { Id = 1, Name = "zuev56", ChatTypeCode = "PRIVATE", RawData = "{ \"test\": \"test\" }", RawDataHash = "-1063294487", InsertDate = DateTime.Now }
+                new Chat() { Id = 1, Name = "zuev56", ChatTypeCode = "PRIVATE", RawData = "{ \"Id\": 210281448 }", RawDataHash = "-1063294487", InsertDate = DateTime.Now }
             });
 
             modelBuilder.Entity<UserRole>().HasData(new[]
@@ -127,7 +126,7 @@ namespace Zs.Bot.Model.Data
             {
                 new User() { Id = -10, Name = "Unknown", FullName = "for exported message reading", UserRoleCode = "USER", IsBot = false, RawData = "{ \"test\": \"test\" }", RawDataHash = "-1063294487", InsertDate = DateTime.Now },
                 new User() { Id = -1, Name = "UnitTestUser", FullName = "UnitTest", UserRoleCode = "USER", IsBot = false, RawData = "{ \"test\": \"test\" }", RawDataHash = "-1063294487", InsertDate = DateTime.Now },
-                new User() { Id = 1, Name = "zuev56", FullName = "Сергей Зуев", UserRoleCode = "ADMIN", IsBot = false, RawData = "{ \"test\": \"test\" }", RawDataHash = "-1063294487", InsertDate = DateTime.Now }
+                new User() { Id = 1, Name = "zuev56", FullName = "Сергей Зуев", UserRoleCode = "ADMIN", IsBot = false, RawData = "{ \"Id\": 210281448 }", RawDataHash = "-1063294487", InsertDate = DateTime.Now }
             });
 
             modelBuilder.Entity<MessageType>().HasData(new[]
@@ -148,11 +147,30 @@ namespace Zs.Bot.Model.Data
 
             modelBuilder.Entity<Command>().HasData(new[]
             {
-                new Command() { Name = "/Test", Script = "SELECT ''Test''", Description = "Тестовый запрос к боту. Возвращает ''Test''", Group = "moderatorCmdGroup", InsertDate = DateTime.Now },
-                new Command() { Name = "/NullTest", Script = "SELECT null", Description = "Тестовый запрос к боту. Возвращает NULL", Group = "moderatorCmdGroup", InsertDate = DateTime.Now },
-                new Command() { Name = "/Help", Script = "SELECT bot.sf_cmd_get_help({0})", DefaultArgs = "<UserRoleCode>", Description = "Получение справки по доступным функциям", Group = "userCmdGroup", InsertDate = DateTime.Now },
-                new Command() { Name = "/SqlQuery", Script = "select (with userQuery as ({0}) select json_agg(q) from userQuery q)", DefaultArgs = "select ''Pass your query as parameter in double quotes''", Description = "SQL-запрос", Group = "adminCmdGroup", InsertDate = DateTime.Now }
+                new Command() { Name = "/Test".ToLowerInvariant(), Script = "SELECT 'Test'", Description = "Тестовый запрос к боту. Возвращает ''Test''", Group = "moderatorCmdGroup", InsertDate = DateTime.Now },
+                new Command() { Name = "/NullTest".ToLowerInvariant(), Script = "SELECT null", Description = "Тестовый запрос к боту. Возвращает NULL", Group = "moderatorCmdGroup", InsertDate = DateTime.Now },
+                new Command() { Name = "/Help".ToLowerInvariant(), Script = "SELECT bot.sf_cmd_get_help({0})", DefaultArgs = "<UserRoleCode>", Description = "Получение справки по доступным функциям", Group = "userCmdGroup", InsertDate = DateTime.Now },
+                new Command() { Name = "/SqlQuery".ToLowerInvariant(), Script = "select (with userQuery as ({0}) select json_agg(q) from userQuery q)", DefaultArgs = "select 'Pass your query as parameter in double quotes'", Description = "SQL-запрос", Group = "adminCmdGroup", InsertDate = DateTime.Now }
             });
         }
+
+        public static string GetOtherSqlScripts()
+        {
+            var resources = new[]
+            {
+                "StoredFunctions.sql",
+                "SequencesUpdate.sql"
+            };
+
+            var sb = new StringBuilder();
+            foreach (var resourceName in resources)
+            {
+                var sqlScript = Assembly.GetExecutingAssembly().ReadResource(resourceName);
+                sb.Append(sqlScript + Environment.NewLine);
+            }
+
+            return sb.ToString();
+        }
+
     }
 }

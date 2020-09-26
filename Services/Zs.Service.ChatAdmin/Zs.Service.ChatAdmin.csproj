@@ -21,15 +21,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Update="Model\SQL\OLD (DatabaseFirst)\T4 Create Database.sql">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>T4 Create Database.tt</DependentUpon>
-    </None>
-    <None Update="Model\SQL\OLD (DatabaseFirst)\T4 Create Database.tt">
-      <LastGenOutput>T4 Create Database.sql</LastGenOutput>
-      <Generator>TextTemplatingFileGenerator</Generator>
-    </None>
+    <None Remove="Model\SQL\StoredFunctions.sql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Model\SQL\StoredFunctions.sql" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="3.3.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -40,10 +39,10 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="3.1.8" />
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="3.1.8" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="3.1.8" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="3.1.8" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="3.1.8" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="5.0.0-rc.1.20451.14" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="5.0.0-rc.1.20451.14" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="5.0.0-rc.1.20451.14" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="5.0.0-rc.1.20451.14" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="3.1.4" />
   </ItemGroup>
 

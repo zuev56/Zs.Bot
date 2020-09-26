@@ -15,6 +15,7 @@ using Zs.Bot.Model.Data;
 using Zs.Common.Abstractions;
 using Zs.Common.Exceptions;
 using Zs.Common.Extensions;
+using Zs.Common.Helpers;
 
 namespace Zs.Bot.Modules.Command
 {
@@ -105,12 +106,11 @@ namespace Zs.Bot.Modules.Command
                             //который будет расшивровываться в этом блоке и обрабатываться определённым образом
                             //
                             //    ProcessSpecifiedParametres(...)
-
-                            var fromSql = ctx.Query.FromSqlRaw($"{queryWithParams}").AsEnumerable();
-
+                            
                             try
                             {
-                                cmdExecResult = fromSql.ToList()?[0]?.Result ?? "NULL";
+                                var connectionString = ctx.Database.GetDbConnection().ConnectionString;
+                                cmdExecResult = DbHelper.GetQueryResult(connectionString, queryWithParams) ?? "NULL";
                             }
                             catch (PostgresException pEx)
                             {
@@ -177,7 +177,7 @@ namespace Zs.Bot.Modules.Command
 
             foreach (var cp in concreteParams)
             {
-                int index = parameters.IndexOf(cp.Key);
+                int index = Array.IndexOf(parameters, cp.Key);
                 if (index >= 0)
                     parameters[index] = cp.Value;
             }
@@ -242,7 +242,8 @@ namespace Zs.Bot.Modules.Command
         internal ICommand GetDbCommand(string commandName)
         {
             using var ctx = _contextFactory.GetContext();
-            return ctx.Commands.FirstOrDefault(c => c.Name == commandName);
+            var test = ctx.Commands.Where(c => EF.Functions.Like(c.Name, commandName));
+            return ctx.Commands.Where(c => EF.Functions.Like(c.Name, commandName)).FirstOrDefault();
         }
 
     }

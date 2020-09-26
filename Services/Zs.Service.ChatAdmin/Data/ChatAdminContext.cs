@@ -1,8 +1,13 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
+using System.Reflection;
+using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Zs.Bot.Model;
 using Zs.Bot.Model.Data;
 using Zs.Service.ChatAdmin.Model;
+using Zs.Common.Extensions;
 
 namespace Zs.Service.ChatAdmin.Data
 {
@@ -35,6 +40,9 @@ namespace Zs.Service.ChatAdmin.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            //modelBuilder.UseCollation("SQL_Latin1_General_CP1_CI_AS");
+            modelBuilder.ForNpgsqlUseSerialColumns();
+
             BotContext.SetDefaultValues(modelBuilder);
             BotContext.SeedData(modelBuilder);
 
@@ -58,7 +66,27 @@ namespace Zs.Service.ChatAdmin.Data
 
         private void SeedData(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<Command>().HasData(new[]
+            {
+                new Command() { Name = "/GetUserStatistics".ToLowerInvariant(), Script = "SELECT zl.sf_cmd_get_full_statistics({0}, {1}, {2})", DefaultArgs = "15; now()::Date; now()", Description = "Получение статистики по активности участников всех чатов за определённый период", Group = "adminCmdGroup", InsertDate = DateTime.Now },
+            });
+        }
 
+        public static string GetOtherSqlScripts()
+        {
+            var resources = new[]
+            {
+                "StoredFunctions.sql"
+            };
+
+            var sb = new StringBuilder();
+            foreach (var resourceName in resources)
+            {
+                var sqlScript = Assembly.GetExecutingAssembly().ReadResource(resourceName);
+                sb.Append(sqlScript + Environment.NewLine);
+            }
+
+            return sb.ToString();
         }
     }
 }
