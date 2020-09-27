@@ -66,12 +66,12 @@ namespace Zs.Service.ChatAdmin
                     .ConfigureServices((hostContext, services) =>
                     {
                         services.AddDbContext<ChatAdminContext>(options =>
-                            options.UseNpgsql(hostContext.Configuration.GetConnectionString("ChatAdmin"))
+                            options.UseNpgsql(hostContext.Configuration.GetConnectionString("Default"))
                                    .EnableDetailedErrors(true)
                                    .EnableSensitiveDataLogging(true));
 
                         services.AddDbContext<BotContext>(options =>
-                            options.UseNpgsql(hostContext.Configuration.GetConnectionString("ChatAdmin"))
+                            options.UseNpgsql(hostContext.Configuration.GetConnectionString("Default"))
                                    .EnableDetailedErrors(true)
                                    .EnableSensitiveDataLogging(true));
 

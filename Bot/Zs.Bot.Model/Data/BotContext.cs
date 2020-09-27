@@ -41,7 +41,7 @@ namespace Zs.Bot.Model.Data
         
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.ForNpgsqlUseSerialColumns();
+            modelBuilder.UseSerialColumns();
 
             SetDefaultValues(modelBuilder);
             

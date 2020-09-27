@@ -5,7 +5,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Unicode;
 using Zs.Common.Extensions;
-using Zs.Service.Home.Model.Db;
+using Zs.Service.Home.Model;
 
 namespace Zs.Service.Home.Model.Vk
 {
@@ -39,7 +39,7 @@ namespace Zs.Service.Home.Model.Vk
         public Dictionary<string, JsonElement> RawData { get; set; }
 
 
-        public static explicit operator DbVkUser(ApiUser apiVkUser)
+        public static explicit operator VkUser(ApiUser apiVkUser)
         {
             var options = new JsonSerializerOptions
             {
@@ -48,7 +48,7 @@ namespace Zs.Service.Home.Model.Vk
                 Encoder = JavaScriptEncoder.Create(UnicodeRanges.All)
             };
 
-            return new DbVkUser()
+            return new VkUser()
             {
                 FirstName = apiVkUser.FirstName,
                 LastName = apiVkUser.LastName,

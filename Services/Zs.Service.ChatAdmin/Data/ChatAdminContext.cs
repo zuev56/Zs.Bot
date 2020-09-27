@@ -33,7 +33,7 @@ namespace Zs.Service.ChatAdmin.Data
             var configuration = new ConfigurationBuilder()
                 .AddJsonFile(Path.Combine(solutionDir, "PrivateConfiguration.json"), optional: false)
                 .Build();
-            var connectionString = configuration.GetConnectionString("ChatAdmin");
+            var connectionString = configuration.GetConnectionString("Default");
         
             optionsBuilder.UseNpgsql(connectionString);
         }
@@ -41,7 +41,7 @@ namespace Zs.Service.ChatAdmin.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             //modelBuilder.UseCollation("SQL_Latin1_General_CP1_CI_AS");
-            modelBuilder.ForNpgsqlUseSerialColumns();
+            modelBuilder.UseSerialColumns();
 
             BotContext.SetDefaultValues(modelBuilder);
             BotContext.SeedData(modelBuilder);

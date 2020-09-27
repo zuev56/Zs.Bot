@@ -13,7 +13,9 @@ using Zs.Common.Abstractions;
 using Zs.Common.Enums;
 using Zs.Common.Modules.CycleWorker;
 using Zs.Common.Modules.WebAPI;
-using Zs.Service.Home.Model.Db;
+using Zs.Service.Home.Model;
+using Zs.Service.Home.Model.Abstractions;
+using Zs.Service.Home.Model.Data;
 using Zs.Service.Home.Model.Vk;
 
 namespace Zs.Service.Home.Bot
@@ -23,13 +25,11 @@ namespace Zs.Service.Home.Bot
         private readonly IServiceProvider _serviceProvider;
         private readonly IConfiguration _configuration;
         private readonly IZsLogger _logger;
-        private readonly IContextFactory<BotContext> _botContextFactory;
-        private readonly IContextFactory<HomeDbContext> _homeContextFactory;
-        private readonly ZsBot _bot;
+        private readonly IContextFactory _contextFactory;
+        private readonly IZsBot _bot;
         private readonly CycleWorker _cycleWorker;
         //private readonly IConnectionAnalyser _connectionAnalyser;
         private readonly bool _detailedLogging;
-
         private readonly float _version;
         private readonly string _accessToken;
         private readonly int[] _userIds;
@@ -38,44 +38,26 @@ namespace Zs.Service.Home.Bot
         public UserWatcher(
             IServiceProvider serviceProvider,
             IConfiguration configuration,
+            IZsBot zsBot,
             IMessenger messenger,
-            IContextFactory<BotContext> botContextFactory,
-            IContextFactory<HomeDbContext> homeContextFactory,
+            IContextFactory contextFactory,
             IZsLogger logger)
         {
             try
             {
-                if (serviceProvider == null)
-                    throw new ArgumentNullException(nameof(serviceProvider));
-
-                if (configuration == null)
-                    throw new ArgumentNullException(nameof(configuration));
-
                 if (messenger is null)
                     throw new ArgumentNullException(nameof(messenger));
 
-                if (botContextFactory is null)
-                    throw new ArgumentNullException(nameof(botContextFactory));
-
-                if (homeContextFactory is null)
-                    throw new ArgumentNullException(nameof(homeContextFactory));
-
-                if (logger is null)
-                    throw new ArgumentNullException(nameof(logger));
-
-                _configuration = configuration;
-                _botContextFactory = botContextFactory;
-                _homeContextFactory = homeContextFactory;
-                _logger = logger;
-                _serviceProvider = serviceProvider;
+                _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+                _contextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
+                _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+                _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+                _bot = zsBot ?? throw new ArgumentNullException(nameof(zsBot));
 
                 _version = float.Parse(_configuration["Vk:Version"], CultureInfo.InvariantCulture);
                 _accessToken = _configuration["Vk:AccessToken"];
                 _userIds = _configuration.GetSection("Vk:UserIds").Get<int[]>();
-
                 bool.TryParse(_configuration["DetailedLogging"]?.ToString(), out _detailedLogging);
-
-                _bot = new ZsBot(_configuration, messenger, _botContextFactory, _logger);
 
                 _cycleWorker = new CycleWorker(_logger, _detailedLogging);
                 CreateJobs();
@@ -123,7 +105,7 @@ namespace Zs.Service.Home.Bot
                 TimeSpan.FromHours(1),
                 QueryResultType.String,
                 $"select vk.sf_cmd_get_not_active_users('{string.Join(',', _configuration.GetSection("Vk:TrackedUserIds").Get<int[]>())}', 24)",
-                _configuration.GetConnectionString("Home"),
+                _configuration.GetConnectionString("Default"),
                 startDate: DateTime.Now + TimeSpan.FromSeconds(5),
                 description: "informAboutNotActiveUsers24h"
                 );
@@ -132,7 +114,7 @@ namespace Zs.Service.Home.Bot
                 TimeSpan.FromHours(1),
                 QueryResultType.String,
                 $"select vk.sf_cmd_get_not_active_users('{string.Join(',', _configuration.GetSection("Vk:TrackedUserIds").Get<int[]>())}', 12)",
-                _configuration.GetConnectionString("Home"),
+                _configuration.GetConnectionString("Default"),
                 startDate: DateTime.Now + TimeSpan.FromSeconds(5),
                 description: "informAboutNotActiveUsers12h"
                 );
@@ -144,7 +126,7 @@ namespace Zs.Service.Home.Bot
                 + "\n from bot.logs"
                 + "\nwhere log_type in ('Warning', 'Error')"
                 + "\n  and insert_date > now() - interval '1 hour'",
-                _configuration.GetConnectionString("Home"),
+                _configuration.GetConnectionString("Default"),
                 startDate: Job.NextHour(),
                 description: "sendDayErrorsAndWarnings"
                 );
@@ -156,12 +138,10 @@ namespace Zs.Service.Home.Bot
                 + "\n from bot.logs"
                 + "\nwhere log_type in ('Warning', 'Error')"
                 + "\n  and insert_date > now() - interval '12 hours'",
-                _configuration.GetConnectionString("Home"),
+                _configuration.GetConnectionString("Default"),
                 startDate: DateTime.Today + TimeSpan.FromHours(24+10),
                 description: "sendNightErrorsAndWarnings"
                 );
-
-
 
             informAboutNotActiveUsers24h.ExecutionCompleted += Job_ExecutionCompleted;
             informAboutNotActiveUsers12h.ExecutionCompleted += Job_ExecutionCompleted;
@@ -192,24 +172,25 @@ namespace Zs.Service.Home.Bot
         {
             try
             {
+                using var homeContext = _contextFactory.GetHomeContext();
+
                 //https://api.vk.com/method/users.get?user_ids=8790237,1234567&fields=online&access_token=cf11cfd68111cfe68111cf89bf1a6bb54b1a3fad6d&v=5.122
-                //var url = $"https://api.vk.com/method/users.get?user_ids={string.Join(',',_userIds)}&fields=photo_id,verified,sex,bdate,city,country,home_town,photo_max_orig,online,domain,has_mobile,contacts,site,education,universities,schools,status,last_seen,followers_count,occupation,nickname,relatives,relation,personal,connections,exports,activities,interests,music,movies,tv,books,games,about,quotes,can_post,can_see_all_posts,can_see_audio,can_write_private_message,can_send_friend_request,is_favorite,is_hidden_from_feed,timezone,screen_name,maiden_name,is_friend,friend_status,career,military,blacklisted,blacklisted_by_me,can_be_invited_group&access_token={_accessToken}&v={_version}";
-                var url = $"https://api.vk.com/method/users.get?user_ids={string.Join(',',_userIds)}&fields=online,online_mobile,online_app,last_seen&access_token={_accessToken}&v={_version.ToString(CultureInfo.InvariantCulture)}";
+                var url = homeContext.VkUsers.Any()
+                    ? $"https://api.vk.com/method/users.get?user_ids={string.Join(',',_userIds)}&fields=online,online_mobile,online_app,last_seen&access_token={_accessToken}&v={_version.ToString(CultureInfo.InvariantCulture)}"
+                    : $"https://api.vk.com/method/users.get?user_ids={string.Join(',', _userIds)}&fields=photo_id,verified,sex,bdate,city,country,home_town,photo_max_orig,online,domain,has_mobile,contacts,site,education,universities,schools,status,last_seen,followers_count,occupation,nickname,relatives,relation,personal,connections,exports,activities,interests,music,movies,tv,books,games,about,quotes,can_post,can_see_all_posts,can_see_audio,can_write_private_message,can_send_friend_request,is_favorite,is_hidden_from_feed,timezone,screen_name,maiden_name,is_friend,friend_status,career,military,blacklisted,blacklisted_by_me,can_be_invited_group&access_token={_accessToken}&v={_version}";
 
                 //var str = await ApiHelper.GetResponce(url);
                 var response = await ApiHelper.GetResponce<ApiResponse>(url, throwOnError: true);
-
-                using var ctx = _homeContextFactory.GetContext();
 
                 if (response is null)
                 {
                     // Для всех пользователей создаём записи в журнале
                     // с неопределённым статусом, если они ещё не созданы
-                    var users = ctx.Users.ToList();
-                    users.ForEach(u => ctx.ActivityLog.Add(
-                        new DbVkActivityLog()
+                    var users = homeContext.VkUsers.ToList();
+                    users.ForEach(u => homeContext.VkActivityLog.Add(
+                        new VkActivityLog()
                         {
-                            UserId = u.UserId,
+                            UserId = u.Id,
                             IsOnlineMobile = false,
                             LastSeen = -1,
                             IsOnline = null,
@@ -222,16 +203,16 @@ namespace Zs.Service.Home.Bot
 
                 foreach (var user in response.Users)
                 {
-                    var dbUser = ctx.Users.FromSqlRaw($"select * from vk.users where cast(raw_data ->> 'id' as integer) = {user.Id}").FirstOrDefault();
+                    var dbUser = homeContext.VkUsers.FromSqlRaw($"select * from vk.users where cast(raw_data ->> 'id' as integer) = {user.Id}").FirstOrDefault();
                     if (dbUser is null)
                     {
-                        ctx.Users.Add((DbVkUser)user);
-                        ctx.SaveChanges();
-                        dbUser = ctx.Users.FromSqlRaw($"select * from vk.users where cast(raw_data ->> 'id' as integer) = {user.Id}").FirstOrDefault();
+                        homeContext.VkUsers.Add((VkUser)user);
+                        homeContext.SaveChanges();
+                        dbUser = homeContext.VkUsers.FromSqlRaw($"select * from vk.users where cast(raw_data ->> 'id' as integer) = {user.Id}").FirstOrDefault();
                     }
 
-                    var lastActivityDbItem = ctx.ActivityLog.OrderByDescending(l => l.ActivityLogId)
-                        .FirstOrDefault(l => l.UserId == dbUser.UserId);
+                    var lastActivityDbItem = homeContext.VkActivityLog.OrderByDescending(l => l.Id)
+                        .FirstOrDefault(l => l.UserId == dbUser.Id);
 
                     var currentOnlineStatus = user.Online == 1 ? true : false;
                     var currentMobileStatus = user.OnlineMobile == 1 ? true : false;
@@ -242,9 +223,9 @@ namespace Zs.Service.Home.Bot
                         || lastActivityDbItem.IsOnlineMobile != currentMobileStatus
                         || lastActivityDbItem.OnlineApp != currentApp)
                     {
-                        ctx.ActivityLog.Add(new DbVkActivityLog()
+                        homeContext.VkActivityLog.Add(new VkActivityLog()
                         {
-                            UserId = dbUser.UserId,
+                            UserId = dbUser.Id,
                             IsOnline = currentOnlineStatus,
                             IsOnlineMobile = currentMobileStatus,
                             OnlineApp = user.OnlineApp,
@@ -254,8 +235,8 @@ namespace Zs.Service.Home.Bot
                     }
                 }
 
-                if (ctx.ChangeTracker.HasChanges())
-                    ctx.SaveChanges();
+                if (homeContext.ChangeTracker.HasChanges())
+                    homeContext.SaveChanges();
             }
             catch (Exception ex)
             {

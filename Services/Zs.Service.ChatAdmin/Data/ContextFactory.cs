@@ -37,7 +37,7 @@ namespace Zs.Service.ChatAdmin.Data
             var configuration = new ConfigurationBuilder()
                 .AddJsonFile(Path.Combine(solutionDir, "PrivateConfiguration.json"), optional: true)
                 .Build();
-            var connectionString = configuration.GetConnectionString("ChatAdmin");
+            var connectionString = configuration.GetConnectionString("Default");
 
             var optionsBuilder = new DbContextOptionsBuilder<ChatAdminContext>();
             optionsBuilder.UseNpgsql(connectionString);

@@ -4,7 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Zs.Service.Home.Model.Db;
+using Zs.Service.Home.Model.Data;
+using Zs.Service.Home.Model;
 
 namespace Zs.Service.Home.Web
 {
@@ -22,8 +23,8 @@ namespace Zs.Service.Home.Web
         {
             services.AddControllers();
 
-            services.AddDbContext<HomeDbContext>(options =>
-                options.UseNpgsql(Configuration.GetConnectionString("Home"))
+            services.AddDbContext<HomeContext>(options =>
+                options.UseNpgsql(Configuration.GetConnectionString("Default"))
                        .EnableDetailedErrors(true)
                        .EnableSensitiveDataLogging(true));
 
