@@ -33,7 +33,6 @@ namespace Zs.Service.ChatAdmin
         private readonly IConnectionAnalyser _connectionAnalyser;
         private readonly IContextFactory<BotContext> _botContextFactory;
         private readonly IContextFactory _contextFactory;
-
         private readonly bool _detailedLogging;
 
 
@@ -140,7 +139,7 @@ namespace Zs.Service.ChatAdmin
                 TimeSpan.FromDays(1),
                 QueryResultType.String,
                 $"select zl.sf_cmd_get_full_statistics(10, now()::date - interval '1 day', now()::date - interval '1 millisecond')",
-                _configuration.GetConnectionString("ChatAdmin"),
+                _configuration.GetConnectionString("Default"),
                 startDate: DateTime.Now.Date + TimeSpan.FromHours(24+10),
                 description: "sendYesterdaysStatistics"
             );
@@ -159,7 +158,7 @@ namespace Zs.Service.ChatAdmin
                 + "\n from bot.logs"
                 + "\nwhere log_type in ('Warning', 'Error')"
                 + "\n  and insert_date > now() - interval '1 hour'",
-                _configuration.GetConnectionString("ChatAdmin"),
+                _configuration.GetConnectionString("Default"),
                 startDate: Job.NextHour(),
                 description: "sendDayErrorsAndWarnings"
             );
@@ -171,7 +170,7 @@ namespace Zs.Service.ChatAdmin
                 + "\n from bot.logs"
                 + "\nwhere log_type in ('Warning', 'Error')"
                 + "\n  and insert_date > now() - interval '12 hours'",
-                _configuration.GetConnectionString("ChatAdmin"),
+                _configuration.GetConnectionString("Default"),
                 startDate: DateTime.Today + TimeSpan.FromHours(24+10),
                 description: "sendNightErrorsAndWarnings"
             );
