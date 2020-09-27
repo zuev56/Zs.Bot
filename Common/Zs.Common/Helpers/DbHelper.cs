@@ -30,9 +30,12 @@ namespace Zs.Common.Helpers
                 connection.Close();
                 return null;
             }
+            catch (InvalidCastException icex)
+            {
+                return null;
+            }
             catch (Exception ex)
             {
-
                 throw;
             }
 
