@@ -43,8 +43,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.Service.Home.Bot", "Serv
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.Service.Home.Web", "Services\Zs.Service.Home\Zs.Service.Home.Web\Zs.Service.Home.Web.csproj", "{A5B6CE95-3663-4CFD-95D8-FBAB998CB47C}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MyTestAPI", "Services\Zs.Service.Home\MyTestAPI\MyTestAPI.csproj", "{2AD27B95-06DB-4331-938F-2D6D88209D74}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.Service.Home.Model", "Services\Zs.Service.Home\Zs.Service.Home.Model\Zs.Service.Home.Model.csproj", "{BC1C3D76-A322-4F5A-B445-CBC3D8FA85FB}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.Bot.Model", "Bot\Zs.Bot.Model\Zs.Bot.Model.csproj", "{158BBAF1-0A1B-4D02-B180-3F55D5C56D62}"
