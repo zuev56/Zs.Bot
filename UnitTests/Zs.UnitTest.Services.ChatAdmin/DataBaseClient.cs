@@ -20,7 +20,7 @@ namespace Zs.UnitTest.Services.ChatAdmin
         {
             var solutionDir = Common.Helpers.Path.TryGetSolutionPath();
             var configuration = new ConfigurationBuilder().AddJsonFile(Path.Combine(solutionDir,"PrivateConfiguration.json"), true, true).Build();
-            _connectionString = configuration.GetConnectionString("ChatAdmin");
+            _connectionString = configuration.GetConnectionString("Default");
 
             var botOptionsBuilder = new DbContextOptionsBuilder<BotContext>();
             botOptionsBuilder.UseNpgsql(_connectionString);

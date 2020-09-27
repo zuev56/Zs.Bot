@@ -14,9 +14,12 @@ using Zs.Bot.Modules.Messaging;
 using Zs.Common.Abstractions;
 using Zs.Common.Extensions;
 using Zs.Common.Modules.Connectors;
-using Zs.Service.Home.Model.Db;
+using Zs.Service.Home.Model.Data;
+using Zs.Service.Home.Model;
 using BotContextFactory = Zs.Bot.Model.Factories.BotContextFactory;
 using HomeContextFactory = Zs.Service.Home.Model.ContextFactory;
+using Zs.Service.Home.Model.Abstractions;
+using Zs.Bot;
 
 namespace Zs.Service.Home.Bot
 {
@@ -70,23 +73,23 @@ namespace Zs.Service.Home.Bot
                     })
                     .ConfigureServices((hostContext, services) =>
                     {
-                        services.AddSingleton<IZsLogger, Logger>(sp => new Logger(sp.GetService<IContextFactory<BotContext>>()));
+                        services.AddDbContext<HomeContext>(options =>
+                            options.UseNpgsql(hostContext.Configuration.GetConnectionString("Default"))
+                                   .EnableDetailedErrors(true)
+                                   .EnableSensitiveDataLogging(true));
 
                         services.AddDbContext<BotContext>(options  =>
-                            options.UseNpgsql(hostContext.Configuration.GetConnectionString("Home"))
+                            options.UseNpgsql(hostContext.Configuration.GetConnectionString("Default"))
                                    .EnableDetailedErrors(true)
                                    .EnableSensitiveDataLogging(true));
 
-                        services.AddDbContext<HomeDbContext>(options =>
-                            options.UseNpgsql(hostContext.Configuration.GetConnectionString("Home"))
-                                   .EnableDetailedErrors(true)
-                                   .EnableSensitiveDataLogging(true));
+                        services.AddSingleton<IContextFactory, HomeContextFactory>(sp =>
+                            new HomeContextFactory(sp.GetService<DbContextOptions<BotContext>>(), sp.GetService<DbContextOptions<HomeContext>>()));
 
                         services.AddSingleton<IContextFactory<BotContext>, BotContextFactory>(sp =>
                             new BotContextFactory(sp.GetService<DbContextOptions<BotContext>>()));
 
-                        services.AddSingleton<IContextFactory<HomeDbContext>, HomeContextFactory>(sp =>
-                            new HomeContextFactory(sp.GetService<DbContextOptions<HomeDbContext>>()));
+                        services.AddSingleton<IZsLogger, Logger>(sp => new Logger(sp.GetService<IContextFactory<BotContext>>()));
 
                         services.AddScoped<IConnectionAnalyser, ConnectionAnalyser>(sp =>
                         {
@@ -106,7 +109,15 @@ namespace Zs.Service.Home.Bot
                                 sp.GetService<IZsLogger>(),
                                 sp.GetService<IConnectionAnalyser>().WebProxy)
                             );
-                        
+
+                        services.AddSingleton<IZsBot, ZsBot>(sp =>
+                            new ZsBot(
+                                sp.GetService<IConfiguration>(),
+                                sp.GetService<IMessenger>(),
+                                sp.GetService<IContextFactory<BotContext>>(),
+                                sp.GetService<IZsLogger>())
+                            );
+
                         services.AddSingleton<IHostedService, UserWatcher>(x =>
                             ActivatorUtilities.CreateInstance<UserWatcher>(x));
                     });

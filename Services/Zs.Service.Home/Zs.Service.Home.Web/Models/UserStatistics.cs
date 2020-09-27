@@ -4,7 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Text.Json.Serialization;
 using Zs.Common.Extensions;
-using Zs.Service.Home.Model.Db;
+using Zs.Service.Home.Model.Abstractions;
+using Zs.Service.Home.Model;
 
 namespace Zs.Service.Home.Web.Models
 {
@@ -31,7 +32,7 @@ namespace Zs.Service.Home.Web.Models
         public string BrowserActivity => $"{BrowserActivityTime.Days} {BrowserActivityTime.Hours}:{BrowserActivityTime.Minutes}:{BrowserActivityTime.Seconds}";
 
         public static UserStatistics GetUserStatistics(
-            int dbUserId, string userName, IEnumerable<IActivityLog> log)
+            int dbUserId, string userName, IEnumerable<IVkActivityLog> log)
         {
             if (log == null)
                 throw new ArgumentNullException(nameof(log));

@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
-namespace Zs.Service.Home.Model.Vk
+namespace Zs.Service.Home.Model.VkAPI
 {
     public class ApiResponse
     {
