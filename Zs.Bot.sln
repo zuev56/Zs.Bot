@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.Bot", "Bot\Zs.Bot\Zs.Bot
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.Bot.Messenger.Telegram", "Bot\Messengers\Zs.Bot.Messenger.Telegram\Zs.Bot.Messenger.Telegram.csproj", "{68E24E7A-C999-4CA7-B44F-D09FE1449416}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.Service.ChatAdmin", "Services\Zs.Service.ChatAdmin\Zs.Service.ChatAdmin.csproj", "{9B847C34-A8CA-4A0A-A497-5DBE168F541E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.App.ChatAdmin", "Apps\Zs.App.ChatAdmin\Zs.App.ChatAdmin.csproj", "{9B847C34-A8CA-4A0A-A497-5DBE168F541E}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.UnitTest.Bot", "UnitTests\Zs.UnitTest.Bot\Zs.UnitTest.Bot.csproj", "{186B00E5-63F1-4650-9A2A-735039E287A7}"
 EndProject
@@ -15,7 +15,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.UnitTest.Tools", "UnitTe
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Messengers", "Messengers", "{B217690F-F059-4F92-B4C1-BFF40C87EC3D}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Services", "Services", "{6ABB3FF5-110B-42CA-A78E-1414529F472D}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Apps", "Apps", "{6ABB3FF5-110B-42CA-A78E-1414529F472D}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "UnitTests", "UnitTests", "{02EF059F-71AD-409E-A7F1-FBB90959890A}"
 EndProject
@@ -23,7 +23,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Bot", "Bot", "{E77CA16B-EA0
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{3FAF192A-78FD-454E-A32D-0AE923DB24D1}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.UnitTest.Services.ChatAdmin", "UnitTests\Zs.UnitTest.Services.ChatAdmin\Zs.UnitTest.Services.ChatAdmin.csproj", "{5E658E9C-AA4D-42C9-9EFA-D0BE60E537C3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.UnitTest.App.ChatAdmin", "UnitTests\Zs.UnitTest.App.ChatAdmin\Zs.UnitTest.App.ChatAdmin.csproj", "{5E658E9C-AA4D-42C9-9EFA-D0BE60E537C3}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.Common", "Common\Zs.Common\Zs.Common.csproj", "{B047D3FF-44B7-4507-AA36-FD8306D27AE6}"
 EndProject
@@ -37,13 +37,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Api", "Api", "{9C4F1BF3-3AEA-4FD5-85AC-13ACE38A5357}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Zs.Service.Home", "Zs.Service.Home", "{AD5D1E3A-1744-476A-A684-F5427694E0E3}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Zs.App.Home", "Zs.App.Home", "{AD5D1E3A-1744-476A-A684-F5427694E0E3}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.Service.Home.Bot", "Services\Zs.Service.Home\Zs.Service.Home.Bot\Zs.Service.Home.Bot.csproj", "{1E35FCAD-981F-4FFF-9DDE-EB1A40D38853}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.App.Home.Bot", "Apps\Zs.App.Home\Zs.App.Home.Bot\Zs.App.Home.Bot.csproj", "{1E35FCAD-981F-4FFF-9DDE-EB1A40D38853}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.Service.Home.Web", "Services\Zs.Service.Home\Zs.Service.Home.Web\Zs.Service.Home.Web.csproj", "{A5B6CE95-3663-4CFD-95D8-FBAB998CB47C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.App.Home.Web", "Apps\Zs.App.Home\Zs.App.Home.Web\Zs.App.Home.Web.csproj", "{A5B6CE95-3663-4CFD-95D8-FBAB998CB47C}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.Service.Home.Model", "Services\Zs.Service.Home\Zs.Service.Home.Model\Zs.Service.Home.Model.csproj", "{BC1C3D76-A322-4F5A-B445-CBC3D8FA85FB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.App.Home.Model", "Apps\Zs.App.Home\Zs.App.Home.Model\Zs.App.Home.Model.csproj", "{BC1C3D76-A322-4F5A-B445-CBC3D8FA85FB}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.Bot.Model", "Bot\Zs.Bot.Model\Zs.Bot.Model.csproj", "{158BBAF1-0A1B-4D02-B180-3F55D5C56D62}"
 EndProject
