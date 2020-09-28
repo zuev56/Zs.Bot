@@ -17,7 +17,7 @@ using Zs.Common.Exceptions;
 using Zs.Common.Extensions;
 using Zs.Common.Helpers;
 
-namespace Zs.Bot.Modules.Command
+namespace Zs.Bot.Services.Command
 {
     /// <summary>
     /// Handles commands

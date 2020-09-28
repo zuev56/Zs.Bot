@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Zs.Bot.Model.Abstractions;
 using Zs.Bot.Model;
 
-namespace Zs.Bot.Modules.Command
+namespace Zs.Bot.Services.Command
 {
     /// <summary>
     /// Команда, которую понимает бот. 

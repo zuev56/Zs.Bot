@@ -2,7 +2,7 @@
 using Zs.Bot.Model.Abstractions;
 using Zs.Common.Enums;
 
-namespace Zs.Bot.Modules.Messaging
+namespace Zs.Bot.Services.Messaging
 {
     public class MessageActionEventArgs : EventArgs
     {

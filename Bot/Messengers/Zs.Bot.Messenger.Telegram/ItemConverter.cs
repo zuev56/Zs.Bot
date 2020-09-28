@@ -5,7 +5,7 @@ using System.Text.Unicode;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Zs.Bot.Model.Abstractions;
-using Zs.Bot.Modules.Messaging;
+using Zs.Bot.Services.Messaging;
 using Zs.Common.Extensions;
 using TgChatType = Telegram.Bot.Types.Enums.ChatType;
 

@@ -1,7 +1,7 @@
 ﻿using Zs.Bot.Model.Abstractions;
 using Zs.Common.Enums;
 
-namespace Zs.Bot.Modules.Messaging
+namespace Zs.Bot.Services.Messaging
 {
     /// <summary> Converts specific types to general types </summary>
     public interface IToGenegalItemConverter

@@ -7,7 +7,7 @@ using Zs.Bot.Model.Data;
 using Zs.Common.Abstractions;
 using Zs.Common.Enums;
 
-namespace Zs.Bot.Modules.Logging
+namespace Zs.Bot.Services.Logging
 {
     public class Logger : IZsLogger
     {

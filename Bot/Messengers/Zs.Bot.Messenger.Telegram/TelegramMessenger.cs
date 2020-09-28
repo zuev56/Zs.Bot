@@ -13,7 +13,7 @@ using Telegram.Bot.Types.Enums;
 using Zs.Bot.Helpers;
 using Zs.Bot.Model.Abstractions;
 using Zs.Bot.Model.Data;
-using Zs.Bot.Modules.Messaging;
+using Zs.Bot.Services.Messaging;
 using Zs.Common.Abstractions;
 using Zs.Common.Enums;
 using TelegramChat = Telegram.Bot.Types.Chat;

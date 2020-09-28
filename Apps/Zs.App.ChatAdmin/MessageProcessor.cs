@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Zs.Bot.Model.Abstractions;
-using Zs.Bot.Modules.Messaging;
+using Zs.Bot.Services.Messaging;
 using Zs.Common.Abstractions;
 using Zs.Common.Helpers;
 using Zs.App.ChatAdmin.Abstractions;

@@ -8,14 +8,14 @@
 //using Zs.Bot.Helpers;
 //using Zs.Bot.Messenger.Telegram;
 //using Zs.Bot.Model.Db;
-//using Zs.Bot.Modules.Logging;
+//using Zs.Bot.Services.Logging;
 
 //namespace Zs.UnitTest.Bot
 //{
 //    [TestClass]
 //    public class TelegramMessengerTest : DataBaseClient
 //    {
-//        private Zs.Bot.Modules.Messaging.IMessenger _messenger;
+//        private Zs.Bot.Services.Messaging.IMessenger _messenger;
 
 //        public TelegramMessengerTest()
 //        {

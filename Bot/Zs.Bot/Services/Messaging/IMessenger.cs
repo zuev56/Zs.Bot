@@ -1,7 +1,7 @@
 ﻿using System;
 using Zs.Bot.Model.Abstractions;
 
-namespace Zs.Bot.Modules.Messaging
+namespace Zs.Bot.Services.Messaging
 {
     /// <summary>
     /// General interface for all messengers
