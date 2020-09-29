@@ -11,6 +11,8 @@ using Zs.Common.Abstractions;
 using Zs.Bot.Model.Data;
 using Zs.App.Home.Model.Abstractions;
 using Zs.Bot.Model.Factories;
+using BotContextFactory = Zs.Bot.Model.Factories.BotContextFactory;
+using HomeContextFactory = Zs.App.Home.Model.ContextFactory;
 
 namespace Zs.App.Home.Web
 {
@@ -29,14 +31,23 @@ namespace Zs.App.Home.Web
             services.AddControllers();
 
             services.AddDbContext<HomeContext>(options =>
-                            options.UseNpgsql(Configuration.GetConnectionString("Default"))
-                                   .EnableDetailedErrors(true)
-                                   .EnableSensitiveDataLogging(true));
+                options.UseNpgsql(Configuration.GetConnectionString("Default"))
+                       .EnableDetailedErrors(true)
+                       .EnableSensitiveDataLogging(true));
 
-            services.AddSingleton<IContextFactory<HomeContext>, HomeContextFactory>(sp =>
-                new HomeContextFactory(sp.GetService<DbContextOptions<HomeContext>>()));
+            services.AddDbContext<BotContext>(options =>
+                options.UseNpgsql(Configuration.GetConnectionString("Default"))
+                       .EnableDetailedErrors(true)
+                       .EnableSensitiveDataLogging(true));
 
-            services.AddSingleton<IVkActivityService, VkActivityService>();
+            services.AddScoped<IVkActivityService, VkActivityService>(sp => 
+            {
+                var contextFactory = new HomeContextFactory(
+                    sp.GetService<DbContextOptions<BotContext>>(),
+                    sp.GetService<DbContextOptions<HomeContext>>());
+
+                return new VkActivityService(contextFactory);
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

@@ -34,6 +34,7 @@ namespace Zs.App.Home.Web.Models
         public static UserStatistics GetUserStatistics(
             int dbUserId, string userName, IEnumerable<IVkActivityLog> log)
         {
+#warning АЛГОРИТМ ДОЛЖЕН БЫТЬ ПЕРЕСМОТРЕН!
             if (log == null)
                 throw new ArgumentNullException(nameof(log));
 
@@ -45,15 +46,17 @@ namespace Zs.App.Home.Web.Models
             var activitySecMobile = 0d;
             if (userLog.Any())
             {
+                // ПРОВЕРКА НЕ АКТУАЛЬНА В СВЯЗИ С ОТДЕЛЬНЫМ УЧЁТОМ 
+                // ВРЕМЕНИ В БРАУЗЕРЕ И В ПРИЛОЖЕНИИ
                 // Проверка:
                 //  список начинается с IsOnline == true
                 //  все чётные элементы (c [0]) IsOnline == true
                 //  все нечётные элементы IsOnline == false
-                if (userLog.Any() && userLog[0].IsOnline != true)
-                    throw new InvalidDataException($"{nameof(userLog)} must starts with 'IsOnline == true'!");
-
-                if (userLog.Where((l, i) => i % 2 != 0).Any(l => l.IsOnline != false))
-                    throw new InvalidDataException($"{nameof(userLog)} must contains only 'IsOnline == true' odd elements");
+                //if (userLog.Any() && userLog[0].IsOnline != true)
+                //    throw new InvalidDataException($"{nameof(userLog)} must starts with 'IsOnline == true'!");
+                //
+                //if (userLog.Where((l, i) => i % 2 != 0).Any(l => l.IsOnline != false))
+                //    throw new InvalidDataException($"{nameof(userLog)} must contains only 'IsOnline == true' odd elements");
 
                 if (userLog.Where((l, i) => i % 2 == 0).Any(l => l.IsOnline != true))
                     throw new InvalidDataException($"{nameof(userLog)} must contains only 'IsOnline == false' even elements");
