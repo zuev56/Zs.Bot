@@ -10,6 +10,9 @@ using Zs.Common.Extensions;
 using Zs.App.Home.Model;
 using Zs.App.Home.Model.Data;
 using Zs.App.Home.Web.Models;
+using Zs.Common.Abstractions;
+using Zs.App.Home.Model.Abstractions;
+using Zs.App.Home.Web.Services;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -19,23 +22,29 @@ namespace Zs.App.Home.Web.Controllers
     [ApiController]
     public class ActivityLogController : ControllerBase
     {
-        private readonly DbContextOptions<HomeContext> _dbContextOptions;
+        private readonly IVkActivityService _vkActivityService;
+        private readonly IZsLogger _logger;
 
-        public ActivityLogController(IServiceProvider serviceProvider)
+        public ActivityLogController(IVkActivityService vkActivityService)
         {
-            _dbContextOptions = serviceProvider.GetService<DbContextOptions<HomeContext>>();
+            _vkActivityService = vkActivityService ?? throw new ArgumentNullException(nameof(vkActivityService));
+            //_logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         // GET: api/<ActivityLogController>
         [HttpGet]
-        public async Task<IEnumerable<VkActivityLog>> Get()
+        public async Task<IActionResult> Get()
         {
-            //Вывод 20-ти последних операций
-            using var ctx = new HomeContext(_dbContextOptions);
-
-            return await ctx.VkActivityLog.Where(i => i.InsertDate < DateTime.Now - TimeSpan.FromSeconds(60))
-                .OrderByDescending(i => i.InsertDate)
-                .Take(10).ToListAsync();
+            try
+            {
+                var result = await _vkActivityService.GetLastActivity(10);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                //_logger.LogError(ex, nameof(ActivityLogController));
+                return StatusCode(500);
+            }
         }
 
         // GET api/<ActivityLogController>/5
@@ -44,77 +53,16 @@ namespace Zs.App.Home.Web.Controllers
         {
             try
             {
-                var list = new List<UserStatistics>();
+                var fromDate = DateTime.Today - TimeSpan.FromDays(1);
+                var toDate = DateTime.Today - TimeSpan.FromDays(2);
 
-                if (id > 0)
-                {
-
-                    using var ctx = new HomeContext(_dbContextOptions);
-                    var dbUserId = ctx.VkUsers
-                    .FromSqlRaw($"select * from vk.users where cast(raw_data ->> 'id' as int) = {id} limit 1")
-                    .FirstOrDefault()?.Id ?? -1;
-
-                    for (int i = 1; i > 0; i--)
-                    {
-                        var fromDate = DateTime.Today - TimeSpan.FromDays(i);
-                        var toDate = DateTime.Today - TimeSpan.FromDays(i - 1);
-
-                        var log = await ctx.VkActivityLog.Where(l => l.UserId == dbUserId
-                         && l.LastSeen >= fromDate.ToUnixEpoch()
-                         && l.LastSeen <= toDate.ToUnixEpoch())
-                        .ToListAsync();
-                        var user = await ctx.VkUsers.FirstOrDefaultAsync(u =>u.Id == dbUserId);
-
-                        list.Add(UserStatistics.GetUserStatistics(dbUserId, $"{user.FirstName} {user.LastName}", log));
-                    }
-                    return new ObjectResult(list);
-                }
-                else
-                {
-                    var fromDate = DateTime.Today - TimeSpan.FromDays(1);
-                    var toDate = DateTime.Today - TimeSpan.FromDays(0);
-
-                    var bag = new ConcurrentBag<UserStatistics>();
-                    var users = default(List<VkUser>);
-
-                    using (var ctx = new HomeContext(_dbContextOptions))
-                        users = await ctx.VkUsers.ToListAsync();
-
-                    var pOptions = new ParallelOptions()
-                    {
-                        MaxDegreeOfParallelism = Environment.ProcessorCount
-                    };
-
-                    Parallel.ForEach(users, pOptions, user =>
-                    {
-                        using (var ctx = new HomeContext(_dbContextOptions))
-                        {
-                            var log = ctx.VkActivityLog.Where(l => l.UserId == user.Id
-                             && l.LastSeen.FromUnixEpoch() >= fromDate
-                             && l.LastSeen.FromUnixEpoch() <= toDate)
-                            .ToList();
-                            bag.Add(UserStatistics.GetUserStatistics(user.Id, $"{user.FirstName} {user.LastName}", log));
-                        }
-                    });
-                    //list.Clear();
-                    //foreach (var user in users)
-                    //{
-                    //    using (var ctx = new HomeDbContext(_dbContextOptions))
-                    //    {
-                    //        var log = await ctx.ActivityLog.Where(l => l.UserId == user.UserId
-                    //             && l.LastSeenGmt >= fromDate && l.LastSeenGmt <= toDate))
-                    //            .ToListAsync();
-                    //        list.Add(UserStatistics.GetUserStatistics(user.UserId, $"{user.FirstName} {user.LastName}", log));
-                    //    }
-                    //}
-
-                    return new ObjectResult(
-                        bag.OrderByDescending(s => s.FullActivityTime).ToList());
-                }
+                var result = await _vkActivityService.GetUserStatistics(10, fromDate, toDate);
+                return Ok(result);
             }
             catch (Exception ex)
             {
-                return new ObjectResult(ex);
+                //_logger.LogError(ex, nameof(ActivityLogController));
+                return StatusCode(500);
             }
         }
 
