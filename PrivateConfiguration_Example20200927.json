@@ -1,5 +1,5 @@
 {
-  "BotToken": "1344930378:AAGvwwty657i3sO6Z7N0y3L-fMhTW_0ocnc",
+  "BotToken": "1234567890:YourBotToken-fMhTW_0ocnc",
   "DefaultChatId": 2,
   "MessageLimitHi": 3,
   "MessageLimitHiHi": 5,
@@ -13,7 +13,7 @@
 
   "Vk": {
     "Version": 5.122,
-    "AccessToken": "d68611cfd68111cfd681124cd6f29db3dd681d68116f1a65bd1bb5423fad6d",
+    "AccessToken": "d686YourVkAccessTocken6f29db3dd681d68116f1a65bd1bb5423fad6d",
     "UserIds": [ 8790237 ],
     "TrackedUserIds": [ 8790237 ]
   }
