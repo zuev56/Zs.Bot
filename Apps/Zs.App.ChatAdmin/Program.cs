@@ -114,7 +114,7 @@ namespace Zs.App.ChatAdmin
                             ActivatorUtilities.CreateInstance<ChatAdmin>(sp));
                 });
 
-                await builder.RunConsoleAsync().ConfigureAwait(false);
+                await builder.RunConsoleAsync();
             }
             catch (Exception ex)
             {
@@ -125,7 +125,7 @@ namespace Zs.App.ChatAdmin
                 if (_reloadCounter < 3)
                 {
                     Thread.Sleep(1000);
-                    await ServiceLoader(configPath).ConfigureAwait(false);
+                    await ServiceLoader(configPath);
                 }
 
                 Console.ReadLine();

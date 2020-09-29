@@ -23,7 +23,6 @@ namespace Zs.Bot.Model.Data
         public DbSet<MessengerInfo> Messengers { get; set; }
         public DbSet<UserRole> UserRoles { get; set; }
         public DbSet<User> Users { get; set; }
-        //public DbSet<DbQuery> Query { get; set; }
 
         public BotContext()
         {
@@ -34,29 +33,12 @@ namespace Zs.Bot.Model.Data
         {
         }
 
-        public BotContext(DbContextOptions options)
-            : base(options)
-        {
-        }
-        
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.UseSerialColumns();
 
             SetDefaultValues(modelBuilder);
-            
             SeedData(modelBuilder);
-
-            //modelBuilder.Entity<Bot>().ToTable("bots", "bot");
-            //modelBuilder.Entity<ChatType>().ToTable("chat_types", "bot");
-            //modelBuilder.Entity<Chat>().ToTable("chats", "bot");
-            //modelBuilder.Entity<Command>().ToTable("commands", "bot");
-            //modelBuilder.Entity<Log>().ToTable("logs");
-            //modelBuilder.Entity<MessageType>().ToTable("message_types", "bot");
-            //modelBuilder.Entity<Message>().ToTable("messages", "bot");
-            //modelBuilder.Entity<MessengerInfo>().ToTable("messengers", "bot");
-            //modelBuilder.Entity<UserRole>().ToTable("user_roles", "bot");
-            //modelBuilder.Entity<User>().ToTable("users", "bot");
         }
 
         public static void SetDefaultValues(ModelBuilder modelBuilder)
@@ -86,7 +68,6 @@ namespace Zs.Bot.Model.Data
 
             modelBuilder.Entity<Command>().Property(b => b.UpdateDate).HasDefaultValueSql("now()");
             modelBuilder.Entity<Command>().Property(b => b.InsertDate).HasDefaultValueSql("now()");
-
         }
 
         public static void SeedData(ModelBuilder modelBuilder)
@@ -171,6 +152,5 @@ namespace Zs.Bot.Model.Data
 
             return sb.ToString();
         }
-
     }
 }

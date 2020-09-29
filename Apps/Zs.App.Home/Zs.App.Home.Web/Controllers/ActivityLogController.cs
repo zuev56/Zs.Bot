@@ -37,7 +37,7 @@ namespace Zs.App.Home.Web.Controllers
         {
             try
             {
-                var result = await _vkActivityService.GetLastActivity(10);
+                var result = await _vkActivityService.GetLastActivity(100);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -53,10 +53,10 @@ namespace Zs.App.Home.Web.Controllers
         {
             try
             {
-                var fromDate = DateTime.Today - TimeSpan.FromDays(1);
-                var toDate = DateTime.Today - TimeSpan.FromDays(2);
+                var fromDate = DateTime.Today - TimeSpan.FromDays(10);
+                var toDate = DateTime.Today - TimeSpan.FromDays(0);
 
-                var result = await _vkActivityService.GetUserStatistics(10, fromDate, toDate);
+                var result = await _vkActivityService.GetUserStatistics(id, fromDate, toDate);
                 return Ok(result);
             }
             catch (Exception ex)

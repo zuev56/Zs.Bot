@@ -31,7 +31,6 @@ namespace Zs.App.ChatAdmin
         private readonly CycleWorker _cycleWorker;
         private readonly MessageProcessor _messageProcessor;
         private readonly IConnectionAnalyser _connectionAnalyser;
-        private readonly IContextFactory<BotContext> _botContextFactory;
         private readonly IContextFactory _contextFactory;
         private readonly bool _detailedLogging;
 
