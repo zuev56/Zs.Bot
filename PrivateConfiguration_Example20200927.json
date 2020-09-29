@@ -1,5 +1,5 @@
 {
-  "BotToken": "1234567890:YourBotToken-fMhTW_0ocnc",
+  "BotToken": "1234567890:YourTelegramBotToken-fMhTW_0ocnc",
   "DefaultChatId": 2,
   "MessageLimitHi": 3,
   "MessageLimitHiHi": 5,
