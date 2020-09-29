@@ -1,4 +1,4 @@
-﻿namespace Zs.Bot.Modules.Command
+﻿namespace Zs.Bot.Services.Command
 {
     /// <summary> 
     /// Contains command execution result

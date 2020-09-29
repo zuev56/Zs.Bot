@@ -5,7 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Zs.Bot;
 using Zs.Bot.Model.Data;
-using Zs.Bot.Modules.Messaging;
+using Zs.Bot.Services.Messaging;
 using Zs.Common.Abstractions;
 using Zs.Common.Enums;
 using Zs.Common.Modules.Connectors;

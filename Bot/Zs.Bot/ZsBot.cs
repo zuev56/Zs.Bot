@@ -2,8 +2,8 @@
 using Microsoft.Extensions.Configuration;
 using Zs.Bot.Model;
 using Zs.Bot.Model.Data;
-using Zs.Bot.Modules.Command;
-using Zs.Bot.Modules.Messaging;
+using Zs.Bot.Services.Command;
+using Zs.Bot.Services.Messaging;
 using Zs.Common.Abstractions;
 
 namespace Zs.Bot
