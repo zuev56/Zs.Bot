@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "pgsql1": {
+      "type": "pgsql.local",
+      "connectionId": "Default"
+    }
+  }
+}

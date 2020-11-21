@@ -11,7 +11,7 @@ using Zs.Bot.Model.Data;
 using Zs.Bot.Services.Messaging;
 using Zs.Common.Abstractions;
 using Zs.Common.Enums;
-using Zs.Common.Modules.CycleWorker;
+using Zs.Common.Modules.Scheduler;
 using Zs.Common.Modules.WebAPI;
 using Zs.App.Home.Model;
 using Zs.App.Home.Model.Abstractions;
@@ -27,7 +27,7 @@ namespace Zs.App.Home.Bot
         private readonly IZsLogger _logger;
         private readonly IContextFactory _contextFactory;
         private readonly IZsBot _bot;
-        private readonly CycleWorker _cycleWorker;
+        private readonly IScheduler _scheduler;
         //private readonly IConnectionAnalyser _connectionAnalyser;
         private readonly bool _detailedLogging;
         private readonly float _version;
@@ -59,7 +59,7 @@ namespace Zs.App.Home.Bot
                 _userIds = _configuration.GetSection("Vk:UserIds").Get<int[]>();
                 bool.TryParse(_configuration["DetailedLogging"]?.ToString(), out _detailedLogging);
 
-                _cycleWorker = new CycleWorker(_logger, _detailedLogging);
+                _scheduler = new Scheduler(configuration, _logger);
                 CreateJobs();
             }
             catch (Exception ex)
@@ -73,7 +73,7 @@ namespace Zs.App.Home.Bot
         {
             try
             {
-                _cycleWorker.Start(3000, 1000);
+                _scheduler.Start(3000, 1000);
                 _bot.Messenger.AddMessageToOutbox($"Bot started", "ADMIN");
                 _logger.LogInfo($"{nameof(UserWatcher)} started", nameof(UserWatcher));
 
@@ -88,7 +88,7 @@ namespace Zs.App.Home.Bot
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
-            _cycleWorker.Stop();
+            _scheduler.Stop();
             _logger.LogInfo($"{nameof(UserWatcher)} stopped", nameof(UserWatcher));
 
             return Task.CompletedTask;
@@ -148,14 +148,14 @@ namespace Zs.App.Home.Bot
             sendDayErrorsAndWarnings.ExecutionCompleted += Job_ExecutionCompleted;
             sendNightErrorsAndWarnings.ExecutionCompleted += Job_ExecutionCompleted;
 
-            _cycleWorker.Jobs.Add(logUserStatus);
-            _cycleWorker.Jobs.Add(informAboutNotActiveUsers24h);
-            _cycleWorker.Jobs.Add(informAboutNotActiveUsers12h);
-            _cycleWorker.Jobs.Add(sendDayErrorsAndWarnings);
-            _cycleWorker.Jobs.Add(sendNightErrorsAndWarnings);
+            _scheduler.Jobs.Add(logUserStatus);
+            _scheduler.Jobs.Add(informAboutNotActiveUsers24h);
+            _scheduler.Jobs.Add(informAboutNotActiveUsers12h);
+            _scheduler.Jobs.Add(sendDayErrorsAndWarnings);
+            _scheduler.Jobs.Add(sendNightErrorsAndWarnings);
         }
 
-        private void Job_ExecutionCompleted(Job job, IJobExecutionResult result)
+        private void Job_ExecutionCompleted(IJob job, IJobExecutionResult result)
         {
             try
             {
@@ -188,7 +188,7 @@ namespace Zs.App.Home.Bot
                     // с неопределённым статусом, если они ещё не созданы
                     var users = homeContext.VkUsers.ToList();
                     users.ForEach(u => homeContext.VkActivityLog.Add(
-                        new VkActivityLog()
+                        new VkActivityLogItem()
                         {
                             UserId = u.Id,
                             IsOnlineMobile = false,
@@ -223,7 +223,7 @@ namespace Zs.App.Home.Bot
                         || lastActivityDbItem.IsOnlineMobile != currentMobileStatus
                         || lastActivityDbItem.OnlineApp != currentApp)
                     {
-                        homeContext.VkActivityLog.Add(new VkActivityLog()
+                        homeContext.VkActivityLog.Add(new VkActivityLogItem()
                         {
                             UserId = dbUser.Id,
                             IsOnline = currentOnlineStatus,

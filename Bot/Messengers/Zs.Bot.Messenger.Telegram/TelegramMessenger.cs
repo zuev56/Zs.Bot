@@ -234,7 +234,7 @@ namespace Zs.Bot.Messenger.Telegram
             }
         }
 
-        private void ProcessOutputMessages(Task currentTask)
+        private async Task ProcessOutputMessages(Task currentTask)
         {
             TgMessage msgForLog = null;
             try
@@ -244,18 +244,17 @@ namespace Zs.Bot.Messenger.Telegram
                     msgForLog = tgMessage;
                     OperationResult sendingResult;
 
-                    lock (_locker)
-                    {
-                        sendingResult = SendMessageFinaly(tgMessage, currentTask);
-                    }
+                    //lock (_locker)
+                    //{
+                        sendingResult = await SendMessageFinaly(tgMessage, currentTask);
+                    //}
 
                     if (sendingResult == OperationResult.Retry)
                         continue;
 
-#warning Make awaitable!
                     // When an error occured during sending
                     if (tgMessage.From is null)
-                        tgMessage.From = _botClient.GetMeAsync().GetAwaiter().GetResult();
+                        tgMessage.From = await _botClient.GetMeAsync();
 
                     var args = new MessageActionEventArgs()
                     {
@@ -340,7 +339,7 @@ namespace Zs.Bot.Messenger.Telegram
         }
         
         /// <inheritdoc />
-        public bool DeleteMessage(IMessage dbMessage)
+        public async Task<bool> DeleteMessage(IMessage dbMessage)
         {
             if (dbMessage is null)
                 throw new ArgumentNullException(nameof(dbMessage));
@@ -354,7 +353,7 @@ namespace Zs.Bot.Messenger.Telegram
                 return false;
             }
 
-            return DeleteMessage(dbChat, dbMessage) == OperationResult.Success
+            return await DeleteMessage(dbChat, dbMessage) == OperationResult.Success
                  ? true
                  : false;
         }
@@ -432,7 +431,7 @@ namespace Zs.Bot.Messenger.Telegram
             }
         }
 
-        public OperationResult DeleteMessage(IChat chat, IMessage message)
+        public async Task<OperationResult> DeleteMessage(IChat chat, IMessage message)
         {
             try
             {
@@ -445,7 +444,7 @@ namespace Zs.Bot.Messenger.Telegram
                 var tgChat = System.Text.Json.JsonSerializer.Deserialize<TelegramChat>(chat.RawData);
                 var tgMessage = System.Text.Json.JsonSerializer.Deserialize<TelegramMessage>(message.RawData);
                 
-                _botClient.DeleteMessageAsync(tgChat.Id, tgMessage.MessageId).GetAwaiter().GetResult();
+                await _botClient.DeleteMessageAsync(tgChat.Id, tgMessage.MessageId);
 
                 message.IsDeleted = true;
                 var args = new MessageActionEventArgs()
@@ -467,7 +466,7 @@ namespace Zs.Bot.Messenger.Telegram
             }
         }
 
-        private OperationResult SendMessageFinaly(TgMessage message, Task currentTask)
+        private async Task<OperationResult> SendMessageFinaly(TgMessage message, Task currentTask)
         {
             // Telegram.Bot.API не позволяет отправлять сообщения, 
             // содержащие текст вида */command@botName*
@@ -480,24 +479,23 @@ namespace Zs.Bot.Messenger.Telegram
                     case TelegramMessageType.Text:
                         if (string.IsNullOrWhiteSpace(message.Text))
                             throw new Exception("Text message have no text");
-#warning Make awaitable!
+
                         TelegramMessage tmp = message.ReplyToMessage is null
-                                ? _botClient.SendTextMessageAsync(
-                                    message.Chat.Id,
-                                    message.Text,
-                                    ParseMode.Default).GetAwaiter().GetResult()
-                                : _botClient.SendTextMessageAsync(
-                                    message.Chat.Id,
-                                    message.Text,
-                                    ParseMode.Default,
-                                    replyToMessageId: (int)message.ReplyToMessageId).GetAwaiter().GetResult();
+                                ? await _botClient.SendTextMessageAsync(
+                                      message.Chat.Id,
+                                      message.Text,
+                                      ParseMode.Default)
+                                : await _botClient.SendTextMessageAsync(
+                                      message.Chat.Id,
+                                      message.Text,
+                                      ParseMode.Default,
+                                      replyToMessageId: (int)message.ReplyToMessageId);
                         tgMessage = new TgMessage(tmp);
                         break;
                     default:
-                        _botClient.SendTextMessageAsync(
-                                  message.Chat.Id,
-                                  $"Unable to send message type of {message.Type} "
-                                  ).GetAwaiter().GetResult();
+                        await _botClient.SendTextMessageAsync(
+                            message.Chat.Id,
+                            $"Unable to send message type of {message.Type}");
                         break;
                 }
 

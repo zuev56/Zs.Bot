@@ -1,31 +1,34 @@
-{
+﻿{
   "iisSettings": {
     "windowsAuthentication": false,
     "anonymousAuthentication": true,
     "iisExpress": {
-      "applicationUrl": "http://localhost:61739",
-      "sslPort": 44344
+      "applicationUrl": "http://localhost:6550",
+      "sslPort": 44308
     }
   },
-  "$schema": "http://json.schemastore.org/launchsettings.json",
   "profiles": {
     "IIS Express": {
       "commandName": "IISExpress",
       "launchBrowser": true,
-      "launchUrl": "api/activitylog",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ASPNETCORE_HOSTINGSTARTUPASSEMBLIES": "Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation"
       }
     },
-    "Zs.Service.Home.Web": {
+    "Zs.App.Home.Web2": {
       "commandName": "Project",
       "commandLineArgs": "M:\\Zs.Bot\\PrivateConfiguration.json",
+      "dotnetRunMessages": "true",
       "launchBrowser": true,
-      "launchUrl": "api/activitylog",
+      //"launchUrl": "api/activitylog",
+      "launchUrl": "admin/serverinfo",
+      //"applicationUrl": "https://localhost:5001;http://localhost:5000",
+      "applicationUrl": "http://localhost:5000",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
-      },
-      "applicationUrl": "https://localhost:5001;http://localhost:5000"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ASPNETCORE_HOSTINGSTARTUPASSEMBLIES": "Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation"
+      }
     }
   }
 }

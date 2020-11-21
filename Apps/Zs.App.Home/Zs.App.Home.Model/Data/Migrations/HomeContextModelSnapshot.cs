@@ -818,6 +818,7 @@ namespace Zs.App.Home.Model.Data.Migrations
                         });
                 });
 
+
             modelBuilder.Entity("Zs.App.Home.Model.VkActivityLog", b =>
                 {
                     b.HasOne("Zs.App.Home.Model.VkUser", "VkUser")

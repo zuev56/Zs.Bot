@@ -14,7 +14,7 @@ namespace Zs.App.Home.Model.Data
 {
     public partial class HomeContext : DbContext
     {
-        public DbSet<VkActivityLog> VkActivityLog { get; set; }
+        public DbSet<VkActivityLogItem> VkActivityLog { get; set; }
         public DbSet<VkUser> VkUsers { get; set; }
 
         public HomeContext()
@@ -49,7 +49,7 @@ namespace Zs.App.Home.Model.Data
 
         private void SetDefaultValues(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<VkActivityLog>().Property(b => b.InsertDate).HasDefaultValueSql("now()");
+            modelBuilder.Entity<VkActivityLogItem>().Property(b => b.InsertDate).HasDefaultValueSql("now()");
 
             modelBuilder.Entity<VkUser>().Property(b => b.UpdateDate).HasDefaultValueSql("now()");
             modelBuilder.Entity<VkUser>().Property(b => b.InsertDate).HasDefaultValueSql("now()");

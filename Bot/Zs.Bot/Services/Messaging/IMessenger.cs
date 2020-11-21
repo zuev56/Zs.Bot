@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using Zs.Bot.Model.Abstractions;
 
 namespace Zs.Bot.Services.Messaging
@@ -31,7 +32,7 @@ namespace Zs.Bot.Services.Messaging
         void AddMessageToOutbox(string messageText, params string[] userRoleCodes);
 
         /// <summary> Delete message from chat </summary>
-        bool DeleteMessage(IMessage message);
+        Task<bool> DeleteMessage(IMessage message);
 
         /// <summary>
         /// Get an identical user ID in the database by comparing RawData fields
