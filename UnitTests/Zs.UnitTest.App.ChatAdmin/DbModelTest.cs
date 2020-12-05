@@ -1,7 +1,7 @@
 using System;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Zs.Bot.Model;
+using Zs.Bot.Data;
 using Zs.App.ChatAdmin.Model;
 
 namespace Zs.UnitTest.App.ChatAdmin

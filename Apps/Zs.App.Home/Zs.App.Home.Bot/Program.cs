@@ -8,18 +8,18 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
 using Zs.Bot.Messenger.Telegram;
-using Zs.Bot.Model.Data;
 using Zs.Bot.Services.Logging;
 using Zs.Bot.Services.Messaging;
 using Zs.Common.Abstractions;
 using Zs.Common.Extensions;
-using Zs.Common.Modules.Connectors;
+using Zs.Common.Services.Connectors;
 using Zs.App.Home.Model.Data;
 using Zs.App.Home.Model;
-using BotContextFactory = Zs.Bot.Model.Factories.BotContextFactory;
+using BotContextFactory = Zs.Bot.Data.Factories.BotContextFactory;
 using HomeContextFactory = Zs.App.Home.Model.ContextFactory;
 using Zs.App.Home.Model.Abstractions;
 using Zs.Bot;
+using Zs.Bot.Data;
 
 namespace Zs.App.Home.Bot
 {

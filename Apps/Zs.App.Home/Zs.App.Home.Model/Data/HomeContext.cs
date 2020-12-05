@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Zs.Bot.Model.Data;
+using Zs.Bot.Data;
 using Zs.Common.Extensions;
 
 namespace Zs.App.Home.Model.Data

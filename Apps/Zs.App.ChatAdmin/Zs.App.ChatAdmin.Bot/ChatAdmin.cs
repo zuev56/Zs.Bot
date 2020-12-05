@@ -1,16 +1,14 @@
-﻿using System;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
-using Zs.Bot;
-using Zs.Bot.Model.Data;
+using Zs.App.ChatAdmin.Abstractions;
 using Zs.Bot.Services.Messaging;
 using Zs.Common.Abstractions;
 using Zs.Common.Enums;
-using Zs.Common.Modules.Connectors;
-using Zs.Common.Modules.Scheduler;
-using Zs.App.ChatAdmin.Abstractions;
+using Zs.Common.Services.Connectors;
+using Zs.Common.Services.Scheduler;
 
 namespace Zs.App.ChatAdmin
 {
@@ -27,7 +25,7 @@ namespace Zs.App.ChatAdmin
     {
         private readonly IConfiguration _configuration;
         private readonly IZsLogger _logger;
-        private readonly IZsBot _bot;
+        private readonly IMessenger _messenger;
         private readonly IScheduler _scheduler;
         private readonly IMessageProcessor _messageProcessor;
         private readonly IConnectionAnalyser _connectionAnalyser;
@@ -38,7 +36,7 @@ namespace Zs.App.ChatAdmin
         public ChatAdmin(
             IConfiguration configuration,
             IConnectionAnalyser connectionAnalyser,
-            IZsBot zsBot,
+            IMessenger messenger,
             IContextFactory contextFactory,
             IMessageProcessor messageProcessor,
             IScheduler scheduler,
@@ -50,8 +48,8 @@ namespace Zs.App.ChatAdmin
                 _contextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
                 _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-                _bot = zsBot ?? throw new ArgumentNullException(nameof(zsBot));
-                _bot.Messenger.MessageReceived += Messenger_MessageReceived;
+                _messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
+                _messenger.MessageReceived += Messenger_MessageReceived;
 
                 _connectionAnalyser = connectionAnalyser ?? throw new ArgumentNullException(nameof(connectionAnalyser));
                 _connectionAnalyser.ConnectionStatusChanged += СonnectionAnalyser_StatusChanged;
@@ -74,14 +72,12 @@ namespace Zs.App.ChatAdmin
             }
         }
 
-        public Task StartAsync(CancellationToken cancellationToken)
+        public async Task StartAsync(CancellationToken cancellationToken)
         {
             _connectionAnalyser.Start(5000, 30000);
             _scheduler.Start(3000, 1000);
-            _bot.Messenger.AddMessageToOutbox($"Bot started", "ADMIN");
+            await _messenger.AddMessageToOutboxAsync($"Bot started", "ADMIN");
             _logger.LogInfo($"{nameof(ChatAdmin)} started", nameof(ChatAdmin));
-
-            return Task.CompletedTask;
         }
 
         public Task StopAsync(CancellationToken cancellationToken)
@@ -93,10 +89,10 @@ namespace Zs.App.ChatAdmin
             return Task.CompletedTask;
         }
 
-        private void MessageProcessor_LimitsDefined(string messageText)
+        private async void MessageProcessor_LimitsDefined(string messageText)
         {
             if (DateTime.Now.Hour > 9)
-                _bot.Messenger.AddMessageToOutbox(messageText, "ADMIN");
+                await _messenger.AddMessageToOutboxAsync(messageText, "ADMIN");
         }
 
         private void СonnectionAnalyser_StatusChanged(ConnectionStatus status)
@@ -117,12 +113,12 @@ namespace Zs.App.ChatAdmin
             _logger.LogWarning(logMessage, nameof(ConnectionAnalyser));
         }
 
-        private async void Messenger_MessageReceived(MessageActionEventArgs e)
+        private async void Messenger_MessageReceived(object sender, MessageActionEventArgs e)
         {
             await _messageProcessor.ProcessGroupMessage(e.Message);
         }
 
-        private void Job_ExecutionCompleted(IJob job, IJobExecutionResult result)
+        private async void Job_ExecutionCompleted(IJob job, IJobExecutionResult result)
         {
             if (_detailedLogging || result?.TextValue != null)
             {
@@ -133,7 +129,7 @@ namespace Zs.App.ChatAdmin
             }
 
             if (result != null && DateTime.Now.Hour > 9 && DateTime.Now.Hour < 23)
-                _bot.Messenger.AddMessageToOutbox(result?.TextValue, "ADMIN");
+                await _messenger.AddMessageToOutboxAsync(result?.TextValue, "ADMIN");
         }
 
         /// <summary> Creating a <see cref="Job"/> list for a <see cref="Scheduler"/> instance </summary>

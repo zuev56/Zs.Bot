@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29409.12
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.Bot", "Bot\Zs.Bot\Zs.Bot.csproj", "{26B4EFEE-4C4A-4EF1-BC18-521671F14AF5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.Bot.Services", "Bot\Zs.Bot.Services\Zs.Bot.Services.csproj", "{26B4EFEE-4C4A-4EF1-BC18-521671F14AF5}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.Bot.Messenger.Telegram", "Bot\Messengers\Zs.Bot.Messenger.Telegram\Zs.Bot.Messenger.Telegram.csproj", "{68E24E7A-C999-4CA7-B44F-D09FE1449416}"
 EndProject
@@ -41,7 +41,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.App.Home.Bot", "Apps\Zs.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.App.Home.Model", "Apps\Zs.App.Home\Zs.App.Home.Model\Zs.App.Home.Model.csproj", "{BC1C3D76-A322-4F5A-B445-CBC3D8FA85FB}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.Bot.Model", "Bot\Zs.Bot.Model\Zs.Bot.Model.csproj", "{158BBAF1-0A1B-4D02-B180-3F55D5C56D62}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.Bot.Data", "Bot\Zs.Bot.Model\Zs.Bot.Data.csproj", "{158BBAF1-0A1B-4D02-B180-3F55D5C56D62}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.App.Home.Web", "Apps\Zs.App.Home\Zs.App.Home.Web\Zs.App.Home.Web.csproj", "{7C795B28-D593-4DC6-8BB3-60500B8140C9}"
 EndProject

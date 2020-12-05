@@ -10,12 +10,14 @@ using Telegram.Bot;
 using Telegram.Bot.Args;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types.Enums;
-using Zs.Bot.Helpers;
-using Zs.Bot.Model.Abstractions;
-using Zs.Bot.Model.Data;
+using Zs.Bot.Data.Abstractions;
+using Zs.Bot.Data.Models;
+using Zs.Bot.Services.Commands;
+using Zs.Bot.Services.DataSavers;
 using Zs.Bot.Services.Messaging;
 using Zs.Common.Abstractions;
 using Zs.Common.Enums;
+using Zs.Common.Helpers;
 using TelegramChat = Telegram.Bot.Types.Chat;
 using TelegramMessage = Telegram.Bot.Types.Message;
 using TelegramMessageType = Telegram.Bot.Types.Enums.MessageType;
@@ -25,28 +27,49 @@ namespace Zs.Bot.Messenger.Telegram
 {
     public class TelegramMessenger : IMessenger
     {
-        private readonly IZsLogger _logger; 
-        IContextFactory<BotContext> _contextFactory;
+        private readonly IZsLogger _logger;
+        private readonly IItemsWithRawDataRepository<Chat, int> _chatsRepo;
+        private readonly IItemsWithRawDataRepository<User, int> _usersRepo;
+        private readonly IItemsWithRawDataRepository<Message, int> _messagesRepo;
+        private readonly IMessageDataSaver _messengerDataSaver;
+        private readonly ICommandManager _commandManager;
         private readonly int _sendingRetryLimit = 5;
         private readonly TelegramBotClient _botClient;
         private readonly Buffer<TgMessage> _inputMessageBuffer = new Buffer<TgMessage>();
         private readonly Buffer<TgMessage> _outputMessageBuffer = new Buffer<TgMessage>();
         private readonly object _locker = new object();
 
-        public event Action<MessageActionEventArgs> MessageEdited;
-        public event Action<MessageActionEventArgs> MessageReceived;
-        public event Action<MessageActionEventArgs> MessageSent;
-        public event Action<MessageActionEventArgs> MessageDeleted;
+        public event EventHandler<MessageActionEventArgs> MessageEdited;
+        public event EventHandler<MessageActionEventArgs> MessageReceived;
+        public event EventHandler<MessageActionEventArgs> MessageSent;
+        public event EventHandler<MessageActionEventArgs> MessageDeleted;
         public bool ApiLogIsEnabled { get; set; } = false;
         public IToGenegalItemConverter ItemConverter { get; set; } = new ItemConverter();
 
 
-        public TelegramMessenger(string token, IContextFactory<BotContext> contextFactory, IZsLogger logger, IWebProxy webProxy = null)
+        public TelegramMessenger(
+            string token,
+            IItemsWithRawDataRepository<Chat, int> chatsRepo,
+            IItemsWithRawDataRepository<User, int> usersRepo,
+            IItemsWithRawDataRepository<Message, int> messagesRepo,
+            IMessageDataSaver messengerDataSaver = null,
+            ICommandManager commandManager = null,
+            IZsLogger logger = null, 
+            IWebProxy webProxy = null)
         {
             try
             {
                 _logger = logger;
-                _contextFactory = contextFactory;
+                _chatsRepo = chatsRepo;
+                _usersRepo = usersRepo;
+                _messagesRepo = messagesRepo;
+                
+                _messengerDataSaver = messengerDataSaver;
+                if (commandManager is not null)
+                {
+                    _commandManager = commandManager;
+                    _commandManager.CommandCompleted += CommandManager_CommandCompleted;
+                }
 
                 _inputMessageBuffer.OnEnqueue += InputMessageBuffer_OnEnqueue;
                 _outputMessageBuffer.OnEnqueue += OutputMessageBuffer_OnEnqueue;
@@ -91,7 +114,7 @@ namespace Zs.Bot.Messenger.Telegram
             {
                 var te = new TypeInitializationException(typeof(TelegramMessenger).FullName, e);
                 if (_logger != null)
-                    _logger.LogError(te, nameof(TelegramMessenger));
+                    _logger?.LogError(te, nameof(TelegramMessenger));
                 else
                     throw;
             }
@@ -102,31 +125,31 @@ namespace Zs.Bot.Messenger.Telegram
         private void BotClient_ApiResponseReceived(object sender, ApiResponseEventArgs e)
         {
             if (ApiLogIsEnabled)
-                _logger.LogInfo("ApiResponseReceived", e.ResponseMessage, "Telegram.Bot.API");
+                _logger?.LogInfo("ApiResponseReceived", e.ResponseMessage, "Telegram.Bot.API");
         }
 
         private void BotClient_MakingApiRequest(object sender, ApiRequestEventArgs e)
         {
             if (ApiLogIsEnabled)
-                _logger.LogInfo("MakingApiRequest", e, "Telegram.Bot.API");
+                _logger?.LogInfo("MakingApiRequest", e, "Telegram.Bot.API");
         }
 
         private void BotClient_OnCallbackQuery(object sender, CallbackQueryEventArgs e)
         {
             if (ApiLogIsEnabled)
-                _logger.LogInfo("OnCallbackQuery", e, "Telegram.Bot.API");
+                _logger?.LogInfo("OnCallbackQuery", e, "Telegram.Bot.API");
         }
 
         private void BotClient_OnInlineQuery(object sender, InlineQueryEventArgs e)
         {
             if (ApiLogIsEnabled)
-                _logger.LogInfo("OnInlineQuery", e, "Telegram.Bot.API");
+                _logger?.LogInfo("OnInlineQuery", e, "Telegram.Bot.API");
         }
 
         private void BotClient_OnInlineResultChosen(object sender, ChosenInlineResultEventArgs e)
         {
             if (ApiLogIsEnabled)
-                _logger.LogInfo("OnInlineResultChosen", e, "Telegram.Bot.API");
+                _logger?.LogInfo("OnInlineResultChosen", e, "Telegram.Bot.API");
         }
 
         private void BotClient_OnMessage(object sender, MessageEventArgs args)
@@ -134,20 +157,20 @@ namespace Zs.Bot.Messenger.Telegram
             try
             {
                 if (ApiLogIsEnabled)
-                    _logger.LogInfo("OnMessage", args, "Telegram.Bot.API");
+                    _logger?.LogInfo("OnMessage", args, "Telegram.Bot.API");
 
                 _inputMessageBuffer.Enqueue(new TgMessage(args.Message));
             }
             catch (Exception e)
             {
-                _logger.LogError(e, $"Не удалось поместить входящее сообщение в буфер. TelegramMessageId={args?.Message?.MessageId}");
+                _logger?.LogError(e, $"Не удалось поместить входящее сообщение в буфер. TelegramMessageId={args?.Message?.MessageId}");
             }
         }
 
         private void BotClient_OnMessageEdited(object sender, MessageEventArgs e)
         {
             if (ApiLogIsEnabled)
-                _logger.LogInfo("OnMessageEdited", e, "Telegram.Bot.API");
+                _logger?.LogInfo("OnMessageEdited", e, "Telegram.Bot.API");
 
             _inputMessageBuffer.Enqueue(new TgMessage(e.Message));
         }
@@ -155,7 +178,7 @@ namespace Zs.Bot.Messenger.Telegram
         private void BotClient_OnReceiveError(object sender, ReceiveErrorEventArgs e)
         {
             if (e?.ApiRequestException?.Message != "Request timed out")
-                _logger.LogError(e.ApiRequestException, "Telegram.Bot.API");
+                _logger?.LogError(e.ApiRequestException, "Telegram.Bot.API");
         }
 
         private void BotClient_OnReceiveGeneralError(object sender, ReceiveGeneralErrorEventArgs e)
@@ -163,17 +186,22 @@ namespace Zs.Bot.Messenger.Telegram
             if (e.Exception is System.Net.Http.HttpRequestException)
                 return;
 
-            _logger.LogError(e.Exception, "Telegram.Bot.API");
+            _logger?.LogError(e.Exception, "Telegram.Bot.API");
         }
 
         private void BotClient_OnUpdate(object sender, UpdateEventArgs e)
         {
             if (ApiLogIsEnabled)
-                _logger.LogInfo("OnUpdate", e, "Telegram.Bot.API");
+                _logger?.LogInfo("OnUpdate", e, "Telegram.Bot.API");
         }
 
         #endregion
-      
+        private async void CommandManager_CommandCompleted(object sender, CommandResult result)
+        {
+            var chat = await _chatsRepo.FindByKeyAsync(result.ChatIdForAnswer);
+            await AddMessageToOutboxAsync(chat, result.Text);
+        }
+
         private void InputMessageBuffer_OnEnqueue(object sender, TgMessage item)
         {
 //#if DEBUG
@@ -192,7 +220,7 @@ namespace Zs.Bot.Messenger.Telegram
             task = Task.Run(() => ProcessOutputMessages(task));
         }
       
-        private void ProcessInputMessages(Task currentTask)
+        private async Task ProcessInputMessages(Task currentTask)
         {
             TgMessage msgForLog = null;
 
@@ -212,13 +240,39 @@ namespace Zs.Bot.Messenger.Telegram
                         Action   = MessageAction.Received
                     };
 
-                    if (tgMessage.EditDate is { })
+                    if (tgMessage.EditDate is not null)
                     {
-                        OnMessageEdited(args);
+                        if (await TrySetExistingMessageId(args.Message))
+                        {
+
+                            await _messengerDataSaver?.EditSavedMessage(args);
+                            OnMessageEdited(args);
+                        }
+                        else
+                            _logger.LogWarning("The message not found in the database", args, nameof(TelegramMessenger));
                     }
                     else
                     {
+                        await TrySetExistingUserId(args.User);
+                        await TrySetExistingChatId(args.Chat);
+                        await _messengerDataSaver?.SaveNewMessageData(args);
                         OnMessageReceived(args);
+
+                        // 1. Проверка авторизации
+                        //if (!Authorization(tgMessage) && session.SessionCurrentStep != IsWaitingForPassword)
+                        //    return;
+
+                        // 2. Обрабатываем в зависимости от того, команда это или данные                           
+                        if (BotCommand.IsCommand(args.Message.Text) 
+                            && !await _commandManager.TryEnqueueCommandAsync(args.Message))
+                        {
+                            await AddMessageToOutboxAsync(args.Chat, $"Unknown command '{args.Message.Text}'");
+                        }
+                        //else if (File)
+                        //{
+                        //
+                        //}
+
                     }
 
                     msgForLog = null;
@@ -230,7 +284,7 @@ namespace Zs.Bot.Messenger.Telegram
             catch (Exception ex)
             {
                 ex.Data.Add("Message", msgForLog);
-                _logger.LogError(ex, nameof(TelegramMessenger));
+                _logger?.LogError(ex, nameof(TelegramMessenger));
             }
         }
 
@@ -246,7 +300,7 @@ namespace Zs.Bot.Messenger.Telegram
 
                     //lock (_locker)
                     //{
-                        sendingResult = await SendMessageFinaly(tgMessage, currentTask);
+                        sendingResult = await SendMessageFinalyAsync(tgMessage, currentTask);
                     //}
 
                     if (sendingResult == OperationResult.Retry)
@@ -264,6 +318,10 @@ namespace Zs.Bot.Messenger.Telegram
                         ChatType = ItemConverter.ToGeneralChatType(tgMessage.Chat.Type),
                         Action   = MessageAction.Sent
                     };
+
+                    await TrySetExistingUserId(args.User);
+                    await TrySetExistingChatId(args.Chat);
+                    await _messengerDataSaver?.SaveNewMessageData(args);
                     OnMessageSent(args);
 
                     msgForLog = null;
@@ -275,12 +333,12 @@ namespace Zs.Bot.Messenger.Telegram
             catch (Exception e)
             {
                 e.Data.Add("Message", msgForLog);
-                _logger.LogError(e, nameof(TelegramMessenger));
+                _logger?.LogError(e, nameof(TelegramMessenger));
             }
         }
         
         /// <inheritdoc />
-        public void AddMessageToOutbox(IChat chat, string messageText, IMessage messageToReply = null)
+        public Task AddMessageToOutboxAsync(Chat chat, string messageText, Message messageToReply = null)
         {
             try
             {
@@ -304,23 +362,22 @@ namespace Zs.Bot.Messenger.Telegram
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, nameof(TelegramMessenger));
+                _logger?.LogError(ex, nameof(TelegramMessenger));
                 throw;
             }
+            return Task.CompletedTask;
         }
         
         /// <inheritdoc />
-        public void AddMessageToOutbox(string messageText, params string[] userRoleCodes)
+        public async Task AddMessageToOutboxAsync(string messageText, params string[] userRoleIds)
         {
             try
             {
-                using var ctx = _contextFactory.GetContext();
-                var dbUsers = ctx.Users.Where(u => userRoleCodes.Contains(u.UserRoleCode))
-                                 .ToList();// Для исключения Npgsql.NpgsqlOperationInProgressException: A command is already in progress
+                var dbUsers = await _usersRepo.FindAllAsync(u => userRoleIds.Contains(u.UserRoleId));
 
                 var tgUsers = dbUsers.Select(u => System.Text.Json.JsonSerializer.Deserialize<TelegramUser>(u.RawData));
 
-                var tgChats = ctx.Chats.ToList().Select(c => System.Text.Json.JsonSerializer.Deserialize<TelegramChat>(c.RawData))
+                var tgChats = (await _chatsRepo.FindAllAsync()).Select(c => System.Text.Json.JsonSerializer.Deserialize<TelegramChat>(c.RawData))
                     .Where(c => c.Id >= int.MinValue && c.Id <= int.MaxValue 
                              && tgUsers.Select(u => u.Id).Contains((int)c.Id)).ToList();
 
@@ -334,81 +391,83 @@ namespace Zs.Bot.Messenger.Telegram
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, nameof(TelegramMessenger));
+                _logger?.LogError(ex, nameof(TelegramMessenger));
             }
         }
         
         /// <inheritdoc />
-        public async Task<bool> DeleteMessage(IMessage dbMessage)
+        public async Task<bool> DeleteMessage(Message dbMessage)
         {
             if (dbMessage is null)
                 throw new ArgumentNullException(nameof(dbMessage));
 
-            using var ctx = _contextFactory.GetContext();
-
-            var dbChat = ctx.Chats.FirstOrDefault(c => c.Id == dbMessage.ChatId);
+            var dbChat = await _chatsRepo.FindAsync(c => c.Id == dbMessage.ChatId);
             if (dbChat == null)
             {
-                _logger.LogWarning($"Chat with ChatId = {dbMessage.ChatId} not found in database", nameof(TelegramMessenger));
+                _logger?.LogWarning($"Chat with ChatId = {dbMessage.ChatId} not found in database", nameof(TelegramMessenger));
                 return false;
             }
 
-            return await DeleteMessage(dbChat, dbMessage) == OperationResult.Success
-                 ? true
-                 : false;
+            return await DeleteMessageAsync(dbChat, dbMessage) == OperationResult.Success
+                ? true
+                : false;
         }
 
-        /// <inheritdoc />
-        public int? GetIdenticalUserId(IUser user)
+        /// <summary> Tries find the same item in the database and set it's Id  </summary>
+        /// <param name="user"></param>
+        /// <returns><see langword="true"/> if the <see cref="user"/> found in the database, otherwise false</returns>
+        public async Task<bool> TrySetExistingUserId(User user)
         {
             if (user is null)
                 throw new ArgumentNullException(nameof(user));
-
-            using var ctx = _contextFactory.GetContext();
 
             var jObject = JObject.Parse(user.RawData);
             if (jObject.ContainsKey("Id"))
             {
                 var tgUserId = (int)jObject["Id"];
-                var identicalUser = ctx.Users.FromSqlRaw($"select * from bot.users where cast(raw_data ->> 'Id' as integer) = {tgUserId}").FirstOrDefault();
+                var identicalUser = await _usersRepo.FindBySqlAsync($"select * from bot.users where cast(raw_data ->> 'Id' as integer) = {tgUserId}");
 
-                return identicalUser?.Id;
+                if (identicalUser is not null)
+                {
+                    user.Id = identicalUser.Id;
+                    return true;
+                }
             }
-            else
-            {
-                return null;
-            }
+
+            return false;
         }
 
-        /// <inheritdoc />
-        public int? GetIdenticalChatId(IChat chat)
+        /// <summary> Tries find the same item in the database and set it's Id  </summary>
+        /// <param name="chat"></param>
+        /// <returns><see langword="true"/> if the <see cref="chat"/> found in the database, otherwise false</returns>
+        public async Task<bool> TrySetExistingChatId(Chat chat)
         {
             if (chat is null)
                 throw new ArgumentNullException(nameof(chat));
-
-            using var ctx = _contextFactory.GetContext();
 
             var jObject = JObject.Parse(chat.RawData);
             if (jObject.ContainsKey("Id"))
             {
                 var tgChatId = (long)jObject["Id"];
-                var identicalChat = ctx.Chats.FromSqlRaw($"select * from bot.chats where cast(raw_data ->> 'Id' as bigint) = {tgChatId}").FirstOrDefault();
+                var identicalChat = await _chatsRepo.FindBySqlAsync($"select * from bot.chats where cast(raw_data ->> 'Id' as bigint) = {tgChatId}");
 
-                return identicalChat?.Id;
+                if (identicalChat is not null)
+                {
+                    chat.Id = identicalChat.Id;
+                    return true;
+                }
             }
-            else
-            {
-                return null;
-            }
+
+            return false;
         }
 
-        /// <inheritdoc />
-        public int? GetIdenticalMessageId(IMessage message)
+        /// <summary> Tries find the same item in the database and set it's Id  </summary>
+        /// <param name="message"></param>
+        /// <returns><see langword="true"/> if the <see cref="message"/> found in the database, otherwise false</returns>
+        public async Task<bool> TrySetExistingMessageId(Message message)
         {
             if (message is null)
                 throw new ArgumentNullException(nameof(message));
-
-            using var ctx = _contextFactory.GetContext();
 
             //Вместо изменения текущего сообщения, 
             //было создано новое с некорректными ChatId и UserId
@@ -418,20 +477,22 @@ namespace Zs.Bot.Messenger.Telegram
             {
                 var tgMessageId = (int)jObject["MessageId"];
                 var tgChatId = (long)jObject["ChatId"];
-                var identicalMessage = ctx.Messages.FromSqlRaw(
+                var identicalMessage = await _messagesRepo.FindBySqlAsync(
                     $"select * from bot.messages " +
                     $" where cast(raw_data ->> 'MessageId' as integer) = {tgMessageId}" +
-                    $"   and cast(raw_data ->> 'ChatId' as bigint) = {tgChatId}").FirstOrDefault();
+                    $"   and cast(raw_data ->> 'ChatId' as bigint) = {tgChatId}");
 
-                return identicalMessage?.Id;
+                if (identicalMessage is not null)
+                {
+                    message.Id = identicalMessage.Id;
+                    return true;
+                }
             }
-            else
-            {
-                return null;
-            }
+
+            return false;
         }
 
-        public async Task<OperationResult> DeleteMessage(IChat chat, IMessage message)
+        public async Task<OperationResult> DeleteMessageAsync(Chat chat, Message message)
         {
             try
             {
@@ -455,18 +516,19 @@ namespace Zs.Bot.Messenger.Telegram
                     Action = MessageAction.Deleted
                 };
 
+                await _messengerDataSaver?.SaveNewMessageData(args);
                 OnMessageDeleted(args);
 
                 return OperationResult.Success;
             }
             catch (Exception e)
             {
-                _logger.LogError(e, nameof(TelegramMessenger));
+                _logger?.LogError(e, nameof(TelegramMessenger));
                 return OperationResult.Failure;
             }
         }
 
-        private async Task<OperationResult> SendMessageFinaly(TgMessage message, Task currentTask)
+        private async Task<OperationResult> SendMessageFinalyAsync(TgMessage message, Task currentTask)
         {
             // Telegram.Bot.API не позволяет отправлять сообщения, 
             // содержащие текст вида */command@botName*
@@ -517,7 +579,7 @@ namespace Zs.Bot.Messenger.Telegram
                     {
                         message.IsSucceed = false;
                         ex.Data.Add("Message", message);
-                        _logger.LogError(ex, nameof(TelegramMessenger));
+                        _logger?.LogError(ex, nameof(TelegramMessenger));
                         return OperationResult.Failure;
                     }
                     else
@@ -538,7 +600,7 @@ namespace Zs.Bot.Messenger.Telegram
                     {
                         message.IsSucceed = false;
                         ex.Data.Add("Message", message);
-                        _logger.LogError(ex, nameof(TelegramMessenger));
+                        _logger?.LogError(ex, nameof(TelegramMessenger));
                         return OperationResult.Failure;
                     }
                     catch { return OperationResult.Failure; }
@@ -549,19 +611,19 @@ namespace Zs.Bot.Messenger.Telegram
 
         private void OnMessageEdited(MessageActionEventArgs args)
         {
-            Volatile.Read(ref MessageEdited)?.Invoke(args);
+            Volatile.Read(ref MessageEdited)?.Invoke(this, args);
         }
         private void OnMessageReceived(MessageActionEventArgs args)
         {
-            Volatile.Read(ref MessageReceived)?.Invoke(args);
+            Volatile.Read(ref MessageReceived)?.Invoke(this, args);
         }
         private void OnMessageSent(MessageActionEventArgs args)
         {
-            Volatile.Read(ref MessageSent)?.Invoke(args);
+            Volatile.Read(ref MessageSent)?.Invoke(this, args);
         }
         private void OnMessageDeleted(MessageActionEventArgs args)
         {
-            Volatile.Read(ref MessageDeleted)?.Invoke(args);
+            Volatile.Read(ref MessageDeleted)?.Invoke(this, args);
         }
 
     }

@@ -2,11 +2,11 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Zs.Bot.Model;
-using Zs.Bot.Model.Data;
-using Zs.Bot.Model.Factories;
+using Zs.Bot.Data;
+using Zs.Bot.Data.Data;
+using Zs.Bot.Data.Factories;
 using Zs.Common.Abstractions;
-using Zs.Bot.Model.Abstractions;
+using Zs.Bot.Data.Abstractions;
 
 namespace Zs.UnitTest.Bot
 {

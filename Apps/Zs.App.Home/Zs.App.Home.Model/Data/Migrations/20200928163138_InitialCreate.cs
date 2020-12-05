@@ -414,7 +414,7 @@ namespace Zs.App.Home.Model.Data.Migrations
                 table: "activity_log",
                 column: "VkUserId");
 
-            migrationBuilder.Sql(Zs.Bot.Model.Data.BotContext.GetOtherSqlScripts());
+            migrationBuilder.Sql(Zs.Bot.Data.BotContext.GetOtherSqlScripts());
             migrationBuilder.Sql(HomeContext.GetOtherSqlScripts());
         }
 

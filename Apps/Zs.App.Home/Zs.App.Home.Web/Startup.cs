@@ -15,9 +15,8 @@ using System.Net;
 using System.Threading.Tasks;
 using Zs.App.Home.Model.Data;
 using Zs.App.Home.Web.Areas.VkAPI.Services;
-using Zs.App.Home.Web.Data;
-using Zs.Bot.Model.Data;
-using BotContextFactory = Zs.Bot.Model.Factories.BotContextFactory;
+using Zs.Bot.Data;
+using BotContextFactory = Zs.Bot.Data.Factories.BotContextFactory;
 using HomeContextFactory = Zs.App.Home.Model.ContextFactory;
 
 namespace Zs.App.Home.Web
@@ -34,29 +33,29 @@ namespace Zs.App.Home.Web
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddDbContext<HomeContext>(options =>
-                options.UseNpgsql(_configuration.GetConnectionString("Default"))
-                       .EnableDetailedErrors(true)
-                       .EnableSensitiveDataLogging(true));
+            //services.AddDbContext<HomeContext>(options =>
+            //    options.UseNpgsql(_configuration.GetConnectionString("Default"))
+            //           .EnableDetailedErrors(true)
+            //           .EnableSensitiveDataLogging(true));
+            //
+            //services.AddDbContext<BotContext>(options =>
+            //    options.UseNpgsql(_configuration.GetConnectionString("Default"))
+            //           .EnableDetailedErrors(true)
+            //           .EnableSensitiveDataLogging(true));
+            //
+            //services.AddDbContext<ApplicationDbContext>(options =>
+            //    options.UseNpgsql(_configuration.GetConnectionString("Default"))
+            //           .EnableDetailedErrors(true)
+            //           .EnableSensitiveDataLogging(true));
 
-            services.AddDbContext<BotContext>(options =>
-                options.UseNpgsql(_configuration.GetConnectionString("Default"))
-                       .EnableDetailedErrors(true)
-                       .EnableSensitiveDataLogging(true));
-
-            services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseNpgsql(_configuration.GetConnectionString("Default"))
-                       .EnableDetailedErrors(true)
-                       .EnableSensitiveDataLogging(true));
-
-            services.AddScoped<IVkActivityService, VkActivityService>(sp =>
-            {
-                var contextFactory = new HomeContextFactory(
-                    sp.GetService<DbContextOptions<BotContext>>(),
-                    sp.GetService<DbContextOptions<HomeContext>>());
-
-                return new VkActivityService(contextFactory);
-            });
+            //services.AddScoped<IVkActivityService, VkActivityService>(sp =>
+            //{
+            //    var contextFactory = new HomeContextFactory(
+            //        sp.GetService<DbContextOptions<BotContext>>(),
+            //        sp.GetService<DbContextOptions<HomeContext>>());
+            //
+            //    return new VkActivityService(contextFactory);
+            //});
 
             //services.AddDatabaseDeveloperPageExceptionFilter();
             

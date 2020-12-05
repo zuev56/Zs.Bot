@@ -1,12 +1,12 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using System;
 using System.IO;
 using System.Reflection;
 using System.Text;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Zs.Bot.Model;
-using Zs.Bot.Model.Data;
 using Zs.App.ChatAdmin.Model;
+using Zs.Bot.Data;
+using Zs.Bot.Data.Models;
 using Zs.Common.Extensions;
 
 namespace Zs.App.ChatAdmin.Data
@@ -29,9 +29,9 @@ namespace Zs.App.ChatAdmin.Data
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            var solutionDir = Common.Helpers.Path.TryGetSolutionPath();
+            var solutionDir = Common.Extensions.Path.TryGetSolutionPath();
             var configuration = new ConfigurationBuilder()
-                .AddJsonFile(Path.Combine(solutionDir, "PrivateConfiguration.json"), optional: false)
+                .AddJsonFile(System.IO.Path.Combine(solutionDir, "PrivateConfiguration.json"), optional: false)
                 .Build();
             var connectionString = configuration.GetConnectionString("Default");
         
@@ -49,7 +49,7 @@ namespace Zs.App.ChatAdmin.Data
             SetDefaultValues(modelBuilder);
             SeedData(modelBuilder);
         }
-
+        
         private void SetDefaultValues(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Accounting>().Property(b => b.UpdateDate).HasDefaultValueSql("now()");
@@ -68,7 +68,7 @@ namespace Zs.App.ChatAdmin.Data
         {
             modelBuilder.Entity<Command>().HasData(new[]
             {
-                new Command() { Name = "/GetUserStatistics".ToLowerInvariant(), Script = "SELECT zl.sf_cmd_get_full_statistics({0}, {1}, {2})", DefaultArgs = "15; now()::Date; now()", Description = "Получение статистики по активности участников всех чатов за определённый период", Group = "adminCmdGroup", InsertDate = DateTime.Now },
+                new Command() { Id = "/GetUserStatistics".ToLowerInvariant(), Script = "SELECT zl.sf_cmd_get_full_statistics({0}, {1}, {2})", DefaultArgs = "15; now()::Date; now()", Description = "Получение статистики по активности участников всех чатов за определённый период", Group = "adminCmdGroup", InsertDate = DateTime.Now },
             });
         }
 

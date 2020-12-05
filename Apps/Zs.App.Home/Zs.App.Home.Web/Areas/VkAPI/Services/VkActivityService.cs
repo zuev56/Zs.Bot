@@ -9,7 +9,7 @@ using Zs.App.Home.Model.Abstractions;
 using Zs.App.Home.Model.Data;
 using Zs.App.Home.Web.Areas.VkAPI.Models;
 using Zs.App.Home.Web.Models;
-using Zs.Bot.Model.Data;
+using Zs.Bot.Data;
 using Zs.Common.Abstractions;
 using Zs.Common.Extensions;
 

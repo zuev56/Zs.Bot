@@ -1,9 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using Zs.Bot.Model;
-using Zs.Bot.Model.Abstractions;
-using Zs.Common.Abstractions;
-using Zs.App.ChatAdmin;
+using Zs.Bot.Data.Models;
 
 namespace Zs.UnitTest.App.ChatAdmin
 {
@@ -34,7 +31,7 @@ namespace Zs.UnitTest.App.ChatAdmin
 
 
 
-        private IMessage GetTestMessage()
+        private Message GetTestMessage()
         {
             return new Message()
             {

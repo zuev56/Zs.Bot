@@ -2,7 +2,7 @@
 using Zs.App.Home.Model.Data;
 using Zs.App.Home.Model;
 using Microsoft.EntityFrameworkCore.Design;
-using Zs.Bot.Model.Data;
+using Zs.Bot.Data;
 using System;
 using System.IO;
 using Microsoft.Extensions.Configuration;

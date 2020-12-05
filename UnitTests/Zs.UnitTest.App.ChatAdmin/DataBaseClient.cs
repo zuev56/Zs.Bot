@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Zs.Bot.Model.Data;
+using Zs.Bot.Data.Data;
 using Zs.App.ChatAdmin.Abstractions;
 using Zs.App.ChatAdmin.Data;
 using ChatAdminContextFactory = Zs.App.ChatAdmin.Data.ContextFactory;

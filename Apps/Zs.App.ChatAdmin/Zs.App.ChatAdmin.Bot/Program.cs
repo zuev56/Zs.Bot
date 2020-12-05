@@ -6,18 +6,21 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Zs.Bot;
+using Zs.App.ChatAdmin.Abstractions;
+using Zs.App.ChatAdmin.Data;
+using Zs.Bot.Data;
+using Zs.Bot.Data.Abstractions;
+using Zs.Bot.Data.Factories;
+using Zs.Bot.Data.Models;
 using Zs.Bot.Messenger.Telegram;
-using Zs.Bot.Model.Data;
-using Zs.Bot.Model.Factories;
+using Zs.Bot.Services.Commands;
+using Zs.Bot.Services.DataSavers;
 using Zs.Bot.Services.Logging;
 using Zs.Bot.Services.Messaging;
 using Zs.Common.Abstractions;
-using Zs.Common.Modules.Connectors;
-using Zs.App.ChatAdmin.Abstractions;
-using Zs.App.ChatAdmin.Data;
+using Zs.Common.Services.Connectors;
+using Zs.Common.Services.Scheduler;
 using ChatAdminContextFactory = Zs.App.ChatAdmin.Data.ContextFactory;
-using Zs.Common.Modules.Scheduler;
 
 namespace Zs.App.ChatAdmin
 {
@@ -98,23 +101,27 @@ namespace Zs.App.ChatAdmin
                         services.AddScoped<IMessenger, TelegramMessenger>(sp => 
                             new TelegramMessenger(
                                 hostContext.Configuration["BotToken"],
-                                sp.GetService<IContextFactory<BotContext>>(),
+                                sp.GetService<IItemsWithRawDataRepository<Chat, int>>(),
+                                sp.GetService<IItemsWithRawDataRepository<User, int>>(),
+                                sp.GetService<IItemsWithRawDataRepository<Message, int>>(),
+                                sp.GetService<IMessageDataSaver>(),
+                                sp.GetService<ICommandManager>(),
                                 sp.GetService<IZsLogger>(),
                                 sp.GetService<IConnectionAnalyser>().WebProxy)
                             );
 
-                        services.AddScoped<IZsBot, ZsBot>(sp => 
-                            new ZsBot(
-                                sp.GetService<IConfiguration>(),
-                                sp.GetService<IMessenger>(),
-                                sp.GetService<IContextFactory<BotContext>>(),
+                        services.AddScoped<IMessageDataSaver, MessageDataDBSaver>(sp => 
+                            new MessageDataDBSaver(
+                                sp.GetService<IItemsWithRawDataRepository<Chat, int>>(),
+                                sp.GetService<IItemsWithRawDataRepository<User, int>>(),
+                                sp.GetService<IItemsWithRawDataRepository<Message, int>>(),
                                 sp.GetService<IZsLogger>())
                             );
 
                         services.AddScoped<IMessageProcessor, MessageProcessor>(sp => 
                             new MessageProcessor(
                                 sp.GetService<IConfiguration>(),
-                                sp.GetService<IZsBot>(),
+                                sp.GetService<IMessenger>(),
                                 sp.GetService<IContextFactory>(),
                                 sp.GetService<IZsLogger>())
                             );
@@ -124,6 +131,25 @@ namespace Zs.App.ChatAdmin
                                 sp.GetService<IConfiguration>(),
                                 sp.GetService<IZsLogger>())
                             );
+                        services.AddScoped<ICommandManager, CommandManager>(sp =>
+                            new CommandManager(
+                                sp.GetService<IContextFactory<BotContext>>(), 
+                                sp.GetService<IZsLogger>())
+                            );
+                        
+                        services.AddScoped<IItemsWithRawDataRepository<Chat, int>, ItemsWithRawDataRepository<Chat, int>>(sp =>
+                            new ItemsWithRawDataRepository<Chat, int>(
+                                sp.GetService<IContextFactory<BotContext>>())
+                            );
+                        services.AddScoped<IItemsWithRawDataRepository<User, int>, ItemsWithRawDataRepository<User, int>>(sp =>
+                            new ItemsWithRawDataRepository<User, int>(
+                                sp.GetService<IContextFactory<BotContext>>())
+                            );
+                        services.AddScoped<IItemsWithRawDataRepository<Message, int>, ItemsWithRawDataRepository<Message, int>>(sp =>
+                            new ItemsWithRawDataRepository<Message, int>(
+                                sp.GetService<IContextFactory<BotContext>>())
+                            );
+
 
                         services.AddSingleton<IHostedService, ChatAdmin>(sp =>
                             ActivatorUtilities.CreateInstance<ChatAdmin>(sp));

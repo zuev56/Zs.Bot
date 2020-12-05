@@ -9,8 +9,8 @@ using System.Text.Json;
 using System.Text.Unicode;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json.Linq;
-using Zs.Bot.Model;
-using Zs.Bot.Model.Data;
+using Zs.Bot.Data;
+using Zs.Bot.Data.Models;
 using Zs.Common.Extensions;
 using TelegramMessageType = Telegram.Bot.Types.Enums.MessageType;
 
@@ -57,7 +57,7 @@ namespace Zs.Bot.Messenger.Telegram
                     {
                         Name         = string.IsNullOrWhiteSpace(jItem["Username"].ToString()) ? fullName : $"{jItem["Username"]}",
                         FullName     = (string.IsNullOrWhiteSpace(fullName) || userName == fullName) ? null : fullName,
-                        UserRoleCode = "USER",
+                        UserRoleId = "USER",
                         IsBot        = isBot,
                         RawData      = jObj.ToString(),
                         RawDataHash  = jObj.ToString().GetMD5Hash(),
@@ -110,7 +110,7 @@ namespace Zs.Bot.Messenger.Telegram
                     {
                         Description = $"{telegramChatTitle}",
                         Name        = $"{telegramChatName}",
-                        ChatTypeCode    = "GROUP",
+                        ChatTypeId    = "GROUP",
                         RawData         = jsonChat,
                         RawDataHash     = jsonChat.GetMD5Hash(),
                         InsertDate      = DateTime.Parse("2018-04-14T22:49:37"),
@@ -225,8 +225,8 @@ namespace Zs.Bot.Messenger.Telegram
                         {
                             Id               = id,
                             ReplyToMessageId = ReplyToDbMessageId,
-                            MessengerCode    = "TG",
-                            MessageTypeCode  = mediaType,
+                            MessengerId    = "TG",
+                            MessageTypeId  = mediaType,
                             UserId           = UserId,
                             ChatId           = (int)dbChatId,
                             Text             = text?.Length > 100 ? text.Substring(0, 100) : text,

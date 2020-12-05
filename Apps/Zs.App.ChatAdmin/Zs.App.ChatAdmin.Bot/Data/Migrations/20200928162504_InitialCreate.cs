@@ -1,6 +1,6 @@
-﻿using System;
-using Microsoft.EntityFrameworkCore.Migrations;
+﻿using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
+using System;
 
 namespace Zs.App.ChatAdmin.Data.Migrations
 {
@@ -473,7 +473,7 @@ namespace Zs.App.ChatAdmin.Data.Migrations
                 table: "bans",
                 column: "user_id");
 
-            migrationBuilder.Sql(Zs.Bot.Model.Data.BotContext.GetOtherSqlScripts());
+            migrationBuilder.Sql(Zs.Bot.Data.BotContext.GetOtherSqlScripts());
             migrationBuilder.Sql(ChatAdminContext.GetOtherSqlScripts());
         }
 

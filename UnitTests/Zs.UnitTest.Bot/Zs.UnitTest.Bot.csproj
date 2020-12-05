@@ -7,21 +7,20 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="3.1.9" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="5.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="5.0.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.8.0" />
     <PackageReference Include="MSTest.TestAdapter" Version="2.1.2" />
     <PackageReference Include="MSTest.TestFramework" Version="2.1.2" />
     <PackageReference Include="Newtonsoft.Json.Schema" Version="3.0.14-beta2" />
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="3.1.4" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="5.0.0" />
     <PackageReference Include="System.Collections.Immutable" Version="5.0.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\Bot\Messengers\Zs.Bot.Messenger.Telegram\Zs.Bot.Messenger.Telegram.csproj" />
-    <ProjectReference Include="..\..\Bot\Zs.Bot.Model\Zs.Bot.Model.csproj" />
-    <ProjectReference Include="..\..\Bot\Zs.Bot\Zs.Bot.csproj" />
+    <ProjectReference Include="..\..\Bot\Zs.Bot.Model\Zs.Bot.Data.csproj" />
+    <ProjectReference Include="..\..\Bot\Zs.Bot\Zs.Bot.Services.csproj" />
     <ProjectReference Include="..\..\Common\Zs.Common\Zs.Common.csproj" />
   </ItemGroup>
 

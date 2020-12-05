@@ -7,12 +7,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Zs.Bot;
-using Zs.Bot.Model.Data;
+using Zs.Bot.Data;
 using Zs.Bot.Services.Messaging;
 using Zs.Common.Abstractions;
 using Zs.Common.Enums;
-using Zs.Common.Modules.Scheduler;
-using Zs.Common.Modules.WebAPI;
+using Zs.Common.Services.Scheduler;
+using Zs.Common.Services.WebAPI;
 using Zs.App.Home.Model;
 using Zs.App.Home.Model.Abstractions;
 using Zs.App.Home.Model.Data;
@@ -74,7 +74,7 @@ namespace Zs.App.Home.Bot
             try
             {
                 _scheduler.Start(3000, 1000);
-                _bot.Messenger.AddMessageToOutbox($"Bot started", "ADMIN");
+                _bot.Messenger.AddMessageToOutboxAsync($"Bot started", "ADMIN");
                 _logger.LogInfo($"{nameof(UserWatcher)} started", nameof(UserWatcher));
 
                 return Task.CompletedTask;
@@ -160,7 +160,7 @@ namespace Zs.App.Home.Bot
             try
             {
                 if (result != null && DateTime.Now.Hour > 8 && DateTime.Now.Hour < 22)
-                    _bot.Messenger.AddMessageToOutbox(result?.TextValue, "ADMIN");
+                    _bot.Messenger.AddMessageToOutboxAsync(result?.TextValue, "ADMIN");
             }
             catch (Exception ex)
             {

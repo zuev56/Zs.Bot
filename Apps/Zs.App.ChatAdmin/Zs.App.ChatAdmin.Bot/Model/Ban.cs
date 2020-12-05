@@ -1,8 +1,8 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Zs.Bot.Model;
 using Zs.App.ChatAdmin.Abstractions;
+using Zs.Bot.Data.Models;
 
 namespace Zs.App.ChatAdmin.Model
 {

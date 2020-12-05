@@ -47,9 +47,9 @@ namespace Zs.App.Home.Web
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseStartup<Startup>();
-                    webBuilder.UseUrls(
-                        "http://localhost:5601",
-                        "http://192.168.1.11:5601");
+                    //webBuilder.UseUrls(
+                    //    "http://localhost:5601",
+                    //    "http://192.168.1.11:5601");
                 });
     }
 }

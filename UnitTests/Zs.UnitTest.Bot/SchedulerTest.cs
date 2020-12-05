@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zs.Common.Enums;
-using Zs.Common.Modules.Scheduler;
+using Zs.Common.Services.Scheduler;
 
 namespace Zs.UnitTest.Bot
 {

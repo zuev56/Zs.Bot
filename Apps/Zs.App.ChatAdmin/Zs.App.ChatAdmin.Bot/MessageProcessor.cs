@@ -5,35 +5,34 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Zs.Bot.Model.Abstractions;
+using Zs.App.ChatAdmin.Abstractions;
+using Zs.Bot.Data.Models;
 using Zs.Bot.Services.Messaging;
 using Zs.Common.Abstractions;
 using Zs.Common.Helpers;
-using Zs.App.ChatAdmin.Abstractions;
-using Zs.Bot;
 
 namespace Zs.App.ChatAdmin
 {
     internal interface IMessageProcessor
     {
         event Action<string> LimitsDefined;
-        Task ProcessGroupMessage(IMessage message);
+        Task ProcessGroupMessage(Message message);
         void ResetLimits();
         Task SetInternetRepairDate(DateTime? date);
     }
 
     internal sealed class MessageProcessor : IMessageProcessor
     {
-        private int _defaultChatId;                 // Идентификатор чата, с которым работает бот
-        private int _limitHi = -1;    // Верхняя предупредительная уставка
-        private int _limitHiHi = -1;    // Верхняя аварийная уставка
-        private int _limitAfterBan = 5;    // Количество сообщений, доступное пользователю после бана до конца дня
-        private int _accountingStartsAfter = -1;    // Общее количество сообщений в чате, после которого включается ограничитель
-        private bool _doNotBanAdmins = true;  // Банить или не банить админов
-        private bool _limitsAreDefined;              // Нужен для понимания, были ли уже переопределены лимиты после восстановления интернета
-        private DateTime? _accountingStartDate;           // Время начала учёта сообщений и включения ограничений
-        private DateTime? _internetRepairDate;            // Время восстановления соединения с интернетом
-        private readonly IZsBot _bot;
+        private int _defaultChatId;              // Идентификатор чата, с которым работает бот
+        private int _limitHi = -1;               // Верхняя предупредительная уставка
+        private int _limitHiHi = -1;             // Верхняя аварийная уставка
+        private int _limitAfterBan = 5;          // Количество сообщений, доступное пользователю после бана до конца дня
+        private int _accountingStartsAfter = -1; // Общее количество сообщений в чате, после которого включается ограничитель
+        private bool _doNotBanAdmins = true;     // Банить или не банить админов
+        private bool _limitsAreDefined;          // Нужен для понимания, были ли уже переопределены лимиты после восстановления интернета
+        private DateTime? _accountingStartDate;  // Время начала учёта сообщений и включения ограничений
+        private DateTime? _internetRepairDate;   // Время восстановления соединения с интернетом
+        private readonly IMessenger _messenger;
         private readonly IZsLogger _logger;
         private readonly IConfiguration _configuration;
         private readonly bool _detailedLogging;
@@ -45,7 +44,7 @@ namespace Zs.App.ChatAdmin
 
         internal MessageProcessor(
             IConfiguration configuration,
-            IZsBot bot,
+            IMessenger messenger,
             IContextFactory contextFactory,
             IZsLogger logger)
         {
@@ -53,7 +52,7 @@ namespace Zs.App.ChatAdmin
             try
             {
                 _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-                _bot = bot ?? throw new ArgumentNullException(nameof(bot));
+                _messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
                 _contextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
 
                 _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -71,7 +70,7 @@ namespace Zs.App.ChatAdmin
             }
         }
 
-        public async Task ProcessGroupMessage(IMessage message)
+        public async Task ProcessGroupMessage(Message message)
         {
             try
             {
@@ -147,18 +146,18 @@ namespace Zs.App.ChatAdmin
                     {
                         case "Continue": return;
                         case "DeleteMessage":
-                            if (!await _bot.Messenger.DeleteMessage(message))
+                            if (!await _messenger.DeleteMessage(message))
                             {
-                                _bot.Messenger.AddMessageToOutbox("Message deleting failed", "OWNER", "ADMIN");
+                                await _messenger.AddMessageToOutboxAsync("Message deleting failed", "OWNER", "ADMIN");
                                 _logger.LogWarning("Message deleting failed", message, nameof(MessageProcessor));
                             }
                             return;
                         case "SetAccountingStartDate":
-                            _bot.Messenger.AddMessageToOutbox(chat, dictResult["MessageText"]);
+                            await _messenger.AddMessageToOutboxAsync(chat, dictResult["MessageText"]);
                             _accountingStartDate = DateTime.Parse(dictResult["AccountingStartDate"]) + TimeSpan.FromSeconds(2);
                             return;
                         case "SendMessageToGroup":
-                            _bot.Messenger.AddMessageToOutbox(chat, dictResult["MessageText"], message);
+                            await _messenger.AddMessageToOutboxAsync(chat, dictResult["MessageText"], message);
 
                             if (dictResult.ContainsKey("BanId") && int.TryParse(dictResult["BanId"], out int banId))
                             {
@@ -182,16 +181,16 @@ namespace Zs.App.ChatAdmin
                             }
                             return;
                         case "SendMessageToOwner":
-                            _bot.Messenger.AddMessageToOutbox(dictResult["MessageText"], "OWNER", "ADMIN");
+                            await _messenger.AddMessageToOutboxAsync(dictResult["MessageText"], "OWNER", "ADMIN");
                             return;
                         default:
-                            _bot.Messenger.AddMessageToOutbox("Unknown action", "OWNER", "ADMIN");
+                            await _messenger.AddMessageToOutboxAsync("Unknown action", "OWNER", "ADMIN");
                             break;
                     }
                 }
                 else
                 {
-                    _bot.Messenger.AddMessageToOutbox("Unknown message process result", "OWNER", "ADMIN");
+                    await _messenger.AddMessageToOutboxAsync("Unknown message process result", "OWNER", "ADMIN");
                 }
 
                 // Начало индивидуального учёта после 100 сообщений в чате 

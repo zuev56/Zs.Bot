@@ -4,17 +4,23 @@ using System.Text.Json;
 using System.Text.Unicode;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
-using Zs.Bot.Model.Abstractions;
+using Zs.Bot.Data.Abstractions;
+using Zs.Bot.Data.Models;
+using Zs.Bot.Data.Factories;
 using Zs.Bot.Services.Messaging;
 using Zs.Common.Extensions;
 using TgChatType = Telegram.Bot.Types.Enums.ChatType;
+using MessageType = Telegram.Bot.Types.Enums.MessageType;
+using User = Telegram.Bot.Types.User;
+using Chat = Telegram.Bot.Types.Chat;
+using Message = Telegram.Bot.Types.Message;
 
 namespace Zs.Bot.Messenger.Telegram
 {
     internal class ItemConverter : IToGenegalItemConverter
     {
         /// <inheritdoc />
-        public IMessage ToGeneralMessage(object specificMessage)
+        public Zs.Bot.Data.Models.Message ToGeneralMessage(object specificMessage)
         {
             var options = new JsonSerializerOptions
             {
@@ -25,13 +31,13 @@ namespace Zs.Bot.Messenger.Telegram
 
             if (specificMessage is TgMessage telegramMessage)
             {
-                var message = DbEntityFactory.NewMessage();
+                var message = EntityFactory.NewMessage();
                 
                 //message.MessageId     -> Auto
                 //message.ChatId        -> define when saving
                 //message.UserId        -> define when saving
-                message.MessengerCode = "TG";
-                message.MessageTypeCode = GetGeneralMessageTypeCode(telegramMessage.Type);
+                message.MessengerId = "TG";
+                message.MessageTypeId = GetGeneralMessageTypeId(telegramMessage.Type);
                 message.Text = telegramMessage.Text;
                 message.RawData = JsonSerializer.Serialize(telegramMessage, options).NormalizeJsonString();
                 message.RawDataHash = message.RawData.GetMD5Hash();
@@ -46,7 +52,7 @@ namespace Zs.Bot.Messenger.Telegram
         }
 
         /// <inheritdoc />
-        public IChat ToGeneralChat(object specificChat)
+        public Zs.Bot.Data.Models.Chat ToGeneralChat(object specificChat)
         {
             var options = new JsonSerializerOptions
             {
@@ -57,13 +63,12 @@ namespace Zs.Bot.Messenger.Telegram
 
             if (specificChat is Chat telegramChat)
             {
-                var chat = DbEntityFactory.NewChat();
+                var chat = EntityFactory.NewChat();
 
-                
                 //chat.ChatId -> Auto
                 chat.Description = telegramChat.Description;
                 chat.Name = telegramChat.Title ?? telegramChat.Username ?? $"{telegramChat.FirstName} {telegramChat.LastName}";
-                chat.ChatTypeCode = ToGeneralChatType(telegramChat.Type).ToString().ToUpperInvariant();
+                chat.ChatTypeId = ToGeneralChatType(telegramChat.Type).ToString().ToUpperInvariant();
                 chat.RawData = JsonSerializer.Serialize(telegramChat, options).NormalizeJsonString();
                 chat.RawDataHash = chat.RawData.GetMD5Hash();
 
@@ -74,7 +79,7 @@ namespace Zs.Bot.Messenger.Telegram
         }
 
         /// <inheritdoc />
-        public IUser ToGeneralUser(object specificUser)
+        public Zs.Bot.Data.Models.User ToGeneralUser(object specificUser)
         {
             var options = new JsonSerializerOptions
             {
@@ -85,10 +90,10 @@ namespace Zs.Bot.Messenger.Telegram
 
             if (specificUser is User telegramUser)
             {
-                var user = DbEntityFactory.NewUser();
+                var user = EntityFactory.NewUser();
 
                 //user.UserId -> Auto
-                user.UserRoleCode = "USER";
+                user.UserRoleId = "USER";
                 user.Name = telegramUser.Username;
                 user.FullName = $"{telegramUser.FirstName} {telegramUser.LastName}".Trim();
                 user.IsBot = telegramUser.IsBot;
@@ -119,7 +124,7 @@ namespace Zs.Bot.Messenger.Telegram
                 return Common.Enums.ChatType.Undefined;
         }
 
-        private static string GetGeneralMessageTypeCode(MessageType type)
+        private static string GetGeneralMessageTypeId(MessageType type)
         {
             return type switch
             {

@@ -3,8 +3,8 @@ using System.IO;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
-using Zs.Bot.Model.Data;
 using Zs.App.ChatAdmin.Abstractions;
+using Zs.Bot.Data;
 
 namespace Zs.App.ChatAdmin.Data
 {
@@ -33,7 +33,7 @@ namespace Zs.App.ChatAdmin.Data
 
         public ChatAdminContext CreateDbContext(string[] args)
         {
-            var solutionDir = Common.Helpers.Path.TryGetSolutionPath();
+            var solutionDir = Common.Extensions.Path.TryGetSolutionPath();
             var configuration = new ConfigurationBuilder()
                 .AddJsonFile(Path.Combine(solutionDir, "PrivateConfiguration.json"), optional: true)
                 .Build();

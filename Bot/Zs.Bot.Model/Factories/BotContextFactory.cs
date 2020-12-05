@@ -2,10 +2,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
-using Zs.Bot.Model.Data;
 using Zs.Common.Abstractions;
 
-namespace Zs.Bot.Model.Factories
+namespace Zs.Bot.Data.Factories
 {
     public class BotContextFactory : IContextFactory<BotContext>, IDesignTimeDbContextFactory<BotContext>
     {
@@ -28,7 +27,7 @@ namespace Zs.Bot.Model.Factories
         // For migrations
         public BotContext CreateDbContext(string[] args)
         {
-            var solutionDir = Common.Helpers.Path.TryGetSolutionPath();
+            var solutionDir = Common.Extensions.Path.TryGetSolutionPath();
             var configuration = new ConfigurationBuilder()
                 .AddJsonFile(Path.Combine(solutionDir, "PrivateConfiguration.json"), optional: true)
                 .Build();
