@@ -26,7 +26,7 @@ namespace Zs.App.Home.Bot
         private readonly IConfiguration _configuration;
         private readonly IZsLogger _logger;
         private readonly IContextFactory _contextFactory;
-        private readonly IZsBot _bot;
+        private readonly IMessenger _messenger;
         private readonly IScheduler _scheduler;
         //private readonly IConnectionAnalyser _connectionAnalyser;
         private readonly bool _detailedLogging;
@@ -38,21 +38,17 @@ namespace Zs.App.Home.Bot
         public UserWatcher(
             IServiceProvider serviceProvider,
             IConfiguration configuration,
-            IZsBot zsBot,
             IMessenger messenger,
             IContextFactory contextFactory,
             IZsLogger logger)
         {
             try
             {
-                if (messenger is null)
-                    throw new ArgumentNullException(nameof(messenger));
-
                 _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
                 _contextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
-                _logger = logger ?? throw new ArgumentNullException(nameof(logger));
                 _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
-                _bot = zsBot ?? throw new ArgumentNullException(nameof(zsBot));
+                _messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
+                _logger = logger;
 
                 _version = float.Parse(_configuration["Vk:Version"], CultureInfo.InvariantCulture);
                 _accessToken = _configuration["Vk:AccessToken"];
@@ -65,33 +61,30 @@ namespace Zs.App.Home.Bot
             catch (Exception ex)
             {
                 var tiex = new TypeInitializationException(typeof(UserWatcher).FullName, ex);
-                _logger.LogError(tiex, nameof(UserWatcher));
+               _logger?.LogErrorAsync(tiex, nameof(UserWatcher));
             }
         }
 
-        public Task StartAsync(CancellationToken cancellationToken)
+        public async Task StartAsync(CancellationToken cancellationToken)
         {
             try
             {
                 _scheduler.Start(3000, 1000);
-                _bot.Messenger.AddMessageToOutboxAsync($"Bot started", "ADMIN");
-                _logger.LogInfo($"{nameof(UserWatcher)} started", nameof(UserWatcher));
+                await _messenger.AddMessageToOutboxAsync($"Bot started", "ADMIN");
+                await _logger?.LogInfoAsync($"{nameof(UserWatcher)} started", nameof(UserWatcher));
 
-                return Task.CompletedTask;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, nameof(UserWatcher));
+                await _logger?.LogErrorAsync(ex, nameof(UserWatcher));
                 throw;
             }
         }
 
-        public Task StopAsync(CancellationToken cancellationToken)
+        public async Task StopAsync(CancellationToken cancellationToken)
         {
             _scheduler.Stop();
-            _logger.LogInfo($"{nameof(UserWatcher)} stopped", nameof(UserWatcher));
-
-            return Task.CompletedTask;
+            await _logger?.LogInfoAsync($"{nameof(UserWatcher)} stopped", nameof(UserWatcher));
         }
 
         private void CreateJobs()
@@ -155,16 +148,16 @@ namespace Zs.App.Home.Bot
             _scheduler.Jobs.Add(sendNightErrorsAndWarnings);
         }
 
-        private void Job_ExecutionCompleted(IJob job, IJobExecutionResult result)
+        private async void Job_ExecutionCompleted(IJob job, IJobExecutionResult result)
         {
             try
             {
                 if (result != null && DateTime.Now.Hour > 8 && DateTime.Now.Hour < 22)
-                    _bot.Messenger.AddMessageToOutboxAsync(result?.TextValue, "ADMIN");
+                   await _messenger.AddMessageToOutboxAsync(result?.TextValue, "ADMIN");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, nameof(UserWatcher));
+               _logger?.LogErrorAsync(ex, nameof(UserWatcher));
             }
         }
 
@@ -240,7 +233,7 @@ namespace Zs.App.Home.Bot
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, nameof(UserWatcher));
+               _logger?.LogErrorAsync(ex, nameof(UserWatcher));
             }
         }
     }

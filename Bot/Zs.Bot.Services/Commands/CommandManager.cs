@@ -2,12 +2,13 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json.Linq;
 using Npgsql;
-using Zs.Bot.Data;
+using Zs.Bot.Data.Abstractions;
 using Zs.Bot.Data.Models;
 using Zs.Common.Abstractions;
 using Zs.Common.Exceptions;
@@ -21,17 +22,30 @@ namespace Zs.Bot.Services.Commands
     /// </summary>
     public class CommandManager : ICommandManager
     {
+        private readonly string _connectionString;
         private readonly IZsLogger _logger;
-        private readonly IContextFactory<BotContext> _contextFactory;
+        private readonly IRepository<Command, string> _commandsRepo;
+        private readonly IRepository<UserRole, string> _userRolesRepo;
+        private readonly IItemsWithRawDataRepository<User, int> _usersRepo;
         private readonly Buffer<BotCommand> _commandBuffer;
 
         public event EventHandler<CommandResult> CommandCompleted;
 
         public CommandManager(
-            IContextFactory<BotContext> contextFactory,
+            string connectionString,
+            IRepository<Command, string> commandsRepo,
+            IRepository<UserRole, string> userRolesRepo,
+            IItemsWithRawDataRepository<User, int> usersRepo,
             IZsLogger logger = null)
         {
-            _contextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
+            if (string.IsNullOrWhiteSpace(connectionString))
+                throw new ArgumentException(nameof(connectionString));
+
+            _connectionString = connectionString;
+            _commandsRepo = commandsRepo ?? throw new ArgumentNullException(nameof(commandsRepo));
+            _userRolesRepo = userRolesRepo ?? throw new ArgumentNullException(nameof(userRolesRepo));
+            _usersRepo = usersRepo ?? throw new ArgumentNullException(nameof(usersRepo));
+
             _logger = logger;
 
             _commandBuffer = new Buffer<BotCommand>();
@@ -45,7 +59,7 @@ namespace Zs.Bot.Services.Commands
 
         private void EnqueueCommand(BotCommand command)
         {
-            _logger?.LogInfo("Command received", command, nameof(CommandManager));
+            _logger?.LogInfoAsync("Command received", command, nameof(CommandManager));
             _commandBuffer.Enqueue(command);
         }
 
@@ -59,72 +73,69 @@ namespace Zs.Bot.Services.Commands
             string cmdExecResult = null;
             try
             {
-                using (var ctx = _contextFactory.GetContext())
+                var dbCommand = await _commandsRepo.FindAsync(c => c.Id == botCommand.Name);
+
+                if (dbCommand != null)
                 {
-                    var dbCommand = await ctx.Commands.FirstOrDefaultAsync(c => c.Id == botCommand.Name);
+                    // (i) SQL-запросы могут быть любые, не только функции.
+                    // (i) Должны содержать параметры типа object, иначе будут проблемы при форматировании строки {0}
 
-                    if (dbCommand != null)
+                    var dbUser = await _usersRepo.FindAsync(u => u.Id == botCommand.FromUserId);
+                    if (dbUser is null)
+                        throw new ItemNotFoundException($"User with Id = {botCommand.FromUserId} not found");
+
+                    var userHasRights = (await GetPermissionsArrayAsync(dbUser.UserRoleId))
+                        .Any(p => p.ToUpperInvariant() == "ALL"
+                               || string.Equals(p, dbCommand.Group, StringComparison.InvariantCultureIgnoreCase));
+
+
+                    if (userHasRights)
                     {
-                        // (i) SQL-запросы могут быть любые, не только функции.
-                        // (i) Должны содержать параметры типа object, иначе будут проблемы при форматировании строки {0}
+                        // Т.о. исключаются проблемы с форматированием строки
+                        var sqlCommandStr = $"{dbCommand.Script} as \"Result\"";
+                        var parameters = await ProcessParametersAsync(botCommand);
 
-                        var dbUser = await ctx.Users.FirstOrDefaultAsync(u => u.Id == botCommand.FromUserId);
-                        if (dbUser is null)
-                            throw new ItemNotFoundException($"User with Id = {botCommand.FromUserId} not found");
-
-                        var userHasRights = (await DbUserRoleExtensions.GetPermissionsArray(dbUser.UserRoleId, _contextFactory.GetContext()))
-                            .Any(p => p.ToUpperInvariant() == "ALL"
-                                   || string.Equals(p, dbCommand.Group, StringComparison.InvariantCultureIgnoreCase));
+                        var queryWithParams = string.Format(sqlCommandStr, parameters);
 
 
-                        if (userHasRights)
+
+                        //Определить спец. синтаксис для дефолтных(и не только) параметров команды,
+                        //который будет расшивровываться в этом блоке и обрабатываться определённым образом
+                        //
+                        //    ProcessSpecifiedParametres(...)
+                        
+                        try
                         {
-                            // Т.о. исключаются проблемы с форматированием строки
-                            var sqlCommandStr = $"{dbCommand.Script} as \"Result\"";
-                            var parameters = await ProcessParametersAsync(botCommand);
-
-                            var queryWithParams = string.Format(sqlCommandStr, parameters);
-
-
-
-                            //Определить спец. синтаксис для дефолтных(и не только) параметров команды,
-                            //который будет расшивровываться в этом блоке и обрабатываться определённым образом
-                            //
-                            //    ProcessSpecifiedParametres(...)
-                            
-                            try
-                            {
-                                var connectionString = ctx.Database.GetDbConnection().ConnectionString;
-                                cmdExecResult = DbHelper.GetQueryResult(connectionString, queryWithParams) ?? "NULL";
-                            }
-                            catch (PostgresException pEx)
-                            {
-                                pEx.Data.Add("BotCommand", botCommand);
-                                _logger?.LogError(pEx, nameof(CommandManager));
-                                cmdExecResult = "Command execution: request processing error!";
-                            }
-                            catch (Exception ex)
-                            {
-                                ex.Data.Add("BotCommand", botCommand);
-                                _logger?.LogError(ex, nameof(CommandManager));
-
-                                cmdExecResult = ex.Message == "Column is null"
-                                    ? "NULL"
-                                    : "Command execution: general error!";
-                            }
+                            cmdExecResult = DbHelper.GetQueryResult(_connectionString, queryWithParams) ?? "NULL";
                         }
-                        else
+                        catch (PostgresException pEx)
                         {
-                            cmdExecResult = "You have no rights for this command";
+                            pEx.Data.Add("BotCommand", botCommand);
+                            _logger?.LogErrorAsync(pEx, nameof(CommandManager));
+                            cmdExecResult = "Command execution: request processing error!";
+                        }
+                        catch (Exception ex)
+                        {
+                            ex.Data.Add("BotCommand", botCommand);
+                            _logger?.LogErrorAsync(ex, nameof(CommandManager));
+
+                            cmdExecResult = ex.Message == "Column is null"
+                                ? "NULL"
+                                : "Command execution: general error!";
                         }
                     }
                     else
-                        throw new ArgumentException($"Command '{botCommand.Name}' not found");
+                    {
+                        cmdExecResult = "You have no rights for this command";
+                    }
                 }
+                else
+                    throw new ArgumentException($"Command '{botCommand.Name}' not found");
+                
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, nameof(CommandManager));
+                _logger?.LogErrorAsync(ex, nameof(CommandManager));
                 return $"Command '{botCommand.Name}' execution failed!";
             }
 
@@ -145,13 +156,12 @@ namespace Zs.Bot.Services.Commands
 
             var concreteParams = new Dictionary<string, string>(genericParams.Count());
 
-            using var ctx = _contextFactory.GetContext();
             foreach (var p in genericParams)
             {
                 switch (p.ToUpperInvariant())
                 {
                     case "<USERROLECODE>":
-                        var user = await ctx.Users.FirstOrDefaultAsync(u => u.Id == botCommand.FromUserId);
+                        var user = await _usersRepo.FindAsync(u => u.Id == botCommand.FromUserId);
                         concreteParams.Add(p, $"'{user?.UserRoleId}'");
                         break;
                     default:
@@ -199,8 +209,18 @@ namespace Zs.Bot.Services.Commands
             catch (Exception ex)
             {
                 ex.Data.Add("Command", logCmdName);
-                _logger?.LogError(ex, nameof(CommandManager));
+                _logger?.LogErrorAsync(ex, nameof(CommandManager));
             }
+        }
+
+        private async Task<string[]> GetPermissionsArrayAsync(string userRoleId)
+        {
+            if (userRoleId == null)
+                throw new ArgumentNullException(nameof(userRoleId));
+
+            var role = await _userRolesRepo.FindAsync(r => r.Id == userRoleId);
+
+            return JsonSerializer.Deserialize<string[]>(role?.Permissions);
         }
 
         /// <summary>
@@ -208,26 +228,25 @@ namespace Zs.Bot.Services.Commands
         /// </summary>
         /// <param name="userRoleId"></param>
         /// <returns>List of commands</returns>
-        private List<Command> GetDbCommands(string userRoleId)
+        private async Task<List<Command>> GetDbCommands(string userRoleId)
         {
             if (userRoleId is null)
                 throw new ArgumentNullException(nameof(userRoleId));
 
-            using var ctx = _contextFactory.GetContext();
-            var permissionsString = ctx.UserRoles.FirstOrDefault(r => r.Id == userRoleId).Permissions;
-            var permissionsArray = JArray.Parse(permissionsString).ToObject<string[]>();
+            var role = await _userRolesRepo.FindAsync(r => r.Id == userRoleId);
+            var permissionsArray = JArray.Parse(role.Permissions).ToObject<string[]>();
 
             var dbCommands = permissionsArray.Any(p => string.Equals(p, "All", StringComparison.InvariantCultureIgnoreCase))
-                ? ctx.Commands
-                : ctx.Commands.Where(c => permissionsArray.Contains(c.Group));
+                ? await _commandsRepo.FindAllAsync()
+                : await _commandsRepo.FindAllAsync(c => permissionsArray.Contains(c.Group));
 
             return dbCommands.Cast<Command>().ToList();
         }
 
         private async Task<Command> GetDbCommandAsync(string commandName)
         {
-            using var ctx = _contextFactory.GetContext();
-            return await ctx.Commands.Where(c => EF.Functions.Like(c.Id, commandName)).FirstOrDefaultAsync();
+            //return await ctx.Commands.Where(c => EF.Functions.Like(c.Id, commandName)).FirstOrDefaultAsync();
+            return await _commandsRepo.FindAsync(c => EF.Functions.Like(c.Id, commandName));
         }
 
         /// <summary> Если сообщение является командой, отправит её в очередь на обработку. Иначе вернёт false </summary>
@@ -246,7 +265,7 @@ namespace Zs.Bot.Services.Commands
 
                     if (botCommand != null)
                     {
-                        _logger?.LogInfo("Command received", botCommand, nameof(CommandManager));
+                        _logger?.LogInfoAsync("Command received", botCommand, nameof(CommandManager));
                         EnqueueCommand(botCommand);
                         return true;
                     }
@@ -256,7 +275,7 @@ namespace Zs.Bot.Services.Commands
             }
             catch (Exception e)
             {
-                _logger?.LogError(e, nameof(CommandManager));
+                _logger?.LogErrorAsync(e, nameof(CommandManager));
                 return false;
             }
             

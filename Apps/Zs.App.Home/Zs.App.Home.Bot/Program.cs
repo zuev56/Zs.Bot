@@ -20,6 +20,10 @@ using HomeContextFactory = Zs.App.Home.Model.ContextFactory;
 using Zs.App.Home.Model.Abstractions;
 using Zs.Bot;
 using Zs.Bot.Data;
+using Zs.Bot.Data.Abstractions;
+using Zs.Bot.Services.DataSavers;
+using Zs.Bot.Services.Commands;
+using Zs.Bot.Data.Models;
 
 namespace Zs.App.Home.Bot
 {
@@ -34,7 +38,7 @@ namespace Zs.App.Home.Bot
             {
                 if (args?.Length == 0)
                 {
-                    var localConfig = Path.Combine(Directory.GetCurrentDirectory(), "configuration.json");
+                    var localConfig = System.IO.Path.Combine(Directory.GetCurrentDirectory(), "configuration.json");
                     args = new[] { localConfig };
                 }
 
@@ -89,7 +93,7 @@ namespace Zs.App.Home.Bot
                         services.AddSingleton<IContextFactory<BotContext>, BotContextFactory>(sp =>
                             new BotContextFactory(sp.GetService<DbContextOptions<BotContext>>()));
 
-                        services.AddSingleton<IZsLogger, Logger>(sp => new Logger(sp.GetService<IContextFactory<BotContext>>()));
+                        services.AddSingleton<IZsLogger, Logger>(sp => new Logger(sp.GetService<IRepository<Log, int>>()));
 
                         services.AddScoped<IConnectionAnalyser, ConnectionAnalyser>(sp =>
                         {
@@ -103,20 +107,43 @@ namespace Zs.App.Home.Bot
                             return ca;
                         });
 
-                        services.AddSingleton<IMessenger, TelegramMessenger>(sp =>
-                            new TelegramMessenger(hostContext.Configuration["BotToken"],
-                                sp.GetService<IContextFactory<BotContext>>(),
-                                sp.GetService<IZsLogger>(),
-                                sp.GetService<IConnectionAnalyser>().WebProxy)
-                            );
-
-                        services.AddSingleton<IZsBot, ZsBot>(sp =>
-                            new ZsBot(
-                                sp.GetService<IConfiguration>(),
-                                sp.GetService<IMessenger>(),
-                                sp.GetService<IContextFactory<BotContext>>(),
+                        services.AddScoped<IMessageDataSaver, MessageDataDBSaver>(sp =>
+                            new MessageDataDBSaver(
+                                sp.GetService<IItemsWithRawDataRepository<Chat, int>>(),
+                                sp.GetService<IItemsWithRawDataRepository<User, int>>(),
+                                sp.GetService<IItemsWithRawDataRepository<Message, int>>(),
                                 sp.GetService<IZsLogger>())
                             );
+
+                        services.AddScoped<IMessenger, TelegramMessenger>(sp =>
+                            new TelegramMessenger(
+                                hostContext.Configuration["BotToken"],
+                                sp.GetService<IItemsWithRawDataRepository<Chat, int>>(),
+                                sp.GetService<IItemsWithRawDataRepository<User, int>>(),
+                                sp.GetService<IItemsWithRawDataRepository<Message, int>>(),
+                                sp.GetService<IMessageDataSaver>(),
+                                sp.GetService<ICommandManager>(),
+                                sp.GetService<IConnectionAnalyser>().WebProxy,
+                                sp.GetService<IZsLogger>())
+                            );
+
+                        services.AddScoped<IRepository<Log, int>, CommonRepository<Log, int>>(sp =>
+                            new CommonRepository<Log, int>(
+                                sp.GetService<IContextFactory<BotContext>>())
+                            );
+                        services.AddScoped<IItemsWithRawDataRepository<Chat, int>, ItemsWithRawDataRepository<Chat, int>>(sp =>
+                            new ItemsWithRawDataRepository<Chat, int>(
+                                sp.GetService<IContextFactory<BotContext>>())
+                            );
+                        services.AddScoped<IItemsWithRawDataRepository<User, int>, ItemsWithRawDataRepository<User, int>>(sp =>
+                            new ItemsWithRawDataRepository<User, int>(
+                                sp.GetService<IContextFactory<BotContext>>())
+                            );
+                        services.AddScoped<IItemsWithRawDataRepository<Message, int>, ItemsWithRawDataRepository<Message, int>>(sp =>
+                            new ItemsWithRawDataRepository<Message, int>(
+                                sp.GetService<IContextFactory<BotContext>>())
+                            );
+
 
                         services.AddSingleton<IHostedService, UserWatcher>(x =>
                             ActivatorUtilities.CreateInstance<UserWatcher>(x));

@@ -9,6 +9,7 @@ namespace Zs.Bot.Data.Abstractions
     /// <summary>  </summary>
     /// <typeparam name="TEntity">Search value type</typeparam>
     public interface IRepository<TEntity, TKey>
+        where TEntity : class, IDbEntity<TEntity, TKey>
     {
         /// <summary>
         /// 

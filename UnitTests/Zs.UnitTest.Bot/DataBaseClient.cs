@@ -3,10 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zs.Bot.Data;
-using Zs.Bot.Data.Data;
 using Zs.Bot.Data.Factories;
 using Zs.Common.Abstractions;
-using Zs.Bot.Data.Abstractions;
 
 namespace Zs.UnitTest.Bot
 {
@@ -20,7 +18,7 @@ namespace Zs.UnitTest.Bot
 
         public static void Init(TestContext testContext)
         {
-            var solutionDir = Common.Helpers.Path.TryGetSolutionPath();
+            var solutionDir = Common.Extensions.Path.TryGetSolutionPath();
             var configuration = new ConfigurationBuilder().AddJsonFile(Path.Combine(solutionDir,"PrivateConfiguration.json"), true, true).Build();
             _connectionString = configuration.GetConnectionString("Default");
 

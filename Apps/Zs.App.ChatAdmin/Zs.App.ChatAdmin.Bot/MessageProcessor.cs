@@ -54,7 +54,6 @@ namespace Zs.App.ChatAdmin
                 _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
                 _messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
                 _contextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
-
                 _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
                 _defaultChatId = _configuration["DefaultChatId"] != null ? checked((int)long.Parse(configuration["DefaultChatId"])) : -1;
@@ -82,13 +81,13 @@ namespace Zs.App.ChatAdmin
 
                 if (!_limitsAreDefined)
                 {
-                    _logger.LogInfo($"Limits are not defined. Group message won't be processed", nameof(MessageProcessor));
+                    await _logger.LogInfoAsync($"Limits are not defined. Group message won't be processed", nameof(MessageProcessor));
                     return;
                 }
 
                 if ((DateTime.Now - _internetRepairDate)?.TotalSeconds <= _waitAfterConnectionRepairedSec)
                 {
-                    _logger.LogInfo($"The message [{message.Id}] won't be processed. Internet was restored less then {_waitAfterConnectionRepairedSec} seconds ago", nameof(MessageProcessor));
+                    await _logger.LogInfoAsync($"The message [{message.Id}] won't be processed. Internet was restored less then {_waitAfterConnectionRepairedSec} seconds ago", nameof(MessageProcessor));
                     return;
                 }
 
@@ -121,7 +120,7 @@ namespace Zs.App.ChatAdmin
                         { "JsonResult", jsonResult },
                         { "MessageId", message.Id }
                     };
-                    _logger.LogInfo("Incoming message sql-processing result", logData, nameof(MessageProcessor));
+                    await _logger.LogInfoAsync("Incoming message sql-processing result", logData, nameof(MessageProcessor));
                 }
 
                 var dictResult = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(jsonResult);
@@ -149,7 +148,7 @@ namespace Zs.App.ChatAdmin
                             if (!await _messenger.DeleteMessage(message))
                             {
                                 await _messenger.AddMessageToOutboxAsync("Message deleting failed", "OWNER", "ADMIN");
-                                _logger.LogWarning("Message deleting failed", message, nameof(MessageProcessor));
+                                await _logger.LogWarningAsync("Message deleting failed", message, nameof(MessageProcessor));
                             }
                             return;
                         case "SetAccountingStartDate":
@@ -217,7 +216,7 @@ namespace Zs.App.ChatAdmin
             //}
             catch (Exception ex)
             {
-                _logger.LogError(ex, nameof(MessageProcessor));
+                await _logger.LogErrorAsync(ex, nameof(MessageProcessor));
             }
         }
 
@@ -244,7 +243,7 @@ namespace Zs.App.ChatAdmin
                         { "MessageLimitAfterBan", _limitAfterBan },
                         { "AccountingStartsAfter", _accountingStartsAfter }
                     };
-                    _logger.LogInfo("Limits set from configuration file", logData, nameof(MessageProcessor));
+                    Task.Run(() => _logger.LogInfoAsync("Limits set from configuration file", logData, nameof(MessageProcessor)));
                 }
 
                 Volatile.Read(ref LimitsDefined)?.Invoke(GetLimitInfo());
@@ -256,7 +255,7 @@ namespace Zs.App.ChatAdmin
                 _limitAfterBan = -1;
                 _accountingStartsAfter = -1;
                 _accountingStartDate = null;
-                _logger.LogError(ex, nameof(MessageProcessor));
+                Task.Run(() => _logger.LogErrorAsync(ex, nameof(MessageProcessor)));
             }
         }
 
@@ -281,7 +280,7 @@ namespace Zs.App.ChatAdmin
                     await ctx.SaveChangesAsync();
                 }
 
-                _logger.LogWarning("The internet connection has been lost. Today's ban-warnings removed", nameof(MessageProcessor));
+                await _logger.LogWarningAsync("The internet connection has been lost. Today's ban-warnings removed", nameof(MessageProcessor));
             }
             else
             {
@@ -298,7 +297,7 @@ namespace Zs.App.ChatAdmin
         }
 
         /// <summary> Defines the limits depending on current situation </summary>
-        private void DefineActualLimits()
+        private async Task DefineActualLimits()
         {
             int maxAcountedMessagesFromUser = -1;
             int dailyMsgCount = -1;
@@ -317,7 +316,7 @@ namespace Zs.App.ChatAdmin
                     {"_accountingStartDate", _accountingStartDate}
                 };
 
-                _logger.LogInfo("Limits definition started", logDataBefore, nameof(MessageProcessor));
+                await _logger.LogInfoAsync("Limits definition started", logDataBefore, nameof(MessageProcessor));
 
                 using (var ctx = _contextFactory.GetBotContext())
                 {
@@ -374,7 +373,7 @@ namespace Zs.App.ChatAdmin
                 _accountingStartsAfter = -1;
                 _accountingStartDate = null;
                 _limitsAreDefined = false;
-                _logger.LogError(ex, nameof(MessageProcessor));
+                await _logger.LogErrorAsync(ex, nameof(MessageProcessor));
             }
             finally
             {
@@ -388,7 +387,7 @@ namespace Zs.App.ChatAdmin
                     {"dailyMsgCount", dailyMsgCount}
                 };
 
-                _logger.LogInfo("Limits definition finished", logDataAfter, nameof(MessageProcessor));
+                await _logger.LogInfoAsync("Limits definition finished", logDataAfter, nameof(MessageProcessor));
             }
         }
 

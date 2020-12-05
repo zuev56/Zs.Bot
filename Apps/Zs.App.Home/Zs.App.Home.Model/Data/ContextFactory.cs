@@ -1,12 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Zs.App.Home.Model.Data;
-using Zs.App.Home.Model;
-using Microsoft.EntityFrameworkCore.Design;
-using Zs.Bot.Data;
-using System;
+﻿using System;
 using System.IO;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
 using Zs.App.Home.Model.Abstractions;
+using Zs.App.Home.Model.Data;
+using Zs.Bot.Data;
 
 namespace Zs.App.Home.Model
 {
@@ -29,7 +28,7 @@ namespace Zs.App.Home.Model
 
         public HomeContext CreateDbContext(string[] args)
         {
-            var solutionDir = Common.Helpers.Path.TryGetSolutionPath();
+            var solutionDir = Common.Extensions.Path.TryGetSolutionPath();
             var configuration = new ConfigurationBuilder()
                 .AddJsonFile(Path.Combine(solutionDir, "PrivateConfiguration.json"), optional: true)
                 .Build();

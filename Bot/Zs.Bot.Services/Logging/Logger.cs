@@ -1,8 +1,12 @@
 ﻿using System;
+using System.ComponentModel.DataAnnotations;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Zs.Bot.Data;
+using Zs.Bot.Data.Abstractions;
 using Zs.Bot.Data.Models;
 using Zs.Common.Abstractions;
 using Zs.Common.Enums;
@@ -11,10 +15,11 @@ namespace Zs.Bot.Services.Logging
 {
     public class Logger : IZsLogger
     {
+        private static int _logMessageMaxLength = -1;
         private static Logger _instance;
         private string _emergencyLogDirrectory = AppDomain.CurrentDomain.BaseDirectory;
         private readonly object _locker = new object();
-        private readonly IContextFactory<BotContext> _contextFactory;
+        private readonly IRepository<Log, int> _logsRepo;
 
         public string EmergencyLogDirrectory
         {
@@ -34,46 +39,63 @@ namespace Zs.Bot.Services.Logging
             }
         }
 
-        public Logger(IContextFactory<BotContext> contextFactory)
+        public Logger(IRepository<Log, int> logsRepo)
         {
-            _contextFactory = contextFactory;
+            _logsRepo = logsRepo ?? throw new ArgumentNullException(nameof(logsRepo));
         }
 
-        public void LogError(Exception e, [CallerMemberName] string initiator = null)
+        public async Task LogErrorAsync(Exception e, [CallerMemberName] string initiator = null)
         {
             var jsonData = JsonConvert.SerializeObject(e, Formatting.Indented);
-            TrySaveToDatabase(LogType.Error, e.Message, initiator, jsonData);
+            await TrySaveToDatabase(LogType.Error, e.Message, initiator, jsonData);
         }
 
-        public void LogInfo(string message, [CallerMemberName] string initiator = null)
+        public async Task LogInfoAsync(string message, [CallerMemberName] string initiator = null)
         {
-            TrySaveToDatabase(LogType.Info, message, initiator);
+            await TrySaveToDatabase(LogType.Info, message, initiator);
         }
 
-        public void LogInfo<T>(string message, T data, [CallerMemberName] string initiator = null)
-        {
-            var jsonData = JsonConvert.SerializeObject(data, Formatting.Indented);
-            TrySaveToDatabase(LogType.Info, message, initiator, jsonData);
-        }
-
-        public void LogWarning(string message = null, [CallerMemberName] string initiator = null)
-        {
-            TrySaveToDatabase(LogType.Warning, message, initiator);
-        }
-
-        public void LogWarning<T>(string message, T data, [CallerMemberName] string initiator = null)
+        public async Task LogInfoAsync<T>(string message, T data, [CallerMemberName] string initiator = null)
         {
             var jsonData = JsonConvert.SerializeObject(data, Formatting.Indented);
-            TrySaveToDatabase(LogType.Warning, message, initiator, jsonData);
+            await TrySaveToDatabase(LogType.Info, message, initiator, jsonData);
         }
 
-        private void TrySaveToDatabase(LogType type, string message, string initiator = null, string data = null)
+        public async Task LogWarningAsync(string message = null, [CallerMemberName] string initiator = null)
+        {
+            await TrySaveToDatabase(LogType.Warning, message, initiator);
+        }
+
+        public async Task LogWarningAsync<T>(string message, T data, [CallerMemberName] string initiator = null)
+        {
+            var jsonData = JsonConvert.SerializeObject(data, Formatting.Indented);
+            await TrySaveToDatabase(LogType.Warning, message, initiator, jsonData);
+        }
+
+        private async Task TrySaveToDatabase(LogType type, string message, string initiator = null, string data = null)
         {
             try
             {
-                var isSaved = DbLogExtensions.SaveToDb(type, message, _contextFactory.GetContext(), initiator, data);
+                if (_logMessageMaxLength == -1)
+                {
+                    var attribute = (StringLengthAttribute)typeof(Log).GetProperty(nameof(Log.Message)).GetCustomAttributes(true)
+                        .FirstOrDefault(a => a is StringLengthAttribute);
+                    _logMessageMaxLength = attribute?.MaximumLength ?? 100;
+                }
 
-                if (!isSaved)
+                if (message.Length > _logMessageMaxLength)
+                    message = message.Substring(0, _logMessageMaxLength - 3) + "...";
+
+                var logItem = new Log
+                {
+                    Type       = type.ToString(),
+                    Message    = message,
+                    Initiator  = initiator,
+                    Data       = data,
+                    InsertDate = DateTime.Now
+                };
+
+                if (!await _logsRepo.SaveAsync(logItem))
                 {
                     TrySaveInFile(type, message, initiator, data);
                 }
@@ -83,7 +105,7 @@ namespace Zs.Bot.Services.Logging
                 TrySaveInFile(type, message, initiator, data);
             }
         }
-
+        
         private void TrySaveInFile(LogType type, string message, string initiator, string data)
         {
             var formattedType = type switch

@@ -49,11 +49,11 @@ namespace Zs.Common.Services.Connectors
                 _timer = new Timer(new TimerCallback(AnalyzeConnection));
                 _timer.Change(dueTime, period);
 
-                _logger?.LogInfo($"{nameof(ConnectionAnalyser)} started", nameof(ConnectionAnalyser));
+                _logger?.LogInfoAsync($"{nameof(ConnectionAnalyser)} started", nameof(ConnectionAnalyser));
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, nameof(ConnectionAnalyser));
+                _logger?.LogErrorAsync(ex, nameof(ConnectionAnalyser));
             }
         }
 
@@ -63,11 +63,11 @@ namespace Zs.Common.Services.Connectors
             try
             {
                 _timer.Dispose();
-                _logger?.LogInfo($"{nameof(ConnectionAnalyser)} stopped", nameof(ConnectionAnalyser));
+                _logger?.LogInfoAsync($"{nameof(ConnectionAnalyser)} stopped", nameof(ConnectionAnalyser));
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, nameof(ConnectionAnalyser));
+                _logger?.LogErrorAsync(ex, nameof(ConnectionAnalyser));
             }
         }
 
@@ -80,7 +80,7 @@ namespace Zs.Common.Services.Connectors
             {
                 var credentials = new NetworkCredential(userName, password);
                 WebProxy.Credentials = credentials;
-                _logger?.LogInfo("Proxy used", nameof(ConnectionAnalyser));
+                _logger?.LogInfoAsync("Proxy used", nameof(ConnectionAnalyser));
             }
         }
 
@@ -147,7 +147,7 @@ namespace Zs.Common.Services.Connectors
                     if (analyzeResult != CurrentStatus)
                     {
                         CurrentStatus = analyzeResult;
-                        _logger?.LogInfo($"Connection status changed: {CurrentStatus}", nameof(ConnectionAnalyser));
+                        _logger?.LogInfoAsync($"Connection status changed: {CurrentStatus}", nameof(ConnectionAnalyser));
 
                         ConnectionStatusChanged?.Invoke(CurrentStatus);
                     }
@@ -155,7 +155,7 @@ namespace Zs.Common.Services.Connectors
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, nameof(ConnectionAnalyser));
+                _logger?.LogErrorAsync(ex, nameof(ConnectionAnalyser));
             }
         }
 

@@ -97,15 +97,15 @@ namespace Zs.UnitTest.Bot
             {
                 var testJsonValue = "{\"value\": \"UnitTest1\"}";
 
-                var messenger       = new MessengerInfo   {Id = "U1", Name = "UnitTest1" };
-                var chatType        = new ChatType        {Id = "UNITTEST1", Name = "UnitTest1"};
+                var messenger       = new MessengerInfo   { Id = "U1", Name = "UnitTest1" };
+                var chatType        = new ChatType        { Id = "UNITTEST1", Name = "UnitTest1"};
                 var chat            = new Chat            { Id = -2, ChatTypeId = "UNITTEST1", Name = "UnitTest1", RawData = testJsonValue, RawDataHash = testJsonValue.GetMD5Hash()};
-                var role            = new UserRole        {Id = "UNITTEST1", Name = "UnitTest1", Permissions = "[ \"UnitTest1\" ]" };
-                var user            = new User            { Id = -2, Name = "UnitTest1", UserRoleCode = "UNITTEST1", IsBot = false, RawData = testJsonValue, RawDataHash = testJsonValue.GetMD5Hash() };
-                var messageType     = new MessageType     {Id = "U1", Name = "UnitTest1" };
-                var message         = new Message         { Id = -2, MessengerId = "U1", MessageTypeCode = "U1", ChatId = -2, UserId = -2, RawData = testJsonValue, RawDataHash = testJsonValue.GetMD5Hash() };
+                var role            = new UserRole        { Id = "UNITTEST1", Name = "UnitTest1", Permissions = "[ \"UnitTest1\" ]" };
+                var user            = new User            { Id = -2, Name = "UnitTest1", UserRoleId = "UNITTEST1", IsBot = false, RawData = testJsonValue, RawDataHash = testJsonValue.GetMD5Hash() };
+                var messageType     = new MessageType     { Id = "U1", Name = "UnitTest1" };
+                var message         = new Message         { Id = -2, MessengerId = "U1", MessageTypeId = "U1", ChatId = -2, UserId = -2, RawData = testJsonValue, RawDataHash = testJsonValue.GetMD5Hash() };
                 var log             = new Log             { Id = -2, Type = "WARNING", Message = "UnitTest1" };
-                var command         = new Command         { Name = "/unittest1", Script = "UnitTest1", Group = "UnitTest1" };
+                var command         = new Command         { Id = "/unittest1", Script = "UnitTest1", Group = "UnitTest1" };
 
                 using (var ctx = _contextFactory.GetContext())
                 {
@@ -145,7 +145,7 @@ namespace Zs.UnitTest.Bot
                     if (!ctx.Logs.Any(l => l.Id == log.Id))
                         ctx.Logs.Add(log);
 
-                    if (!ctx.Commands.Any(c => c.Name == command.Name))
+                    if (!ctx.Commands.Any(c => c.Id == command.Id))
                         ctx.Commands.Add(command);
 
                     if (ctx.ChangeTracker.HasChanges())
@@ -165,15 +165,15 @@ namespace Zs.UnitTest.Bot
             {
                 var testJsonValue = "{\"value\": \"UnitTest0\"}";
 
-                var messenger       = new MessengerInfo   {Id = "U0", Name = "UnitTest0" };
-                var chatType        = new ChatType        {Id = "UNITTEST0", Name = "UnitTest0"};
-                var chat            = new Chat            { Id = -1, ChatTypeCode = "UNITTEST0", Name = "UnitTest0", RawData = testJsonValue, RawDataHash = testJsonValue.GetMD5Hash()};
-                var role            = new UserRole        {Id = "UNITTEST0", Name = "UnitTest0", Permissions = "[ \"UnitTest0\" ]" };
-                var user            = new User            { Id = -1, Name = "UnitTest0", UserRoleCode = "UNITTEST0", IsBot = false, RawData = testJsonValue, RawDataHash = testJsonValue.GetMD5Hash() };
-                var messageType     = new MessageType     {Id = "U0", Name = "UnitTest0" };
-                var message         = new Message         { Id = -1, MessengerCode = "U0", MessageTypeCode = "U0", ChatId = -1, UserId = -1, RawData = testJsonValue, RawDataHash = testJsonValue.GetMD5Hash() };
+                var messenger       = new MessengerInfo   { Id = "U0", Name = "UnitTest0" };
+                var chatType        = new ChatType        { Id = "UNITTEST0", Name = "UnitTest0"};
+                var chat            = new Chat            { Id = -1, ChatTypeId = "UNITTEST0", Name = "UnitTest0", RawData = testJsonValue, RawDataHash = testJsonValue.GetMD5Hash()};
+                var role            = new UserRole        { Id = "UNITTEST0", Name = "UnitTest0", Permissions = "[ \"UnitTest0\" ]" };
+                var user            = new User            { Id = -1, Name = "UnitTest0", UserRoleId = "UNITTEST0", IsBot = false, RawData = testJsonValue, RawDataHash = testJsonValue.GetMD5Hash() };
+                var messageType     = new MessageType     { Id = "U0", Name = "UnitTest0" };
+                var message         = new Message         { Id = -1, MessengerId = "U0", MessageTypeId = "U0", ChatId = -1, UserId = -1, RawData = testJsonValue, RawDataHash = testJsonValue.GetMD5Hash() };
                 var log             = new Log             { Id = -1, Type = "WARNING", Message = "UnitTest0" };
-                var command         = new Command         { Name = "/unittest0", Script = "UnitTest0", Group = "UnitTest0" };
+                var command         = new Command         { Id = "/unittest0", Script = "UnitTest0", Group = "UnitTest0" };
 
                 using (var ctx = _contextFactory.GetContext())
                 {
@@ -213,7 +213,7 @@ namespace Zs.UnitTest.Bot
                     if (!ctx.Logs.Any(l => l.Id == log.Id))
                         ctx.Logs.Add(log);
 
-                    if (!ctx.Commands.Any(c => c.Name == command.Name))
+                    if (!ctx.Commands.Any(c => c.Id == command.Id))
                         ctx.Commands.Add(command);
 
                     if (ctx.ChangeTracker.HasChanges())

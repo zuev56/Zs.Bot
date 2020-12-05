@@ -1,10 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Text;
-using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Zs.Bot.Data;
@@ -28,9 +24,9 @@ namespace Zs.App.Home.Model.Data
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            var solutionDir = Common.Helpers.Path.TryGetSolutionPath();
+            var solutionDir = Common.Extensions.Path.TryGetSolutionPath();
             var configuration = new ConfigurationBuilder()
-                .AddJsonFile(Path.Combine(solutionDir, "PrivateConfiguration.json"), optional: false)
+                .AddJsonFile(System.IO.Path.Combine(solutionDir, "PrivateConfiguration.json"), optional: false)
                 .Build();
             var connectionString = configuration.GetConnectionString("Default");
 

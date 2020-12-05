@@ -39,11 +39,11 @@ namespace Zs.Common.Services.Scheduler
                 _timer = new Timer(new TimerCallback(DoWork));
                 _timer.Change(dueTimeMs, periodMs);
 
-                _logger?.LogInfo($"{nameof(Scheduler)} started", nameof(Scheduler));
+                _logger?.LogInfoAsync($"{nameof(Scheduler)} started", nameof(Scheduler));
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, nameof(Scheduler));
+                _logger?.LogErrorAsync(ex, nameof(Scheduler));
             }
         }
 
@@ -52,11 +52,11 @@ namespace Zs.Common.Services.Scheduler
             try
             {
                 _timer.Dispose();
-                _logger?.LogInfo($"{nameof(Scheduler)} stopped", nameof(Scheduler));
+                _logger?.LogInfoAsync($"{nameof(Scheduler)} stopped", nameof(Scheduler));
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, nameof(Scheduler));
+                _logger?.LogErrorAsync(ex, nameof(Scheduler));
             }
         }
 
@@ -75,9 +75,9 @@ namespace Zs.Common.Services.Scheduler
                                 if (task.Exception is AggregateException aex)
                                 {
                                     if (aex.InnerExceptions.Count == 1)
-                                        _logger.LogError(aex.InnerExceptions[0], nameof(Scheduler));
+                                        _logger.LogErrorAsync(aex.InnerExceptions[0], nameof(Scheduler));
                                     else
-                                        _logger.LogError(task.Exception, nameof(Scheduler));
+                                        _logger.LogErrorAsync(task.Exception, nameof(Scheduler));
                                 }
                             }, TaskContinuationOptions.OnlyOnFaulted);
                     }
@@ -85,7 +85,7 @@ namespace Zs.Common.Services.Scheduler
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, nameof(Scheduler));
+                _logger?.LogErrorAsync(ex, nameof(Scheduler));
             }
         }
     }

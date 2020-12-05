@@ -31,7 +31,7 @@ namespace Zs.Bot.Messenger.Telegram
         private readonly IItemsWithRawDataRepository<Chat, int> _chatsRepo;
         private readonly IItemsWithRawDataRepository<User, int> _usersRepo;
         private readonly IItemsWithRawDataRepository<Message, int> _messagesRepo;
-        private readonly IMessageDataSaver _messengerDataSaver;
+        private readonly IMessageDataSaver _messageDataSaver;
         private readonly ICommandManager _commandManager;
         private readonly int _sendingRetryLimit = 5;
         private readonly TelegramBotClient _botClient;
@@ -52,10 +52,10 @@ namespace Zs.Bot.Messenger.Telegram
             IItemsWithRawDataRepository<Chat, int> chatsRepo,
             IItemsWithRawDataRepository<User, int> usersRepo,
             IItemsWithRawDataRepository<Message, int> messagesRepo,
-            IMessageDataSaver messengerDataSaver = null,
+            IMessageDataSaver messageDataSaver = null,
             ICommandManager commandManager = null,
-            IZsLogger logger = null, 
-            IWebProxy webProxy = null)
+            IWebProxy webProxy = null,
+            IZsLogger logger = null)
         {
             try
             {
@@ -64,7 +64,7 @@ namespace Zs.Bot.Messenger.Telegram
                 _usersRepo = usersRepo;
                 _messagesRepo = messagesRepo;
                 
-                _messengerDataSaver = messengerDataSaver;
+                _messageDataSaver = messageDataSaver;
                 if (commandManager is not null)
                 {
                     _commandManager = commandManager;
@@ -114,7 +114,7 @@ namespace Zs.Bot.Messenger.Telegram
             {
                 var te = new TypeInitializationException(typeof(TelegramMessenger).FullName, e);
                 if (_logger != null)
-                    _logger?.LogError(te, nameof(TelegramMessenger));
+                    _logger?.LogErrorAsync(te, nameof(TelegramMessenger));
                 else
                     throw;
             }
@@ -125,31 +125,31 @@ namespace Zs.Bot.Messenger.Telegram
         private void BotClient_ApiResponseReceived(object sender, ApiResponseEventArgs e)
         {
             if (ApiLogIsEnabled)
-                _logger?.LogInfo("ApiResponseReceived", e.ResponseMessage, "Telegram.Bot.API");
+                _logger?.LogInfoAsync("ApiResponseReceived", e.ResponseMessage, "Telegram.Bot.API");
         }
 
         private void BotClient_MakingApiRequest(object sender, ApiRequestEventArgs e)
         {
             if (ApiLogIsEnabled)
-                _logger?.LogInfo("MakingApiRequest", e, "Telegram.Bot.API");
+                _logger?.LogInfoAsync("MakingApiRequest", e, "Telegram.Bot.API");
         }
 
         private void BotClient_OnCallbackQuery(object sender, CallbackQueryEventArgs e)
         {
             if (ApiLogIsEnabled)
-                _logger?.LogInfo("OnCallbackQuery", e, "Telegram.Bot.API");
+                _logger?.LogInfoAsync("OnCallbackQuery", e, "Telegram.Bot.API");
         }
 
         private void BotClient_OnInlineQuery(object sender, InlineQueryEventArgs e)
         {
             if (ApiLogIsEnabled)
-                _logger?.LogInfo("OnInlineQuery", e, "Telegram.Bot.API");
+                _logger?.LogInfoAsync("OnInlineQuery", e, "Telegram.Bot.API");
         }
 
         private void BotClient_OnInlineResultChosen(object sender, ChosenInlineResultEventArgs e)
         {
             if (ApiLogIsEnabled)
-                _logger?.LogInfo("OnInlineResultChosen", e, "Telegram.Bot.API");
+                _logger?.LogInfoAsync("OnInlineResultChosen", e, "Telegram.Bot.API");
         }
 
         private void BotClient_OnMessage(object sender, MessageEventArgs args)
@@ -157,20 +157,20 @@ namespace Zs.Bot.Messenger.Telegram
             try
             {
                 if (ApiLogIsEnabled)
-                    _logger?.LogInfo("OnMessage", args, "Telegram.Bot.API");
+                    _logger?.LogInfoAsync("OnMessage", args, "Telegram.Bot.API");
 
                 _inputMessageBuffer.Enqueue(new TgMessage(args.Message));
             }
             catch (Exception e)
             {
-                _logger?.LogError(e, $"Не удалось поместить входящее сообщение в буфер. TelegramMessageId={args?.Message?.MessageId}");
+                _logger?.LogErrorAsync(e, $"Не удалось поместить входящее сообщение в буфер. TelegramMessageId={args?.Message?.MessageId}");
             }
         }
 
         private void BotClient_OnMessageEdited(object sender, MessageEventArgs e)
         {
             if (ApiLogIsEnabled)
-                _logger?.LogInfo("OnMessageEdited", e, "Telegram.Bot.API");
+                _logger?.LogInfoAsync("OnMessageEdited", e, "Telegram.Bot.API");
 
             _inputMessageBuffer.Enqueue(new TgMessage(e.Message));
         }
@@ -178,7 +178,7 @@ namespace Zs.Bot.Messenger.Telegram
         private void BotClient_OnReceiveError(object sender, ReceiveErrorEventArgs e)
         {
             if (e?.ApiRequestException?.Message != "Request timed out")
-                _logger?.LogError(e.ApiRequestException, "Telegram.Bot.API");
+                _logger?.LogErrorAsync(e.ApiRequestException, "Telegram.Bot.API");
         }
 
         private void BotClient_OnReceiveGeneralError(object sender, ReceiveGeneralErrorEventArgs e)
@@ -186,13 +186,13 @@ namespace Zs.Bot.Messenger.Telegram
             if (e.Exception is System.Net.Http.HttpRequestException)
                 return;
 
-            _logger?.LogError(e.Exception, "Telegram.Bot.API");
+            _logger?.LogErrorAsync(e.Exception, "Telegram.Bot.API");
         }
 
         private void BotClient_OnUpdate(object sender, UpdateEventArgs e)
         {
             if (ApiLogIsEnabled)
-                _logger?.LogInfo("OnUpdate", e, "Telegram.Bot.API");
+                _logger?.LogInfoAsync("OnUpdate", e, "Telegram.Bot.API");
         }
 
         #endregion
@@ -245,17 +245,17 @@ namespace Zs.Bot.Messenger.Telegram
                         if (await TrySetExistingMessageId(args.Message))
                         {
 
-                            await _messengerDataSaver?.EditSavedMessage(args);
+                            await _messageDataSaver?.EditSavedMessage(args);
                             OnMessageEdited(args);
                         }
                         else
-                            _logger.LogWarning("The message not found in the database", args, nameof(TelegramMessenger));
+                            _logger.LogWarningAsync("The message not found in the database", args, nameof(TelegramMessenger));
                     }
                     else
                     {
                         await TrySetExistingUserId(args.User);
                         await TrySetExistingChatId(args.Chat);
-                        await _messengerDataSaver?.SaveNewMessageData(args);
+                        await _messageDataSaver?.SaveNewMessageData(args);
                         OnMessageReceived(args);
 
                         // 1. Проверка авторизации
@@ -284,7 +284,7 @@ namespace Zs.Bot.Messenger.Telegram
             catch (Exception ex)
             {
                 ex.Data.Add("Message", msgForLog);
-                _logger?.LogError(ex, nameof(TelegramMessenger));
+                _logger?.LogErrorAsync(ex, nameof(TelegramMessenger));
             }
         }
 
@@ -321,7 +321,7 @@ namespace Zs.Bot.Messenger.Telegram
 
                     await TrySetExistingUserId(args.User);
                     await TrySetExistingChatId(args.Chat);
-                    await _messengerDataSaver?.SaveNewMessageData(args);
+                    await _messageDataSaver?.SaveNewMessageData(args);
                     OnMessageSent(args);
 
                     msgForLog = null;
@@ -333,7 +333,7 @@ namespace Zs.Bot.Messenger.Telegram
             catch (Exception e)
             {
                 e.Data.Add("Message", msgForLog);
-                _logger?.LogError(e, nameof(TelegramMessenger));
+                _logger?.LogErrorAsync(e, nameof(TelegramMessenger));
             }
         }
         
@@ -362,7 +362,7 @@ namespace Zs.Bot.Messenger.Telegram
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, nameof(TelegramMessenger));
+                _logger?.LogErrorAsync(ex, nameof(TelegramMessenger));
                 throw;
             }
             return Task.CompletedTask;
@@ -391,7 +391,7 @@ namespace Zs.Bot.Messenger.Telegram
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, nameof(TelegramMessenger));
+                _logger?.LogErrorAsync(ex, nameof(TelegramMessenger));
             }
         }
         
@@ -404,7 +404,7 @@ namespace Zs.Bot.Messenger.Telegram
             var dbChat = await _chatsRepo.FindAsync(c => c.Id == dbMessage.ChatId);
             if (dbChat == null)
             {
-                _logger?.LogWarning($"Chat with ChatId = {dbMessage.ChatId} not found in database", nameof(TelegramMessenger));
+                _logger?.LogWarningAsync($"Chat with ChatId = {dbMessage.ChatId} not found in database", nameof(TelegramMessenger));
                 return false;
             }
 
@@ -516,14 +516,14 @@ namespace Zs.Bot.Messenger.Telegram
                     Action = MessageAction.Deleted
                 };
 
-                await _messengerDataSaver?.SaveNewMessageData(args);
+                await _messageDataSaver?.SaveNewMessageData(args);
                 OnMessageDeleted(args);
 
                 return OperationResult.Success;
             }
             catch (Exception e)
             {
-                _logger?.LogError(e, nameof(TelegramMessenger));
+                _logger?.LogErrorAsync(e, nameof(TelegramMessenger));
                 return OperationResult.Failure;
             }
         }
@@ -579,7 +579,7 @@ namespace Zs.Bot.Messenger.Telegram
                     {
                         message.IsSucceed = false;
                         ex.Data.Add("Message", message);
-                        _logger?.LogError(ex, nameof(TelegramMessenger));
+                        _logger?.LogErrorAsync(ex, nameof(TelegramMessenger));
                         return OperationResult.Failure;
                     }
                     else
@@ -600,7 +600,7 @@ namespace Zs.Bot.Messenger.Telegram
                     {
                         message.IsSucceed = false;
                         ex.Data.Add("Message", message);
-                        _logger?.LogError(ex, nameof(TelegramMessenger));
+                        _logger?.LogErrorAsync(ex, nameof(TelegramMessenger));
                         return OperationResult.Failure;
                     }
                     catch { return OperationResult.Failure; }

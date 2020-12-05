@@ -36,7 +36,7 @@ namespace Zs.Bot.Services.DataSavers
             catch (Exception ex)
             {
                 var tex = new TypeInitializationException(typeof(MessageDataDBSaver).FullName, ex);
-                _logger?.LogError(tex, nameof(MessageDataDBSaver));
+                _logger?.LogErrorAsync(tex, nameof(MessageDataDBSaver));
             }
         }
 
@@ -63,7 +63,7 @@ namespace Zs.Bot.Services.DataSavers
                 ex.Data.Add("User", args?.User);
                 ex.Data.Add("Chat", args?.Chat);
                 ex.Data.Add("Message", args?.Message);
-                _logger?.LogError(ex, nameof(MessageDataDBSaver));
+                _logger?.LogErrorAsync(ex, nameof(MessageDataDBSaver));
             }
         }
 
@@ -77,7 +77,7 @@ namespace Zs.Bot.Services.DataSavers
                 await _messagesRepo.SaveAsync(args.Message);
             }
             else
-                _logger?.LogWarning("The edited message is not found in the database", args.Message, nameof(MessageDataDBSaver));
+                _logger?.LogWarningAsync("The edited message is not found in the database", args.Message, nameof(MessageDataDBSaver));
         }
 
     }
