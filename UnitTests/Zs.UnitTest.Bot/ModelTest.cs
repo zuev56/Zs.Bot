@@ -1,7 +1,8 @@
 using System;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Zs.Bot.Model;
+using Zs.Bot.Data;
+using Zs.Bot.Data.Models;
 using Zs.Common.Extensions;
 
 namespace Zs.UnitTest.Bot
@@ -50,15 +51,15 @@ namespace Zs.UnitTest.Bot
                 var log         = ctx.Logs.FirstOrDefault();
                 var command     = ctx.Commands.FirstOrDefault();
 
-                var chatTypeCode    = chatType.Code;
+                var chatTypeCode    = chatType.Id;
                 var chatId          = chat.Id;
-                var roleCode        = role.Code;
+                var roleCode        = role.Id;
                 var userId          = user.Id;
-                var messengerCode   = messenger.Code;
-                var messageTypeCode = messageType.Code;
+                var messengerCode   = messenger.Id;
+                var messageTypeCode = messageType.Id;
                 var messageId       = message.Id;
                 var logId           = log.Id;
-                var commandName     = command.Name;
+                var commandName     = command.Id;
 
                 var newUpdateDate      = DateTime.Now;
                 chatType.UpdateDate    = newUpdateDate;
@@ -73,15 +74,15 @@ namespace Zs.UnitTest.Bot
 
                 ctx.SaveChanges();
 
-                Assert.IsTrue(newUpdateDate == ctx.ChatTypes.First(t => t.Code == chatTypeCode).UpdateDate);
+                Assert.IsTrue(newUpdateDate == ctx.ChatTypes.First(t => t.Id == chatTypeCode).UpdateDate);
                 Assert.IsTrue(newUpdateDate == ctx.Chats.First(c => c.Id == chatId).UpdateDate);
-                Assert.IsTrue(newUpdateDate == ctx.UserRoles.First(r => r.Code == roleCode).UpdateDate);
+                Assert.IsTrue(newUpdateDate == ctx.UserRoles.First(r => r.Id == roleCode).UpdateDate);
                 Assert.IsTrue(newUpdateDate == ctx.Users.First(u => u.Id == userId).UpdateDate);
-                Assert.IsTrue(newUpdateDate == ctx.Messengers.First(m => m.Code == messengerCode).UpdateDate);
-                Assert.IsTrue(newUpdateDate == ctx.MessageTypes.First(t => t.Code == messageTypeCode).UpdateDate);
+                Assert.IsTrue(newUpdateDate == ctx.Messengers.First(m => m.Id == messengerCode).UpdateDate);
+                Assert.IsTrue(newUpdateDate == ctx.MessageTypes.First(t => t.Id == messageTypeCode).UpdateDate);
                 Assert.IsTrue(newUpdateDate == ctx.Messages.First(m => m.Id == messageId).UpdateDate);
                 Assert.IsTrue($"{newUpdateDate}" == ctx.Logs.First(l => l.Id == logId).Message);
-                Assert.IsTrue(newUpdateDate == ctx.Commands.First(c => c.Name == commandName).UpdateDate);
+                Assert.IsTrue(newUpdateDate == ctx.Commands.First(c => c.Id == commandName).UpdateDate);
             }
             catch (Exception ex)
             {
@@ -96,28 +97,28 @@ namespace Zs.UnitTest.Bot
             {
                 var testJsonValue = "{\"value\": \"UnitTest1\"}";
 
-                var messenger       = new MessengerInfo   { Code = "U1", Name = "UnitTest1" };
-                var chatType        = new ChatType        { Code = "UNITTEST1", Name = "UnitTest1"};
-                var chat            = new Chat            { Id = -2, ChatTypeCode = "UNITTEST1", Name = "UnitTest1", RawData = testJsonValue, RawDataHash = testJsonValue.GetMD5Hash()};
-                var role            = new UserRole        { Code = "UNITTEST1", Name = "UnitTest1", Permissions = "[ \"UnitTest1\" ]" };
-                var user            = new User            { Id = -2, Name = "UnitTest1", UserRoleCode = "UNITTEST1", IsBot = false, RawData = testJsonValue, RawDataHash = testJsonValue.GetMD5Hash() };
-                var messageType     = new MessageType     { Code = "U1", Name = "UnitTest1" };
-                var message         = new Message         { Id = -2, MessengerCode = "U1", MessageTypeCode = "U1", ChatId = -2, UserId = -2, RawData = testJsonValue, RawDataHash = testJsonValue.GetMD5Hash() };
+                var messenger       = new MessengerInfo   { Id = "U1", Name = "UnitTest1" };
+                var chatType        = new ChatType        { Id = "UNITTEST1", Name = "UnitTest1"};
+                var chat            = new Chat            { Id = -2, ChatTypeId = "UNITTEST1", Name = "UnitTest1", RawData = testJsonValue, RawDataHash = testJsonValue.GetMD5Hash()};
+                var role            = new UserRole        { Id = "UNITTEST1", Name = "UnitTest1", Permissions = "[ \"UnitTest1\" ]" };
+                var user            = new User            { Id = -2, Name = "UnitTest1", UserRoleId = "UNITTEST1", IsBot = false, RawData = testJsonValue, RawDataHash = testJsonValue.GetMD5Hash() };
+                var messageType     = new MessageType     { Id = "U1", Name = "UnitTest1" };
+                var message         = new Message         { Id = -2, MessengerId = "U1", MessageTypeId = "U1", ChatId = -2, UserId = -2, RawData = testJsonValue, RawDataHash = testJsonValue.GetMD5Hash() };
                 var log             = new Log             { Id = -2, Type = "WARNING", Message = "UnitTest1" };
-                var command         = new Command         { Name = "/unittest1", Script = "UnitTest1", Group = "UnitTest1" };
+                var command         = new Command         { Id = "/unittest1", Script = "UnitTest1", Group = "UnitTest1" };
 
                 using (var ctx = _contextFactory.GetContext())
                 {
-                    if (!ctx.Messengers.Any(m => m.Code == messenger.Code))
+                    if (!ctx.Messengers.Any(m => m.Id == messenger.Id))
                         ctx.Messengers.Add(messenger);
 
-                    if (!ctx.ChatTypes.Any(t => t.Code == chatType.Code))
+                    if (!ctx.ChatTypes.Any(t => t.Id == chatType.Id))
                         ctx.ChatTypes.Add(chatType);
 
-                    if (!ctx.UserRoles.Any(r => r.Code == role.Code))
+                    if (!ctx.UserRoles.Any(r => r.Id == role.Id))
                         ctx.UserRoles.Add(role);
 
-                    if (!ctx.MessageTypes.Any(t => t.Code == messageType.Code))
+                    if (!ctx.MessageTypes.Any(t => t.Id == messageType.Id))
                         ctx.MessageTypes.Add(messageType);
 
                     if (ctx.ChangeTracker.HasChanges())
@@ -144,7 +145,7 @@ namespace Zs.UnitTest.Bot
                     if (!ctx.Logs.Any(l => l.Id == log.Id))
                         ctx.Logs.Add(log);
 
-                    if (!ctx.Commands.Any(c => c.Name == command.Name))
+                    if (!ctx.Commands.Any(c => c.Id == command.Id))
                         ctx.Commands.Add(command);
 
                     if (ctx.ChangeTracker.HasChanges())
@@ -164,28 +165,28 @@ namespace Zs.UnitTest.Bot
             {
                 var testJsonValue = "{\"value\": \"UnitTest0\"}";
 
-                var messenger       = new MessengerInfo   { Code = "U0", Name = "UnitTest0" };
-                var chatType        = new ChatType        { Code = "UNITTEST0", Name = "UnitTest0"};
-                var chat            = new Chat            { Id = -1, ChatTypeCode = "UNITTEST0", Name = "UnitTest0", RawData = testJsonValue, RawDataHash = testJsonValue.GetMD5Hash()};
-                var role            = new UserRole        { Code = "UNITTEST0", Name = "UnitTest0", Permissions = "[ \"UnitTest0\" ]" };
-                var user            = new User            { Id = -1, Name = "UnitTest0", UserRoleCode = "UNITTEST0", IsBot = false, RawData = testJsonValue, RawDataHash = testJsonValue.GetMD5Hash() };
-                var messageType     = new MessageType     { Code = "U0", Name = "UnitTest0" };
-                var message         = new Message         { Id = -1, MessengerCode = "U0", MessageTypeCode = "U0", ChatId = -1, UserId = -1, RawData = testJsonValue, RawDataHash = testJsonValue.GetMD5Hash() };
+                var messenger       = new MessengerInfo   { Id = "U0", Name = "UnitTest0" };
+                var chatType        = new ChatType        { Id = "UNITTEST0", Name = "UnitTest0"};
+                var chat            = new Chat            { Id = -1, ChatTypeId = "UNITTEST0", Name = "UnitTest0", RawData = testJsonValue, RawDataHash = testJsonValue.GetMD5Hash()};
+                var role            = new UserRole        { Id = "UNITTEST0", Name = "UnitTest0", Permissions = "[ \"UnitTest0\" ]" };
+                var user            = new User            { Id = -1, Name = "UnitTest0", UserRoleId = "UNITTEST0", IsBot = false, RawData = testJsonValue, RawDataHash = testJsonValue.GetMD5Hash() };
+                var messageType     = new MessageType     { Id = "U0", Name = "UnitTest0" };
+                var message         = new Message         { Id = -1, MessengerId = "U0", MessageTypeId = "U0", ChatId = -1, UserId = -1, RawData = testJsonValue, RawDataHash = testJsonValue.GetMD5Hash() };
                 var log             = new Log             { Id = -1, Type = "WARNING", Message = "UnitTest0" };
-                var command         = new Command         { Name = "/unittest0", Script = "UnitTest0", Group = "UnitTest0" };
+                var command         = new Command         { Id = "/unittest0", Script = "UnitTest0", Group = "UnitTest0" };
 
                 using (var ctx = _contextFactory.GetContext())
                 {
-                    if (!ctx.Messengers.Any(m => m.Code == messenger.Code))
+                    if (!ctx.Messengers.Any(m => m.Id == messenger.Id))
                         ctx.Messengers.Add(messenger);
 
-                    if (!ctx.ChatTypes.Any(t => t.Code == chatType.Code))
+                    if (!ctx.ChatTypes.Any(t => t.Id == chatType.Id))
                         ctx.ChatTypes.Add(chatType);
 
-                    if (!ctx.UserRoles.Any(r => r.Code == role.Code))
+                    if (!ctx.UserRoles.Any(r => r.Id == role.Id))
                         ctx.UserRoles.Add(role);
 
-                    if (!ctx.MessageTypes.Any(t => t.Code == messageType.Code))
+                    if (!ctx.MessageTypes.Any(t => t.Id == messageType.Id))
                         ctx.MessageTypes.Add(messageType);
 
                     if (ctx.ChangeTracker.HasChanges())
@@ -212,7 +213,7 @@ namespace Zs.UnitTest.Bot
                     if (!ctx.Logs.Any(l => l.Id == log.Id))
                         ctx.Logs.Add(log);
 
-                    if (!ctx.Commands.Any(c => c.Name == command.Name))
+                    if (!ctx.Commands.Any(c => c.Id == command.Id))
                         ctx.Commands.Add(command);
 
                     if (ctx.ChangeTracker.HasChanges())

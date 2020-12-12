@@ -1,0 +1,23 @@
+﻿@model List<Zs.App.Home.Web.Areas.Admin.Models.DriveInfo>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th> @Html.DisplayNameFor(model => model[0].Name) </th>
+            <th> @Html.DisplayNameFor(model => model[0].FileSystem) </th>
+            <th> @Html.DisplayNameFor(model => model[0].TotalSize) </th>
+            <th> @Html.DisplayNameFor(model => model[0].FreeSpace) </th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td> @Html.DisplayFor(model => item.Name) </td>
+                <td> @Html.DisplayFor(model => item.FileSystem) </td>
+                <td> @Html.DisplayFor(model => item.TotalSize) </td>
+                <td> @Html.DisplayFor(model => item.FreeSpace) </td>
+            </tr>
+        }
+    </tbody>
+</table>

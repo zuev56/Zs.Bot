@@ -3,10 +3,10 @@
 --2. ФУНКЦИЯ, ПОКАЗЫВАЮЩАЯ СТАТИСТИКУ ПО ВСЕМ ПОЛЬЗОВАТЕЛЯМ НА ОСНОВЕ ФУНКЦИИ 1
 
 
--- ФУНКЦИЯ, ОПОВЕЩАЮЩАЯ, ЕСЛИ ПОЛЬЗОВАТЕЛЬ НЕ БЫЛ В СЕТИ 24 ЧАСА
+-- ФУНКЦИЯ, ОПОВЕЩАЮЩАЯ, ЕСЛИ ПОЛЬЗОВАТЕЛЬ НЕ БЫЛ В СЕТИ ЗАДАННОЕ КОЛИЧЕСТВО ЧАСОВ
 CREATE OR REPLACE FUNCTION vk.sf_cmd_get_not_active_users(
     _vkUserIdsStr text,
-    _offlineHours int) 
+    _offlineHours int)
     RETURNS text
     LANGUAGE 'plpgsql'
 AS $BODY$ 
@@ -15,6 +15,7 @@ DECLARE
     _dbUserIds int[];
     _activeDbUserIds int[];
     _notActiveDbUserIds int[];
+    _exactOfflineHours int;
     _result text = null;
 BEGIN
     _vkUserIds = string_to_array(_vkUserIdsStr, ',');
@@ -25,7 +26,7 @@ BEGIN
     WHERE cast(raw_data ->> 'id' AS integer) = any(_vkUserIds);
     RAISE NOTICE '2. _dbUserIds: %', _dbUserIds;
    
-    SELECT array_agg(DISTINCT user_id) INTO _activeDbUserIds
+    SELECT INTO _activeDbUserIds array_agg(DISTINCT user_id)
     FROM vk.activity_log
     WHERE insert_date > now() - (_offlineHours || ' hours')::interval
       and user_id = any(_dbUserIds)
@@ -35,9 +36,11 @@ BEGIN
     SELECT array(SELECT unnest(_dbUserIds) EXCEPT SELECT unnest(_activeDbUserIds)) into _notActiveDbUserIds;
     RAISE NOTICE '4. _notActiveUserIds: %', _notActiveDbUserIds;
 
+    -- Надо вычислять время для каждого отдельного пользователя из массива _notActiveDbUserIds
+    -- extract(epoch from (now() - insert_date))::int / 3600
     IF (cardinality(_notActiveDbUserIds) > 0)
     THEN
-        select 'В течение ' || _offlineHours || ' часов не было активности от: ' 
+        select 'В течение ' || _exactOfflineHours || ' часов не было активности от: ' 
             || (select array_to_string(array_agg(first_name || ' ' || last_name), ', ')
                 from vk.users
                 where user_id = any(_notActiveDbUserIds)) INTO _result;
@@ -48,6 +51,7 @@ END;
 $BODY$;
 ALTER FUNCTION vk.sf_cmd_get_not_active_users(text, integer)
     OWNER TO postgres;
+
 --select vk.sf_cmd_get_not_active_users('51823577, 8790237, 24344351', 24);
 
 

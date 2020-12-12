@@ -3,7 +3,7 @@
 //using Microsoft.VisualStudio.TestTools.UnitTesting;
 //using Zs.Bot;
 //using Zs.Bot.Model.Db;
-//using Zs.Bot.Services.Command;
+//using Zs.Bot.Services.Commands;
 //using Zs.Bot.Services.Logging;
 
 //namespace Zs.UnitTest.Bot

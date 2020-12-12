@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 namespace Zs.Common.Abstractions
 {
@@ -7,10 +8,10 @@ namespace Zs.Common.Abstractions
     {
         string EmergencyLogDirrectory { get; set; }
 
-        void LogError(Exception ex, string initiator = null);
-        void LogInfo(string message, string initiator = null);
-        void LogInfo<T>(string message, T data, string initiator = null);
-        void LogWarning(string message = null, string initiator = null);
-        void LogWarning<T>(string message, T data, string initiator = null);
+        Task LogErrorAsync(Exception ex, string initiator = null);
+        Task LogInfoAsync(string message, string initiator = null);
+        Task LogInfoAsync<T>(string message, T data, string initiator = null);
+        Task LogWarningAsync(string message = null, string initiator = null);
+        Task LogWarningAsync<T>(string message, T data, string initiator = null);
     }
 }

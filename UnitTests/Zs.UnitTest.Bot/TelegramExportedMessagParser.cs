@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Zs.Bot.Model;
-using Zs.Bot.Model.Abstractions;
+using Zs.Bot.Data;
+using Zs.Bot.Data.Abstractions;
+using Zs.Bot.Data.Models;
 
 namespace Zs.UnitTest.Bot
 {
@@ -24,13 +25,13 @@ namespace Zs.UnitTest.Bot
             }
         }
 
-        private IChat GetChat()
+        private Chat GetChat()
         {
             return new Chat()
             {
                 Id = 1,
                 Name = "Message",
-                ChatTypeCode = "GROUP",
+                ChatTypeId = "GROUP",
                 RawData = "{"
                         +     "\"Id\": -1001259605660,"
                         +     "\"Type\": 3,"

@@ -1,0 +1,21 @@
+﻿@model List<Zs.App.Home.Web.Areas.Admin.Models.ProcessInfo>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>@Html.DisplayNameFor(model => model[0].Name)</th>
+            <th>@Html.DisplayNameFor(model => model[0].IsResponding)</th>
+            <th>@Html.DisplayNameFor(model => model[0].ThreadsNumber)</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var process in Model)
+        {
+            <tr>
+                <td>@Html.DisplayFor(model => process.Name) (@Html.DisplayFor(model => process.DuplicatesInName))</td>
+                <td>@Html.DisplayFor(model => process.IsResponding)</td>
+                <td>@Html.DisplayFor(model => process.ThreadsNumber)</td>
+            </tr>
+        }
+    </tbody>
+</table>
