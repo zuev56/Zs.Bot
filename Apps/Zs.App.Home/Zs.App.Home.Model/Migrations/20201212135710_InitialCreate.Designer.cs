@@ -2,172 +2,169 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Zs.App.Home.Model.Data;
 
-namespace Zs.App.Home.Model.Data.Migrations
+namespace Zs.App.Home.Data.Migrations
 {
     [DbContext(typeof(HomeContext))]
-    partial class HomeContextModelSnapshot : ModelSnapshot
+    [Migration("20201212135710_InitialCreate")]
+    partial class InitialCreate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.SerialColumn)
-                .HasAnnotation("ProductVersion", "3.1.8")
-                .HasAnnotation("Relational:MaxIdentifierLength", 63);
+                .UseSerialColumns()
+                .HasAnnotation("Relational:MaxIdentifierLength", 63)
+                .HasAnnotation("ProductVersion", "5.0.1");
 
-            modelBuilder.Entity("Zs.App.Home.Model.VkActivityLog", b =>
+            modelBuilder.Entity("Zs.App.Home.Model.VkActivityLogItem", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnName("activity_log_id")
                         .HasColumnType("integer")
-                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.SerialColumn);
+                        .HasColumnName("activity_log_id")
+                        .UseSerialColumn();
 
                     b.Property<DateTime>("InsertDate")
                         .ValueGeneratedOnAdd()
-                        .HasColumnName("insert_date")
                         .HasColumnType("timestamp with time zone")
+                        .HasColumnName("insert_date")
                         .HasDefaultValueSql("now()");
 
                     b.Property<bool?>("IsOnline")
-                        .HasColumnName("is_online")
-                        .HasColumnType("boolean");
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_online");
 
                     b.Property<bool>("IsOnlineMobile")
-                        .HasColumnName("is_online_mobile")
-                        .HasColumnType("boolean");
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_online_mobile");
 
                     b.Property<int>("LastSeen")
-                        .HasColumnName("last_seen")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("last_seen");
 
                     b.Property<int?>("OnlineApp")
-                        .HasColumnName("online_app")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("online_app");
 
                     b.Property<int>("UserId")
-                        .HasColumnName("user_id")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("VkUserId")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("user_id");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("VkUserId");
-
-                    b.ToTable("activity_log","vk");
+                    b.ToTable("activity_log", "vk");
                 });
 
             modelBuilder.Entity("Zs.App.Home.Model.VkUser", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnName("user_id")
                         .HasColumnType("integer")
-                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.SerialColumn);
+                        .HasColumnName("user_id")
+                        .UseSerialColumn();
 
                     b.Property<string>("FirstName")
-                        .HasColumnName("first_name")
+                        .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
-                        .HasMaxLength(50);
+                        .HasColumnName("first_name");
 
                     b.Property<DateTime>("InsertDate")
                         .ValueGeneratedOnAdd()
-                        .HasColumnName("insert_date")
                         .HasColumnType("timestamp with time zone")
+                        .HasColumnName("insert_date")
                         .HasDefaultValueSql("now()");
 
                     b.Property<string>("LastName")
-                        .HasColumnName("last_name")
+                        .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
-                        .HasMaxLength(50);
+                        .HasColumnName("last_name");
 
                     b.Property<string>("RawData")
                         .IsRequired()
-                        .HasColumnName("raw_data")
-                        .HasColumnType("json");
+                        .HasColumnType("json")
+                        .HasColumnName("raw_data");
 
                     b.Property<DateTime>("UpdateDate")
                         .ValueGeneratedOnAdd()
-                        .HasColumnName("update_date")
                         .HasColumnType("timestamp with time zone")
+                        .HasColumnName("update_date")
                         .HasDefaultValueSql("now()");
 
                     b.HasKey("Id");
 
-                    b.ToTable("users","vk");
+                    b.ToTable("users", "vk");
                 });
 
-            modelBuilder.Entity("Zs.Bot.Model.Chat", b =>
+            modelBuilder.Entity("Zs.Bot.Data.Models.Chat", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnName("chat_id")
                         .HasColumnType("int")
-                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.SerialColumn);
+                        .HasColumnName("chat_id")
+                        .UseSerialColumn();
 
-                    b.Property<string>("ChatTypeCode")
+                    b.Property<string>("ChatTypeId")
                         .IsRequired()
-                        .HasColumnName("chat_type_code")
+                        .HasMaxLength(10)
                         .HasColumnType("character varying(10)")
-                        .HasMaxLength(10);
+                        .HasColumnName("chat_type_code");
 
                     b.Property<string>("Description")
-                        .HasColumnName("chat_description")
+                        .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
-                        .HasMaxLength(100);
+                        .HasColumnName("chat_description");
 
                     b.Property<DateTime>("InsertDate")
                         .ValueGeneratedOnAdd()
-                        .HasColumnName("insert_date")
                         .HasColumnType("timestamp with time zone")
+                        .HasColumnName("insert_date")
                         .HasDefaultValueSql("now()");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnName("chat_name")
+                        .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
-                        .HasMaxLength(50);
+                        .HasColumnName("chat_name");
 
                     b.Property<string>("RawData")
                         .IsRequired()
-                        .HasColumnName("raw_data")
-                        .HasColumnType("json");
+                        .HasColumnType("json")
+                        .HasColumnName("raw_data");
 
                     b.Property<string>("RawDataHash")
                         .IsRequired()
-                        .HasColumnName("raw_data_hash")
+                        .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
-                        .HasMaxLength(50);
+                        .HasColumnName("raw_data_hash");
 
                     b.Property<string>("RawDataHistory")
-                        .HasColumnName("raw_data_history")
-                        .HasColumnType("json");
+                        .HasColumnType("json")
+                        .HasColumnName("raw_data_history");
 
                     b.Property<DateTime>("UpdateDate")
                         .ValueGeneratedOnAdd()
-                        .HasColumnName("update_date")
                         .HasColumnType("timestamp with time zone")
+                        .HasColumnName("update_date")
                         .HasDefaultValueSql("now()");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ChatTypeCode");
+                    b.HasIndex("ChatTypeId");
 
-                    b.ToTable("chats","bot");
+                    b.ToTable("chats", "bot");
 
                     b.HasData(
                         new
                         {
                             Id = -1,
-                            ChatTypeCode = "PRIVATE",
+                            ChatTypeId = "PRIVATE",
                             Description = "UnitTestChat",
-                            InsertDate = new DateTime(2020, 9, 28, 19, 31, 38, 240, DateTimeKind.Local).AddTicks(8414),
+                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 497, DateTimeKind.Local).AddTicks(4076),
                             Name = "UnitTestChat",
                             RawData = "{ \"test\": \"test\" }",
                             RawDataHash = "-1063294487",
@@ -176,8 +173,8 @@ namespace Zs.App.Home.Model.Data.Migrations
                         new
                         {
                             Id = 1,
-                            ChatTypeCode = "PRIVATE",
-                            InsertDate = new DateTime(2020, 9, 28, 19, 31, 38, 240, DateTimeKind.Local).AddTicks(8911),
+                            ChatTypeId = "PRIVATE",
+                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 497, DateTimeKind.Local).AddTicks(4646),
                             Name = "zuev56",
                             RawData = "{ \"Id\": 210281448 }",
                             RawDataHash = "-1063294487",
@@ -185,694 +182,730 @@ namespace Zs.App.Home.Model.Data.Migrations
                         });
                 });
 
-            modelBuilder.Entity("Zs.Bot.Model.ChatType", b =>
+            modelBuilder.Entity("Zs.Bot.Data.Models.ChatType", b =>
                 {
-                    b.Property<string>("Code")
-                        .HasColumnName("chat_type_code")
+                    b.Property<string>("Id")
+                        .HasMaxLength(10)
                         .HasColumnType("character varying(10)")
-                        .HasMaxLength(10);
+                        .HasColumnName("chat_type_code");
 
                     b.Property<DateTime>("InsertDate")
                         .ValueGeneratedOnAdd()
-                        .HasColumnName("insert_date")
                         .HasColumnType("timestamp with time zone")
+                        .HasColumnName("insert_date")
                         .HasDefaultValueSql("now()");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnName("chat_type_name")
+                        .HasMaxLength(10)
                         .HasColumnType("character varying(10)")
-                        .HasMaxLength(10);
+                        .HasColumnName("chat_type_name");
 
                     b.Property<DateTime>("UpdateDate")
                         .ValueGeneratedOnAdd()
-                        .HasColumnName("update_date")
                         .HasColumnType("timestamp with time zone")
+                        .HasColumnName("update_date")
                         .HasDefaultValueSql("now()");
 
-                    b.HasKey("Code");
+                    b.HasKey("Id");
 
-                    b.ToTable("chat_types","bot");
+                    b.ToTable("chat_types", "bot");
 
                     b.HasData(
                         new
                         {
-                            Code = "CHANNEL",
-                            InsertDate = new DateTime(2020, 9, 28, 19, 31, 38, 240, DateTimeKind.Local).AddTicks(4342),
+                            Id = "CHANNEL",
+                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 496, DateTimeKind.Local).AddTicks(9606),
                             Name = "Channel",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
-                            Code = "GROUP",
-                            InsertDate = new DateTime(2020, 9, 28, 19, 31, 38, 240, DateTimeKind.Local).AddTicks(4878),
+                            Id = "GROUP",
+                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 497, DateTimeKind.Local).AddTicks(148),
                             Name = "Group",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
-                            Code = "PRIVATE",
-                            InsertDate = new DateTime(2020, 9, 28, 19, 31, 38, 240, DateTimeKind.Local).AddTicks(4882),
+                            Id = "PRIVATE",
+                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 497, DateTimeKind.Local).AddTicks(152),
                             Name = "Private",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
-                            Code = "UNDEFINED",
-                            InsertDate = new DateTime(2020, 9, 28, 19, 31, 38, 240, DateTimeKind.Local).AddTicks(4883),
+                            Id = "UNDEFINED",
+                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 497, DateTimeKind.Local).AddTicks(155),
                             Name = "Undefined",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         });
                 });
 
-            modelBuilder.Entity("Zs.Bot.Model.Command", b =>
+            modelBuilder.Entity("Zs.Bot.Data.Models.Command", b =>
                 {
-                    b.Property<string>("Name")
-                        .HasColumnName("command_name")
+                    b.Property<string>("Id")
+                        .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
-                        .HasMaxLength(50);
+                        .HasColumnName("command_name");
 
                     b.Property<string>("DefaultArgs")
-                        .HasColumnName("command_default_args")
+                        .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
-                        .HasMaxLength(100);
+                        .HasColumnName("command_default_args");
 
                     b.Property<string>("Description")
-                        .HasColumnName("command_desc")
+                        .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
-                        .HasMaxLength(100);
+                        .HasColumnName("command_desc");
 
                     b.Property<string>("Group")
                         .IsRequired()
-                        .HasColumnName("command_group")
+                        .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
-                        .HasMaxLength(50);
+                        .HasColumnName("command_group");
 
                     b.Property<DateTime>("InsertDate")
                         .ValueGeneratedOnAdd()
-                        .HasColumnName("insert_date")
                         .HasColumnType("timestamp with time zone")
+                        .HasColumnName("insert_date")
                         .HasDefaultValueSql("now()");
 
                     b.Property<string>("Script")
                         .IsRequired()
-                        .HasColumnName("command_script")
+                        .HasMaxLength(5000)
                         .HasColumnType("character varying(5000)")
-                        .HasMaxLength(5000);
+                        .HasColumnName("command_script");
 
                     b.Property<DateTime>("UpdateDate")
                         .ValueGeneratedOnAdd()
-                        .HasColumnName("update_date")
                         .HasColumnType("timestamp with time zone")
+                        .HasColumnName("update_date")
                         .HasDefaultValueSql("now()");
 
-                    b.HasKey("Name");
+                    b.HasKey("Id");
 
-                    b.ToTable("commands","bot");
+                    b.ToTable("commands", "bot");
 
                     b.HasData(
                         new
                         {
-                            Name = "/test",
+                            Id = "/test",
                             Description = "Тестовый запрос к боту. Возвращает ''Test''",
                             Group = "moderatorCmdGroup",
-                            InsertDate = new DateTime(2020, 9, 28, 19, 31, 38, 242, DateTimeKind.Local).AddTicks(2325),
+                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(7015),
                             Script = "SELECT 'Test'",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
-                            Name = "/nulltest",
+                            Id = "/nulltest",
                             Description = "Тестовый запрос к боту. Возвращает NULL",
                             Group = "moderatorCmdGroup",
-                            InsertDate = new DateTime(2020, 9, 28, 19, 31, 38, 242, DateTimeKind.Local).AddTicks(2837),
+                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(7495),
                             Script = "SELECT null",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
-                            Name = "/help",
-                            DefaultArgs = "<UserRoleCode>",
+                            Id = "/help",
+                            DefaultArgs = "<UserRoleId>",
                             Description = "Получение справки по доступным функциям",
                             Group = "userCmdGroup",
-                            InsertDate = new DateTime(2020, 9, 28, 19, 31, 38, 242, DateTimeKind.Local).AddTicks(3280),
+                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(7940),
                             Script = "SELECT bot.sf_cmd_get_help({0})",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
-                            Name = "/sqlquery",
+                            Id = "/sqlquery",
                             DefaultArgs = "select 'Pass your query as parameter in double quotes'",
                             Description = "SQL-запрос",
                             Group = "adminCmdGroup",
-                            InsertDate = new DateTime(2020, 9, 28, 19, 31, 38, 242, DateTimeKind.Local).AddTicks(3288),
+                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(7949),
                             Script = "select (with userQuery as ({0}) select json_agg(q) from userQuery q)",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         });
                 });
 
-            modelBuilder.Entity("Zs.Bot.Model.Log", b =>
+            modelBuilder.Entity("Zs.Bot.Data.Models.Log", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnName("log_id")
                         .HasColumnType("int")
-                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.SerialColumn);
+                        .HasColumnName("log_id")
+                        .UseSerialColumn();
 
                     b.Property<string>("Data")
-                        .HasColumnName("log_data")
-                        .HasColumnType("json");
+                        .HasColumnType("json")
+                        .HasColumnName("log_data");
 
                     b.Property<string>("Initiator")
-                        .HasColumnName("log_initiator")
+                        .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
-                        .HasMaxLength(50);
+                        .HasColumnName("log_initiator");
 
                     b.Property<DateTime>("InsertDate")
                         .ValueGeneratedOnAdd()
-                        .HasColumnName("insert_date")
                         .HasColumnType("timestamp with time zone")
+                        .HasColumnName("insert_date")
                         .HasDefaultValueSql("now()");
 
                     b.Property<string>("Message")
                         .IsRequired()
-                        .HasColumnName("log_message")
+                        .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
-                        .HasMaxLength(200);
+                        .HasColumnName("log_message");
 
                     b.Property<string>("Type")
                         .IsRequired()
-                        .HasColumnName("log_type")
+                        .HasMaxLength(7)
                         .HasColumnType("character varying(7)")
-                        .HasMaxLength(7);
+                        .HasColumnName("log_type");
 
                     b.HasKey("Id");
 
-                    b.ToTable("logs","bot");
+                    b.ToTable("logs", "bot");
                 });
 
-            modelBuilder.Entity("Zs.Bot.Model.Message", b =>
+            modelBuilder.Entity("Zs.Bot.Data.Models.Message", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnName("message_id")
                         .HasColumnType("int")
-                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.SerialColumn);
+                        .HasColumnName("message_id")
+                        .UseSerialColumn();
 
                     b.Property<int>("ChatId")
-                        .HasColumnName("chat_id")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("chat_id");
 
                     b.Property<string>("FailDescription")
-                        .HasColumnName("fail_description")
-                        .HasColumnType("json");
+                        .HasColumnType("json")
+                        .HasColumnName("fail_description");
 
                     b.Property<int>("FailsCount")
-                        .HasColumnName("fails_count")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("fails_count");
 
                     b.Property<DateTime>("InsertDate")
                         .ValueGeneratedOnAdd()
-                        .HasColumnName("insert_date")
                         .HasColumnType("timestamp with time zone")
+                        .HasColumnName("insert_date")
                         .HasDefaultValueSql("now()");
 
                     b.Property<bool>("IsDeleted")
-                        .HasColumnName("is_deleted")
-                        .HasColumnType("bool");
+                        .HasColumnType("bool")
+                        .HasColumnName("is_deleted");
 
                     b.Property<bool>("IsSucceed")
-                        .HasColumnName("is_succeed")
-                        .HasColumnType("bool");
+                        .HasColumnType("bool")
+                        .HasColumnName("is_succeed");
 
-                    b.Property<string>("MessageTypeCode")
+                    b.Property<string>("MessageTypeId")
                         .IsRequired()
-                        .HasColumnName("message_type_code")
+                        .HasMaxLength(3)
                         .HasColumnType("character varying(3)")
-                        .HasMaxLength(3);
+                        .HasColumnName("message_type_code");
 
-                    b.Property<string>("MessengerCode")
+                    b.Property<string>("MessengerId")
                         .IsRequired()
-                        .HasColumnName("messenger_code")
+                        .HasMaxLength(2)
                         .HasColumnType("character varying(2)")
-                        .HasMaxLength(2);
+                        .HasColumnName("messenger_code");
 
                     b.Property<string>("RawData")
                         .IsRequired()
-                        .HasColumnName("raw_data")
-                        .HasColumnType("json");
+                        .HasColumnType("json")
+                        .HasColumnName("raw_data");
 
                     b.Property<string>("RawDataHash")
                         .IsRequired()
-                        .HasColumnName("raw_data_hash")
+                        .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
-                        .HasMaxLength(50);
+                        .HasColumnName("raw_data_hash");
 
                     b.Property<string>("RawDataHistory")
-                        .HasColumnName("raw_data_history")
-                        .HasColumnType("json");
+                        .HasColumnType("json")
+                        .HasColumnName("raw_data_history");
 
                     b.Property<int?>("ReplyToMessageId")
-                        .HasColumnName("reply_to_message_id")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("reply_to_message_id");
 
                     b.Property<string>("Text")
-                        .HasColumnName("message_text")
+                        .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
-                        .HasMaxLength(100);
+                        .HasColumnName("message_text");
 
                     b.Property<DateTime>("UpdateDate")
                         .ValueGeneratedOnAdd()
-                        .HasColumnName("update_date")
                         .HasColumnType("timestamp with time zone")
+                        .HasColumnName("update_date")
                         .HasDefaultValueSql("now()");
 
                     b.Property<int>("UserId")
-                        .HasColumnName("user_id")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("user_id");
 
                     b.HasKey("Id");
 
                     b.HasIndex("ChatId");
 
-                    b.HasIndex("MessageTypeCode");
+                    b.HasIndex("MessageTypeId");
 
-                    b.HasIndex("MessengerCode");
+                    b.HasIndex("MessengerId");
 
                     b.HasIndex("ReplyToMessageId");
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("messages","bot");
+                    b.ToTable("messages", "bot");
                 });
 
-            modelBuilder.Entity("Zs.Bot.Model.MessageType", b =>
+            modelBuilder.Entity("Zs.Bot.Data.Models.MessageType", b =>
                 {
-                    b.Property<string>("Code")
-                        .HasColumnName("message_type_code")
+                    b.Property<string>("Id")
+                        .HasMaxLength(3)
                         .HasColumnType("character varying(3)")
-                        .HasMaxLength(3);
+                        .HasColumnName("message_type_code");
 
                     b.Property<DateTime>("InsertDate")
                         .ValueGeneratedOnAdd()
-                        .HasColumnName("insert_date")
                         .HasColumnType("timestamp with time zone")
+                        .HasColumnName("insert_date")
                         .HasDefaultValueSql("now()");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnName("message_type_name")
+                        .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
-                        .HasMaxLength(50);
+                        .HasColumnName("message_type_name");
 
                     b.Property<DateTime>("UpdateDate")
                         .ValueGeneratedOnAdd()
-                        .HasColumnName("update_date")
                         .HasColumnType("timestamp with time zone")
+                        .HasColumnName("update_date")
                         .HasDefaultValueSql("now()");
 
-                    b.HasKey("Code");
+                    b.HasKey("Id");
 
-                    b.ToTable("message_types","bot");
+                    b.ToTable("message_types", "bot");
 
                     b.HasData(
                         new
                         {
-                            Code = "UKN",
-                            InsertDate = new DateTime(2020, 9, 28, 19, 31, 38, 241, DateTimeKind.Local).AddTicks(8727),
+                            Id = "UKN",
+                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(4044),
                             Name = "Unknown",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
-                            Code = "TXT",
-                            InsertDate = new DateTime(2020, 9, 28, 19, 31, 38, 241, DateTimeKind.Local).AddTicks(9212),
+                            Id = "TXT",
+                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(4537),
                             Name = "Text",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
-                            Code = "PHT",
-                            InsertDate = new DateTime(2020, 9, 28, 19, 31, 38, 241, DateTimeKind.Local).AddTicks(9216),
+                            Id = "PHT",
+                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(4542),
                             Name = "Photo",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
-                            Code = "AUD",
-                            InsertDate = new DateTime(2020, 9, 28, 19, 31, 38, 241, DateTimeKind.Local).AddTicks(9218),
+                            Id = "AUD",
+                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(4543),
                             Name = "Audio",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
-                            Code = "VID",
-                            InsertDate = new DateTime(2020, 9, 28, 19, 31, 38, 241, DateTimeKind.Local).AddTicks(9219),
+                            Id = "VID",
+                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(4545),
                             Name = "Video",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
-                            Code = "VOI",
-                            InsertDate = new DateTime(2020, 9, 28, 19, 31, 38, 241, DateTimeKind.Local).AddTicks(9220),
+                            Id = "VOI",
+                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(4547),
                             Name = "Voice",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
-                            Code = "DOC",
-                            InsertDate = new DateTime(2020, 9, 28, 19, 31, 38, 241, DateTimeKind.Local).AddTicks(9221),
+                            Id = "DOC",
+                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(4548),
                             Name = "Document",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
-                            Code = "STK",
-                            InsertDate = new DateTime(2020, 9, 28, 19, 31, 38, 241, DateTimeKind.Local).AddTicks(9224),
+                            Id = "STK",
+                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(4549),
                             Name = "Sticker",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
-                            Code = "LOC",
-                            InsertDate = new DateTime(2020, 9, 28, 19, 31, 38, 241, DateTimeKind.Local).AddTicks(9225),
+                            Id = "LOC",
+                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(4551),
                             Name = "Location",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
-                            Code = "CNT",
-                            InsertDate = new DateTime(2020, 9, 28, 19, 31, 38, 241, DateTimeKind.Local).AddTicks(9226),
+                            Id = "CNT",
+                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(4552),
                             Name = "Contact",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
-                            Code = "SRV",
-                            InsertDate = new DateTime(2020, 9, 28, 19, 31, 38, 241, DateTimeKind.Local).AddTicks(9228),
+                            Id = "SRV",
+                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(4553),
                             Name = "Service message",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
-                            Code = "OTH",
-                            InsertDate = new DateTime(2020, 9, 28, 19, 31, 38, 241, DateTimeKind.Local).AddTicks(9229),
+                            Id = "OTH",
+                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(4554),
                             Name = "Other",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         });
                 });
 
-            modelBuilder.Entity("Zs.Bot.Model.MessengerInfo", b =>
+            modelBuilder.Entity("Zs.Bot.Data.Models.MessengerInfo", b =>
                 {
-                    b.Property<string>("Code")
-                        .HasColumnName("messenger_code")
+                    b.Property<string>("Id")
+                        .HasMaxLength(2)
                         .HasColumnType("character varying(2)")
-                        .HasMaxLength(2);
+                        .HasColumnName("messenger_code");
 
                     b.Property<DateTime>("InsertDate")
                         .ValueGeneratedOnAdd()
-                        .HasColumnName("insert_date")
                         .HasColumnType("timestamp with time zone")
+                        .HasColumnName("insert_date")
                         .HasDefaultValueSql("now()");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnName("messenger_name")
+                        .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
-                        .HasMaxLength(20);
+                        .HasColumnName("messenger_name");
 
                     b.Property<DateTime>("UpdateDate")
                         .ValueGeneratedOnAdd()
-                        .HasColumnName("update_date")
                         .HasColumnType("timestamp with time zone")
+                        .HasColumnName("update_date")
                         .HasDefaultValueSql("now()");
 
-                    b.HasKey("Code");
+                    b.HasKey("Id");
 
-                    b.ToTable("messengers","bot");
+                    b.ToTable("messengers", "bot");
 
                     b.HasData(
                         new
                         {
-                            Code = "TG",
-                            InsertDate = new DateTime(2020, 9, 28, 19, 31, 38, 237, DateTimeKind.Local).AddTicks(9731),
+                            Id = "TG",
+                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 494, DateTimeKind.Local).AddTicks(5629),
                             Name = "Telegram",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
-                            Code = "VK",
-                            InsertDate = new DateTime(2020, 9, 28, 19, 31, 38, 239, DateTimeKind.Local).AddTicks(100),
+                            Id = "VK",
+                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 495, DateTimeKind.Local).AddTicks(6015),
                             Name = "Вконтакте",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
-                            Code = "SK",
-                            InsertDate = new DateTime(2020, 9, 28, 19, 31, 38, 239, DateTimeKind.Local).AddTicks(115),
+                            Id = "SK",
+                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 495, DateTimeKind.Local).AddTicks(6040),
                             Name = "Skype",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
-                            Code = "FB",
-                            InsertDate = new DateTime(2020, 9, 28, 19, 31, 38, 239, DateTimeKind.Local).AddTicks(117),
+                            Id = "FB",
+                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 495, DateTimeKind.Local).AddTicks(6043),
                             Name = "Facebook",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
-                            Code = "DC",
-                            InsertDate = new DateTime(2020, 9, 28, 19, 31, 38, 239, DateTimeKind.Local).AddTicks(118),
+                            Id = "DC",
+                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 495, DateTimeKind.Local).AddTicks(6044),
                             Name = "Discord",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         });
                 });
 
-            modelBuilder.Entity("Zs.Bot.Model.User", b =>
+            modelBuilder.Entity("Zs.Bot.Data.Models.User", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnName("user_id")
                         .HasColumnType("int")
-                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.SerialColumn);
+                        .HasColumnName("user_id")
+                        .UseSerialColumn();
 
                     b.Property<string>("FullName")
-                        .HasColumnName("user_full_name")
+                        .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
-                        .HasMaxLength(50);
+                        .HasColumnName("user_full_name");
 
                     b.Property<DateTime>("InsertDate")
                         .ValueGeneratedOnAdd()
-                        .HasColumnName("insert_date")
                         .HasColumnType("timestamp with time zone")
+                        .HasColumnName("insert_date")
                         .HasDefaultValueSql("now()");
 
                     b.Property<bool>("IsBot")
-                        .HasColumnName("user_is_bot")
-                        .HasColumnType("bool");
+                        .HasColumnType("bool")
+                        .HasColumnName("user_is_bot");
 
                     b.Property<string>("Name")
-                        .HasColumnName("user_name")
+                        .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
-                        .HasMaxLength(50);
+                        .HasColumnName("user_name");
 
                     b.Property<string>("RawData")
                         .IsRequired()
-                        .HasColumnName("raw_data")
-                        .HasColumnType("json");
+                        .HasColumnType("json")
+                        .HasColumnName("raw_data");
 
                     b.Property<string>("RawDataHash")
                         .IsRequired()
-                        .HasColumnName("raw_data_hash")
+                        .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
-                        .HasMaxLength(50);
+                        .HasColumnName("raw_data_hash");
 
                     b.Property<string>("RawDataHistory")
-                        .HasColumnName("raw_data_history")
-                        .HasColumnType("json");
+                        .HasColumnType("json")
+                        .HasColumnName("raw_data_history");
 
                     b.Property<DateTime>("UpdateDate")
                         .ValueGeneratedOnAdd()
-                        .HasColumnName("update_date")
                         .HasColumnType("timestamp with time zone")
+                        .HasColumnName("update_date")
                         .HasDefaultValueSql("now()");
 
-                    b.Property<string>("UserRoleCode")
+                    b.Property<string>("UserRoleId")
                         .IsRequired()
-                        .HasColumnName("user_role_code")
+                        .HasMaxLength(10)
                         .HasColumnType("character varying(10)")
-                        .HasMaxLength(10);
+                        .HasColumnName("user_role_code");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserRoleCode");
+                    b.HasIndex("UserRoleId");
 
-                    b.ToTable("users","bot");
+                    b.ToTable("users", "bot");
 
                     b.HasData(
                         new
                         {
                             Id = -10,
                             FullName = "for exported message reading",
-                            InsertDate = new DateTime(2020, 9, 28, 19, 31, 38, 241, DateTimeKind.Local).AddTicks(6020),
+                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(1374),
                             IsBot = false,
                             Name = "Unknown",
                             RawData = "{ \"test\": \"test\" }",
                             RawDataHash = "-1063294487",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            UserRoleCode = "USER"
+                            UserRoleId = "USER"
                         },
                         new
                         {
                             Id = -1,
                             FullName = "UnitTest",
-                            InsertDate = new DateTime(2020, 9, 28, 19, 31, 38, 241, DateTimeKind.Local).AddTicks(6773),
+                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(1854),
                             IsBot = false,
                             Name = "UnitTestUser",
                             RawData = "{ \"test\": \"test\" }",
                             RawDataHash = "-1063294487",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            UserRoleCode = "USER"
+                            UserRoleId = "USER"
                         },
                         new
                         {
                             Id = 1,
                             FullName = "Сергей Зуев",
-                            InsertDate = new DateTime(2020, 9, 28, 19, 31, 38, 241, DateTimeKind.Local).AddTicks(6785),
+                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(1860),
                             IsBot = false,
                             Name = "zuev56",
                             RawData = "{ \"Id\": 210281448 }",
                             RawDataHash = "-1063294487",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            UserRoleCode = "ADMIN"
+                            UserRoleId = "ADMIN"
                         });
                 });
 
-            modelBuilder.Entity("Zs.Bot.Model.UserRole", b =>
+            modelBuilder.Entity("Zs.Bot.Data.Models.UserRole", b =>
                 {
-                    b.Property<string>("Code")
-                        .HasColumnName("user_role_code")
+                    b.Property<string>("Id")
+                        .HasMaxLength(10)
                         .HasColumnType("character varying(10)")
-                        .HasMaxLength(10);
+                        .HasColumnName("user_role_code");
 
                     b.Property<DateTime>("InsertDate")
                         .ValueGeneratedOnAdd()
-                        .HasColumnName("insert_date")
                         .HasColumnType("timestamp with time zone")
+                        .HasColumnName("insert_date")
                         .HasDefaultValueSql("now()");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnName("user_role_name")
+                        .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
-                        .HasMaxLength(50);
+                        .HasColumnName("user_role_name");
 
                     b.Property<string>("Permissions")
                         .IsRequired()
-                        .HasColumnName("user_role_permissions")
-                        .HasColumnType("json");
+                        .HasColumnType("json")
+                        .HasColumnName("user_role_permissions");
 
                     b.Property<DateTime>("UpdateDate")
                         .ValueGeneratedOnAdd()
-                        .HasColumnName("update_date")
                         .HasColumnType("timestamp with time zone")
+                        .HasColumnName("update_date")
                         .HasDefaultValueSql("now()");
 
-                    b.HasKey("Code");
+                    b.HasKey("Id");
 
-                    b.ToTable("user_roles","bot");
+                    b.ToTable("user_roles", "bot");
 
                     b.HasData(
                         new
                         {
-                            Code = "OWNER",
-                            InsertDate = new DateTime(2020, 9, 28, 19, 31, 38, 241, DateTimeKind.Local).AddTicks(900),
+                            Id = "OWNER",
+                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 497, DateTimeKind.Local).AddTicks(7059),
                             Name = "Owner",
                             Permissions = "[ \"All\" ]",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
-                            Code = "ADMIN",
-                            InsertDate = new DateTime(2020, 9, 28, 19, 31, 38, 241, DateTimeKind.Local).AddTicks(1387),
+                            Id = "ADMIN",
+                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 497, DateTimeKind.Local).AddTicks(7553),
                             Name = "Administrator",
                             Permissions = "[ \"adminCmdGroup\", \"moderatorCmdGroup\", \"userCmdGroup\" ]",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
-                            Code = "MODERATOR",
-                            InsertDate = new DateTime(2020, 9, 28, 19, 31, 38, 241, DateTimeKind.Local).AddTicks(1391),
+                            Id = "MODERATOR",
+                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 497, DateTimeKind.Local).AddTicks(7557),
                             Name = "Moderator",
                             Permissions = "[ \"moderatorCmdGroup\", \"userCmdGroup\" ]",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
-                            Code = "USER",
-                            InsertDate = new DateTime(2020, 9, 28, 19, 31, 38, 241, DateTimeKind.Local).AddTicks(1392),
+                            Id = "USER",
+                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 497, DateTimeKind.Local).AddTicks(7561),
                             Name = "User",
                             Permissions = "[ \"userCmdGroup\" ]",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         });
                 });
 
-
-            modelBuilder.Entity("Zs.App.Home.Model.VkActivityLog", b =>
+            modelBuilder.Entity("Zs.Bot.Data.Models.Chat", b =>
                 {
-                    b.HasOne("Zs.App.Home.Model.VkUser", "VkUser")
-                        .WithMany()
-                        .HasForeignKey("VkUserId");
-                });
-
-            modelBuilder.Entity("Zs.Bot.Model.Chat", b =>
-                {
-                    b.HasOne("Zs.Bot.Model.ChatType", "ChatType")
+                    b.HasOne("Zs.Bot.Data.Models.ChatType", "ChatType")
                         .WithMany("Chats")
-                        .HasForeignKey("ChatTypeCode")
+                        .HasForeignKey("ChatTypeId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("ChatType");
                 });
 
-            modelBuilder.Entity("Zs.Bot.Model.Message", b =>
+            modelBuilder.Entity("Zs.Bot.Data.Models.Message", b =>
                 {
-                    b.HasOne("Zs.Bot.Model.Chat", "Chat")
+                    b.HasOne("Zs.Bot.Data.Models.Chat", "Chat")
                         .WithMany("Messages")
                         .HasForeignKey("ChatId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Zs.Bot.Model.MessageType", "MessageType")
+                    b.HasOne("Zs.Bot.Data.Models.MessageType", "MessageType")
                         .WithMany("Messages")
-                        .HasForeignKey("MessageTypeCode")
+                        .HasForeignKey("MessageTypeId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Zs.Bot.Model.MessengerInfo", "Messenger")
+                    b.HasOne("Zs.Bot.Data.Models.MessengerInfo", "Messenger")
                         .WithMany("Messages")
-                        .HasForeignKey("MessengerCode")
+                        .HasForeignKey("MessengerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Zs.Bot.Model.Message", "ReplyToMessage")
+                    b.HasOne("Zs.Bot.Data.Models.Message", "ReplyToMessage")
                         .WithMany()
                         .HasForeignKey("ReplyToMessageId");
 
-                    b.HasOne("Zs.Bot.Model.User", "User")
+                    b.HasOne("Zs.Bot.Data.Models.User", "User")
                         .WithMany("Messages")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Chat");
+
+                    b.Navigation("MessageType");
+
+                    b.Navigation("Messenger");
+
+                    b.Navigation("ReplyToMessage");
+
+                    b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Zs.Bot.Model.User", b =>
+            modelBuilder.Entity("Zs.Bot.Data.Models.User", b =>
                 {
-                    b.HasOne("Zs.Bot.Model.UserRole", "UserRoles")
+                    b.HasOne("Zs.Bot.Data.Models.UserRole", "UserRoles")
                         .WithMany("Users")
-                        .HasForeignKey("UserRoleCode")
+                        .HasForeignKey("UserRoleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("UserRoles");
+                });
+
+            modelBuilder.Entity("Zs.Bot.Data.Models.Chat", b =>
+                {
+                    b.Navigation("Messages");
+                });
+
+            modelBuilder.Entity("Zs.Bot.Data.Models.ChatType", b =>
+                {
+                    b.Navigation("Chats");
+                });
+
+            modelBuilder.Entity("Zs.Bot.Data.Models.MessageType", b =>
+                {
+                    b.Navigation("Messages");
+                });
+
+            modelBuilder.Entity("Zs.Bot.Data.Models.MessengerInfo", b =>
+                {
+                    b.Navigation("Messages");
+                });
+
+            modelBuilder.Entity("Zs.Bot.Data.Models.User", b =>
+                {
+                    b.Navigation("Messages");
+                });
+
+            modelBuilder.Entity("Zs.Bot.Data.Models.UserRole", b =>
+                {
+                    b.Navigation("Users");
                 });
 #pragma warning restore 612, 618
         }

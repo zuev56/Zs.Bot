@@ -7,23 +7,22 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
+using Zs.App.Home.Model;
+using Zs.App.Home.Model.Data;
+using Zs.Bot.Data;
+using Zs.Bot.Data.Abstractions;
+using Zs.Bot.Data.Models;
+using Zs.Bot.Data.Repositories;
 using Zs.Bot.Messenger.Telegram;
+using Zs.Bot.Services.Commands;
+using Zs.Bot.Services.DataSavers;
 using Zs.Bot.Services.Logging;
 using Zs.Bot.Services.Messaging;
 using Zs.Common.Abstractions;
 using Zs.Common.Extensions;
 using Zs.Common.Services.Connectors;
-using Zs.App.Home.Model.Data;
-using Zs.App.Home.Model;
+using Zs.Common.Services.Scheduler;
 using BotContextFactory = Zs.Bot.Data.Factories.BotContextFactory;
-using HomeContextFactory = Zs.App.Home.Model.ContextFactory;
-using Zs.App.Home.Model.Abstractions;
-using Zs.Bot;
-using Zs.Bot.Data;
-using Zs.Bot.Data.Abstractions;
-using Zs.Bot.Services.DataSavers;
-using Zs.Bot.Services.Commands;
-using Zs.Bot.Data.Models;
 
 namespace Zs.App.Home.Bot
 {
@@ -87,11 +86,15 @@ namespace Zs.App.Home.Bot
                                    .EnableDetailedErrors(true)
                                    .EnableSensitiveDataLogging(true));
 
-                        services.AddSingleton<IContextFactory, HomeContextFactory>(sp =>
-                            new HomeContextFactory(sp.GetService<DbContextOptions<BotContext>>(), sp.GetService<DbContextOptions<HomeContext>>()));
+                        // Пока остаётся для миграций
+                        //services.AddSingleton<IContextFactory, Zs.App.Home.Model.ContextFactory>(sp =>
+                        //    new Zs.App.Home.Model.ContextFactory(sp.GetService<DbContextOptions<BotContext>>(), sp.GetService<DbContextOptions<HomeContext>>()));
 
                         services.AddSingleton<IContextFactory<BotContext>, BotContextFactory>(sp =>
                             new BotContextFactory(sp.GetService<DbContextOptions<BotContext>>()));
+                        
+                        services.AddSingleton<IContextFactory<HomeContext>, HomeContextFactory>(sp =>
+                            new HomeContextFactory(sp.GetService<DbContextOptions<HomeContext>>()));
 
                         services.AddSingleton<IZsLogger, Logger>(sp => new Logger(sp.GetService<IRepository<Log, int>>()));
 
@@ -127,23 +130,36 @@ namespace Zs.App.Home.Bot
                                 sp.GetService<IZsLogger>())
                             );
 
-                        services.AddScoped<IRepository<Log, int>, CommonRepository<Log, int>>(sp =>
-                            new CommonRepository<Log, int>(
+                        
+                        services.AddScoped<IRepository<VkActivityLogItem, int>, CommonRepository<HomeContext, VkActivityLogItem, int>>(sp =>
+                            new CommonRepository<HomeContext, VkActivityLogItem, int>(
+                                sp.GetService<IContextFactory<HomeContext>>())
+                            );
+                        services.AddScoped<IRepository<VkUser, int>, CommonRepository<HomeContext, VkUser, int>>(sp =>
+                            new CommonRepository<HomeContext, VkUser, int>(
+                                sp.GetService<IContextFactory<HomeContext>>())
+                            );
+
+                        services.AddScoped<IRepository<Log, int>, CommonRepository<BotContext, Log, int>>(sp =>
+                            new CommonRepository<BotContext, Log, int>(
                                 sp.GetService<IContextFactory<BotContext>>())
                             );
-                        services.AddScoped<IItemsWithRawDataRepository<Chat, int>, ItemsWithRawDataRepository<Chat, int>>(sp =>
-                            new ItemsWithRawDataRepository<Chat, int>(
+                        services.AddScoped<IItemsWithRawDataRepository<Chat, int>, ItemsWithRawDataRepository<BotContext, Chat, int>>(sp =>
+                            new ItemsWithRawDataRepository<BotContext, Chat, int>(
                                 sp.GetService<IContextFactory<BotContext>>())
                             );
-                        services.AddScoped<IItemsWithRawDataRepository<User, int>, ItemsWithRawDataRepository<User, int>>(sp =>
-                            new ItemsWithRawDataRepository<User, int>(
+                        services.AddScoped<IItemsWithRawDataRepository<User, int>, ItemsWithRawDataRepository<BotContext, User, int>>(sp =>
+                            new ItemsWithRawDataRepository<BotContext, User, int>(
                                 sp.GetService<IContextFactory<BotContext>>())
                             );
-                        services.AddScoped<IItemsWithRawDataRepository<Message, int>, ItemsWithRawDataRepository<Message, int>>(sp =>
-                            new ItemsWithRawDataRepository<Message, int>(
+                        services.AddScoped<IItemsWithRawDataRepository<Message, int>, ItemsWithRawDataRepository<BotContext, Message, int>>(sp =>
+                            new ItemsWithRawDataRepository<BotContext, Message, int>(
                                 sp.GetService<IContextFactory<BotContext>>())
                             );
 
+                        services.AddScoped<IScheduler, Scheduler>(sp =>
+                            new Scheduler(hostContext.Configuration, sp.GetService<IZsLogger>())
+                            );
 
                         services.AddSingleton<IHostedService, UserWatcher>(x =>
                             ActivatorUtilities.CreateInstance<UserWatcher>(x));

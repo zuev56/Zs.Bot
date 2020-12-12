@@ -1,4 +1,4 @@
-﻿{
+{
   "iisSettings": {
     "windowsAuthentication": false,
     "anonymousAuthentication": true,
@@ -19,16 +19,15 @@
     "Zs.App.Home.Web": {
       "commandName": "Project",
       "commandLineArgs": "M:\\Zs.Bot\\PrivateConfiguration.json",
-      "dotnetRunMessages": "true",
       "launchBrowser": true,
-      //"launchUrl": "api/activitylog",
       "launchUrl": "admin/serverinfo",
-      //"applicationUrl": "https://localhost:5001;http://localhost:5000",
-      "applicationUrl": "http://localhost:5601",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
         "ASPNETCORE_HOSTINGSTARTUPASSEMBLIES": "Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation"
-      }
+      },
+      "dotnetRunMessages": "true",
+      "nativeDebugging": false,
+      "applicationUrl": "http://localhost:5601"
     }
   }
 }

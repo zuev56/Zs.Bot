@@ -1,76 +1,32 @@
 ﻿@model Zs.App.Home.Web.Areas.Admin.Models.ServerInfo
 
 @{
+    Layout = "_Layout";
     ViewData["Title"] = "Server information";
 }
 
-<h1>Server information</h1>
+<div>
+    <fieldset>
+        <legend> Common server info </legend>
+        <input id="buttonUpdateCommonInfo" type="button" value="Update" />
+        <div id="commonInfo">
+            @await Html.PartialAsync("_CommonInfo.cshtml", Model)
+        </div>
+    </fieldset>
 
-<p>
-    <label style="font-weight: bold"> Machine name </label> @Model.Name
-</p>
+    <fieldset>
+        <legend>Drives</legend>
+        @await Html.PartialAsync("_DrivesTable.cshtml", Model.Drives)
+    </fieldset>
 
-<table class="table" >
-    <thead>
-        <tr>
-            <th> <label style="font-weight: bold"> IP </label> </th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var ip in Model.IPs)
-        {
-            <tr>
-                <td> @Html.DisplayFor(model => ip) </td>
-            </tr>
-        }
-    </tbody>
-</table>
+    <fieldset>
+        <legend>Services (daemons)</legend>
+        @await Html.PartialAsync("_DaemonsTable.cshtml", Model.Processes)
+    </fieldset>
+</div>
 
-<p>
-    <label style="font-weight: bold"> Current date:</label> @DateTime.Now  <br />
-    <label style="font-weight: bold"> Current UTC date:</label> @DateTime.UtcNow
-</p>
-
-<table class="table" >
-    <thead>
-        <tr>
-            <th> @Html.DisplayNameFor(model => model.Drives[0].Name) </th>
-            <th> @Html.DisplayNameFor(model => model.Drives[0].FileSystem) </th>
-            <th> @Html.DisplayNameFor(model => model.Drives[0].TotalSize) </th>
-            <th> @Html.DisplayNameFor(model => model.Drives[0].FreeSpace) </th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model.Drives)
-        {
-        <tr>
-            <td> @Html.DisplayFor(model => item.Name) </td>
-            <td> @Html.DisplayFor(model => item.FileSystem) </td>
-            <td> @Html.DisplayFor(model => item.TotalSize) </td>
-            <td> @Html.DisplayFor(model => item.FreeSpace) </td>
-        </tr>
-        }
-    </tbody>
-</table>
-
-<h1>Services (daemons)</h1>
-
-<table class="table" >
-    <thead>
-        <tr>
-            <th> @Html.DisplayNameFor(model => model.Processes[0].Name) </th>
-            <th> @Html.DisplayNameFor(model => model.Processes[0].IsResponding) </th>
-            <th> @Html.DisplayNameFor(model => model.Processes[0].ThreadsNumber) </th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var process in Model.Processes)
-        {
-        <tr>
-            <td> @Html.DisplayFor(model => process.Name) (@Html.DisplayFor(model => process.DuplicatesInName)) </td>
-            <td> @Html.DisplayFor(model => process.IsResponding) </td>
-            <td> @Html.DisplayFor(model => process.ThreadsNumber) </td>
-        </tr>
-        }
-    </tbody>
-</table>
+@section Scripts
+{
+    @*<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>*@
+    <script src="/js/Admin/ServerInfo.js" ></script>
+} 

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
@@ -33,6 +34,8 @@ namespace Zs.App.ChatAdmin.Data
 
         public ChatAdminContext CreateDbContext(string[] args)
         {
+            Trace.WriteLineIf(args != null && args.Length > 0, string.Join(',', args));
+            
             var solutionDir = Common.Extensions.Path.TryGetSolutionPath();
             var configuration = new ConfigurationBuilder()
                 .AddJsonFile(Path.Combine(solutionDir, "PrivateConfiguration.json"), optional: true)

@@ -13,7 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\Bot\Messengers\Zs.Bot.Messenger.Telegram\Zs.Bot.Messenger.Telegram.csproj" />
-    <ProjectReference Include="..\Zs.App.Home.Model\Zs.App.Home.Model.csproj" />
+    <ProjectReference Include="..\Zs.App.Home.Model\Zs.App.Home.Data.csproj" />
   </ItemGroup>
 
   <ItemGroup>

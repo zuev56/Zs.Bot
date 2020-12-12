@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -27,17 +28,27 @@ namespace Zs.Bot.Data.Abstractions
         /// condition or a default value if no such element is found
         /// </summary>
         /// <param name="predicate"></param>
+        /// <param name="orderBy"> Sorting rules before executing predicate</param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        Task<TEntity> FindAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default);
+        Task<TEntity> FindAsync(
+            Expression<Func<TEntity, bool>> predicate = null,
+            Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null,
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Asynchronously returns the list of elements of a sequence that satisfies a specified condition
         /// </summary>
         /// <param name="predicate"></param>
+        /// <param name="orderBy"> Sorting rules before executing predicate</param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        Task<List<TEntity>> FindAllAsync(Expression<Func<TEntity, bool>> predicate = null, CancellationToken cancellationToken = default);
+        Task<List<TEntity>> FindAllAsync(
+            Expression<Func<TEntity, bool>> predicate = null,
+            Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null,
+            uint? skip = null,
+            uint? take = null,
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Save new item or update existing item in database

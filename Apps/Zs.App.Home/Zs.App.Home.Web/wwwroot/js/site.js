@@ -2,3 +2,16 @@
 // for details on configuring this project to bundle and minify static web assets.
 
 // Write your JavaScript code.
+$(document).ready(function () {
+
+    $('#buttonUpdateAll').click(function () {
+        $.ajax({
+            type: 'GET',
+            url: '/admin/ServerInfo/UpdateAll',
+            success: function (result) {
+                $('#serverInfo').html(result)
+            }
+        });
+    });
+
+});

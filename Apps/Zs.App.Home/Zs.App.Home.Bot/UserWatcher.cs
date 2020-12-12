@@ -6,28 +6,25 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
-using Zs.Bot;
-using Zs.Bot.Data;
+using Zs.App.Home.Model;
+using Zs.App.Home.Model.VkAPI;
+using Zs.Bot.Data.Abstractions;
 using Zs.Bot.Services.Messaging;
 using Zs.Common.Abstractions;
 using Zs.Common.Enums;
 using Zs.Common.Services.Scheduler;
 using Zs.Common.Services.WebAPI;
-using Zs.App.Home.Model;
-using Zs.App.Home.Model.Abstractions;
-using Zs.App.Home.Model.Data;
-using Zs.App.Home.Model.VkAPI;
 
 namespace Zs.App.Home.Bot
 {
     internal class UserWatcher : IHostedService
     {
-        private readonly IServiceProvider _serviceProvider;
         private readonly IConfiguration _configuration;
-        private readonly IZsLogger _logger;
-        private readonly IContextFactory _contextFactory;
         private readonly IMessenger _messenger;
         private readonly IScheduler _scheduler;
+        private readonly IRepository<VkUser, int> _vkUsersRepo;
+        private readonly IRepository<VkActivityLogItem, int> _vkActivityLogRepo;
+        private readonly IZsLogger _logger;
         //private readonly IConnectionAnalyser _connectionAnalyser;
         private readonly bool _detailedLogging;
         private readonly float _version;
@@ -36,18 +33,20 @@ namespace Zs.App.Home.Bot
 
 
         public UserWatcher(
-            IServiceProvider serviceProvider,
             IConfiguration configuration,
             IMessenger messenger,
-            IContextFactory contextFactory,
-            IZsLogger logger)
+            IScheduler scheduler,
+            IRepository<VkUser, int> vkUsersRepo,
+            IRepository<VkActivityLogItem, int> vkActivityLogRepo,
+            IZsLogger logger = null)
         {
             try
             {
                 _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-                _contextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
-                _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
                 _messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
+                _scheduler = scheduler;
+                _vkUsersRepo = vkUsersRepo ?? throw new ArgumentNullException(nameof(vkUsersRepo));
+                _vkActivityLogRepo = vkActivityLogRepo ?? throw new ArgumentNullException(nameof(vkActivityLogRepo));
                 _logger = logger;
 
                 _version = float.Parse(_configuration["Vk:Version"], CultureInfo.InvariantCulture);
@@ -55,7 +54,6 @@ namespace Zs.App.Home.Bot
                 _userIds = _configuration.GetSection("Vk:UserIds").Get<int[]>();
                 bool.TryParse(_configuration["DetailedLogging"]?.ToString(), out _detailedLogging);
 
-                _scheduler = new Scheduler(configuration, _logger);
                 CreateJobs();
             }
             catch (Exception ex)
@@ -72,7 +70,6 @@ namespace Zs.App.Home.Bot
                 _scheduler.Start(3000, 1000);
                 await _messenger.AddMessageToOutboxAsync($"Bot started", "ADMIN");
                 await _logger?.LogInfoAsync($"{nameof(UserWatcher)} started", nameof(UserWatcher));
-
             }
             catch (Exception ex)
             {
@@ -91,17 +88,8 @@ namespace Zs.App.Home.Bot
         {
             var logUserStatus = new ProgramJob(
                 TimeSpan.FromSeconds(10),
-                GetUsersStatus,
+                async () => await GetUsersStatus(),
                 description: "logUserStatus");
-
-            var informAboutNotActiveUsers24h = new SqlJob(
-                TimeSpan.FromHours(1),
-                QueryResultType.String,
-                $"select vk.sf_cmd_get_not_active_users('{string.Join(',', _configuration.GetSection("Vk:TrackedUserIds").Get<int[]>())}', 24)",
-                _configuration.GetConnectionString("Default"),
-                startDate: DateTime.Now + TimeSpan.FromSeconds(5),
-                description: "informAboutNotActiveUsers24h"
-                );
 
             var informAboutNotActiveUsers12h = new SqlJob(
                 TimeSpan.FromHours(1),
@@ -115,10 +103,10 @@ namespace Zs.App.Home.Bot
             var sendDayErrorsAndWarnings = new SqlJob(
                 TimeSpan.FromHours(1),
                 QueryResultType.String,
-                 @" select string_agg('**' || log_type || '**  ' || to_char(insert_date, 'HH24:MI:SS') || E'\n' || log_initiator || ':  ' || log_message, E'\n\n' order by insert_date desc)"
-                + "\n from bot.logs"
-                + "\nwhere log_type in ('Warning', 'Error')"
-                + "\n  and insert_date > now() - interval '1 hour'",
+                 @" select string_agg('**' || log_type || '**  ' || to_char(insert_date, 'HH24:MI:SS') || E'\n' || log_initiator || ':  ' || log_message, E'\n\n' order by insert_date desc)
+                              from bot.logs
+                             where log_type in ('Warning', 'Error')
+                               and insert_date > now() - interval '1 hour'",
                 _configuration.GetConnectionString("Default"),
                 startDate: Job.NextHour(),
                 description: "sendDayErrorsAndWarnings"
@@ -136,13 +124,11 @@ namespace Zs.App.Home.Bot
                 description: "sendNightErrorsAndWarnings"
                 );
 
-            informAboutNotActiveUsers24h.ExecutionCompleted += Job_ExecutionCompleted;
             informAboutNotActiveUsers12h.ExecutionCompleted += Job_ExecutionCompleted;
             sendDayErrorsAndWarnings.ExecutionCompleted += Job_ExecutionCompleted;
             sendNightErrorsAndWarnings.ExecutionCompleted += Job_ExecutionCompleted;
 
             _scheduler.Jobs.Add(logUserStatus);
-            _scheduler.Jobs.Add(informAboutNotActiveUsers24h);
             _scheduler.Jobs.Add(informAboutNotActiveUsers12h);
             _scheduler.Jobs.Add(sendDayErrorsAndWarnings);
             _scheduler.Jobs.Add(sendNightErrorsAndWarnings);
@@ -161,14 +147,12 @@ namespace Zs.App.Home.Bot
             }
         }
 
-        private async void GetUsersStatus()
+        private async Task GetUsersStatus()
         {
             try
             {
-                using var homeContext = _contextFactory.GetHomeContext();
-
                 //https://api.vk.com/method/users.get?user_ids=8790237,1234567&fields=online&access_token=cf11cfd68111cfe68111cf89bf1a6bb54b1a3fad6d&v=5.122
-                var url = homeContext.VkUsers.Any()
+                var url = await _vkUsersRepo.FindAsync() != null
                     ? $"https://api.vk.com/method/users.get?user_ids={string.Join(',',_userIds)}&fields=online,online_mobile,online_app,last_seen&access_token={_accessToken}&v={_version.ToString(CultureInfo.InvariantCulture)}"
                     : $"https://api.vk.com/method/users.get?user_ids={string.Join(',', _userIds)}&fields=photo_id,verified,sex,bdate,city,country,home_town,photo_max_orig,online,domain,has_mobile,contacts,site,education,universities,schools,status,last_seen,followers_count,occupation,nickname,relatives,relation,personal,connections,exports,activities,interests,music,movies,tv,books,games,about,quotes,can_post,can_see_all_posts,can_see_audio,can_write_private_message,can_send_friend_request,is_favorite,is_hidden_from_feed,timezone,screen_name,maiden_name,is_friend,friend_status,career,military,blacklisted,blacklisted_by_me,can_be_invited_group&access_token={_accessToken}&v={_version}";
 
@@ -179,8 +163,8 @@ namespace Zs.App.Home.Bot
                 {
                     // Для всех пользователей создаём записи в журнале
                     // с неопределённым статусом, если они ещё не созданы
-                    var users = homeContext.VkUsers.ToList();
-                    users.ForEach(u => homeContext.VkActivityLog.Add(
+                    var users = await _vkUsersRepo.FindAllAsync();
+                    users.ForEach(async u => await _vkActivityLogRepo.SaveAsync(
                         new VkActivityLogItem()
                         {
                             UserId = u.Id,
@@ -196,16 +180,17 @@ namespace Zs.App.Home.Bot
 
                 foreach (var user in response.Users)
                 {
-                    var dbUser = homeContext.VkUsers.FromSqlRaw($"select * from vk.users where cast(raw_data ->> 'id' as integer) = {user.Id}").FirstOrDefault();
+                    var dbUser = await _vkUsersRepo.FindBySqlAsync($"select * from vk.users where cast(raw_data ->> 'id' as integer) = {user.Id}");
                     if (dbUser is null)
                     {
-                        homeContext.VkUsers.Add((VkUser)user);
-                        homeContext.SaveChanges();
-                        dbUser = homeContext.VkUsers.FromSqlRaw($"select * from vk.users where cast(raw_data ->> 'id' as integer) = {user.Id}").FirstOrDefault();
+                        await _vkUsersRepo.SaveAsync((VkUser)user);
+                        dbUser = await _vkUsersRepo.FindBySqlAsync($"select * from vk.users where cast(raw_data ->> 'id' as integer) = {user.Id}");
                     }
 
-                    var lastActivityDbItem = homeContext.VkActivityLog.OrderByDescending(l => l.Id)
-                        .FirstOrDefault(l => l.UserId == dbUser.Id);
+                    var lastActivityDbItem = await _vkActivityLogRepo.FindAsync(
+                        l => l.UserId == dbUser.Id, 
+                        orderBy: query => query.OrderByDescending(l => l.Id));
+                        //homeContext.VkActivityLog.OrderByDescending(l => l.Id).FirstOrDefault(l => l.UserId == dbUser.Id);
 
                     var currentOnlineStatus = user.Online == 1 ? true : false;
                     var currentMobileStatus = user.OnlineMobile == 1 ? true : false;
@@ -216,20 +201,18 @@ namespace Zs.App.Home.Bot
                         || lastActivityDbItem.IsOnlineMobile != currentMobileStatus
                         || lastActivityDbItem.OnlineApp != currentApp)
                     {
-                        homeContext.VkActivityLog.Add(new VkActivityLogItem()
-                        {
-                            UserId = dbUser.Id,
-                            IsOnline = currentOnlineStatus,
-                            IsOnlineMobile = currentMobileStatus,
-                            OnlineApp = user.OnlineApp,
-                            LastSeen = user.LastSeenUnix?.Time ?? 0,
-                            InsertDate = DateTime.Now
-                        });
+                        await _vkActivityLogRepo.SaveAsync(
+                            new VkActivityLogItem()
+                            {
+                                UserId = dbUser.Id,
+                                IsOnline = currentOnlineStatus,
+                                IsOnlineMobile = currentMobileStatus,
+                                OnlineApp = user.OnlineApp,
+                                LastSeen = user.LastSeenUnix?.Time ?? 0,
+                                InsertDate = DateTime.Now
+                            });
                     }
                 }
-
-                if (homeContext.ChangeTracker.HasChanges())
-                    homeContext.SaveChanges();
             }
             catch (Exception ex)
             {

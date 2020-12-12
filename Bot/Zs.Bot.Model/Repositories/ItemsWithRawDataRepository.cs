@@ -1,24 +1,25 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json.Linq;
-using System;
+﻿using System;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json.Linq;
 using Zs.Bot.Data.Abstractions;
 using Zs.Common.Abstractions;
 using Zs.Common.Exceptions;
 using Zs.Common.Extensions;
 
-namespace Zs.Bot.Data
+namespace Zs.Bot.Data.Repositories
 {
     /// <summary>
     /// Repository for items containing raw data
     /// </summary>
     /// <typeparam name="TEntity">Entity type</typeparam>
     /// <typeparam name="TKey">Primary key type</typeparam>
-    public sealed class ItemsWithRawDataRepository<TEntity, TKey> : CommonRepository<TEntity, TKey>, IItemsWithRawDataRepository<TEntity, TKey>
+    public sealed class ItemsWithRawDataRepository<TContext, TEntity, TKey> : CommonRepository<TContext, TEntity, TKey>, IItemsWithRawDataRepository<TEntity, TKey>
         where TEntity : class, IDbEntityWithRawData<TEntity, TKey>
+        where TContext : DbContext
     {
 
-        public ItemsWithRawDataRepository(IContextFactory<BotContext> contextFactory)
+        public ItemsWithRawDataRepository(IContextFactory<TContext> contextFactory)
             : base(contextFactory)
         {
             BeforeUpdateItem = (item, existingItem) 

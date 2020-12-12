@@ -1,31 +1,32 @@
-﻿using Microsoft.EntityFrameworkCore;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using Zs.Bot.Data.Abstractions;
 using Zs.Common.Abstractions;
 
-namespace Zs.Bot.Data
+namespace Zs.Bot.Data.Repositories
 {
     /// <summary>
     /// Universal repository
     /// </summary>
     /// <typeparam name="TEntity">Entity type</typeparam>
     /// <typeparam name="TKey">Primary key type</typeparam>
-    public class CommonRepository<TEntity, TKey> : IRepository<TEntity, TKey>
+    public class CommonRepository<TContext, TEntity, TKey> : IRepository<TEntity, TKey>
         where TEntity : class, IDbEntity<TEntity, TKey>
+        where TContext : DbContext
     {
-        protected IContextFactory<BotContext> ContextFactory { get; }
+        protected IContextFactory<TContext> ContextFactory { get; }
 
         // TODO: Make specific delegate type
         /// <summary> Calls before items update. 
         /// First argument - saving item, second argument - existing item from database </summary>
         protected Action<TEntity, TEntity> BeforeUpdateItem { get; set; }
         
-        public CommonRepository(IContextFactory<BotContext> contextFactory)
+        public CommonRepository(IContextFactory<TContext> contextFactory)
         {
             ContextFactory = contextFactory;
         }
@@ -42,21 +43,47 @@ namespace Zs.Bot.Data
             return await context.Set<TEntity>().FromSqlRaw(query).FirstOrDefaultAsync();
         }
 
-        public virtual async Task<TEntity> FindAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
+        public virtual async Task<TEntity> FindAsync(
+            Expression<Func<TEntity, bool>> predicate = null,
+            Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null,
+            CancellationToken cancellationToken = default)
         {
-            if (predicate == null)
-                throw new ArgumentNullException(nameof(predicate));
-
             using var context = ContextFactory.GetContext();
-            return await context.Set<TEntity>().FirstOrDefaultAsync(predicate);
+
+            IQueryable<TEntity> query = context.Set<TEntity>();
+
+            if (orderBy != null)
+                query = orderBy(query);
+
+            return predicate is null
+                ? await query.FirstOrDefaultAsync()
+                : await query.FirstOrDefaultAsync(predicate);
         }
 
-        public virtual async Task<List<TEntity>> FindAllAsync(Expression<Func<TEntity, bool>> predicate = null, CancellationToken cancellationToken = default)
+        public virtual async Task<List<TEntity>> FindAllAsync(
+            Expression<Func<TEntity, bool>> predicate = null,
+            Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null,
+            uint? skip = null,
+            uint? take = null,
+            CancellationToken cancellationToken = default)
         {
             using var context = ContextFactory.GetContext();
-            return predicate == null
-                ? await context.Set<TEntity>().ToListAsync(cancellationToken)
-                : await context.Set<TEntity>().Where(predicate).ToListAsync(cancellationToken);
+
+            IQueryable<TEntity> query = context.Set<TEntity>();
+
+            if (predicate != null)
+                query = query.Where(predicate);
+
+            if (orderBy != null)
+                query = orderBy(query);
+
+            if (skip != null)
+                query = query.Skip((int)skip);
+
+            if (take != null)
+                query = query.Take((int)take);
+
+            return await query.ToListAsync(cancellationToken);
         }
 
         public virtual async Task<bool> SaveAsync(TEntity item, CancellationToken cancellationToken = default)
@@ -117,6 +144,5 @@ namespace Zs.Bot.Data
                 return false;
             }
         }
-
     }
 }

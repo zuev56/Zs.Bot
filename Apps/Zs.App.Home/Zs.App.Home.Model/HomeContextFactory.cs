@@ -3,29 +3,29 @@ using System.IO;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
-using Zs.App.Home.Model.Abstractions;
 using Zs.App.Home.Model.Data;
 using Zs.Bot.Data;
+using Zs.Common.Abstractions;
 
 namespace Zs.App.Home.Model
 {
-    public class ContextFactory : IContextFactory, IDesignTimeDbContextFactory<HomeContext>
+    public class HomeContextFactory : IContextFactory<HomeContext>, IDesignTimeDbContextFactory<HomeContext>
     {
-        private static DbContextOptions<BotContext> _botOptions;
-        private static DbContextOptions<HomeContext> _homeOptions;
+        private static DbContextOptions<HomeContext> _options;
 
-        public ContextFactory()
+        public HomeContextFactory()
         {
         }
 
-        public ContextFactory(
-            DbContextOptions<BotContext> botOptions,
-            DbContextOptions<HomeContext> homeOptions)
+        public HomeContextFactory(DbContextOptions<HomeContext> options)
         {
-            _botOptions = botOptions ?? throw new ArgumentNullException(nameof(botOptions));
-            _homeOptions = homeOptions ?? throw new ArgumentNullException(nameof(homeOptions));
+            _options = options;
         }
 
+        public HomeContext GetContext() => new HomeContext(_options);
+        
+
+        // For migrations
         public HomeContext CreateDbContext(string[] args)
         {
             var solutionDir = Common.Extensions.Path.TryGetSolutionPath();
@@ -40,10 +40,5 @@ namespace Zs.App.Home.Model
             return new HomeContext(optionsBuilder.Options);
         }
 
-        public HomeContext GetHomeContext()
-            => new HomeContext(_homeOptions);
-
-        public BotContext GetBotContext()
-            => new BotContext(_botOptions);
     }
 }

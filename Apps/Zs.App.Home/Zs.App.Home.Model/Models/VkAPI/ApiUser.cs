@@ -61,10 +61,4 @@ namespace Zs.App.Home.Model.VkAPI
         public override string ToString()
             => $"{Id}  {FirstName} {LastName}";
     }
-
-    public class ApiLastSeen
-    {
-        [JsonPropertyName("time")]
-        public int Time { get; set; }
-    }
 }

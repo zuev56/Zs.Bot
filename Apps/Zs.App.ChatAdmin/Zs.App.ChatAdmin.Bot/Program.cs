@@ -12,6 +12,7 @@ using Zs.Bot.Data;
 using Zs.Bot.Data.Abstractions;
 using Zs.Bot.Data.Factories;
 using Zs.Bot.Data.Models;
+using Zs.Bot.Data.Repositories;
 using Zs.Bot.Messenger.Telegram;
 using Zs.Bot.Services.Commands;
 using Zs.Bot.Services.DataSavers;
@@ -140,28 +141,28 @@ namespace Zs.App.ChatAdmin
                                 sp.GetService<IZsLogger>())
                             );
 
-                        services.AddScoped<IRepository<Log, int>, CommonRepository<Log, int>>(sp =>
-                            new CommonRepository<Log, int>(
+                        services.AddScoped<IRepository<Log, int>, CommonRepository<BotContext, Log, int>>(sp =>
+                            new CommonRepository<BotContext, Log, int>(
                                 sp.GetService<IContextFactory<BotContext>>())
                             );
-                        services.AddScoped<IRepository<Command, string>, CommonRepository<Command, string>>(sp =>
-                            new CommonRepository<Command, string>(
+                        services.AddScoped<IRepository<Command, string>, CommonRepository<BotContext, Command, string>>(sp =>
+                            new CommonRepository<BotContext, Command, string>(
                                 sp.GetService<IContextFactory<BotContext>>())
                             );
-                        services.AddScoped<IRepository<UserRole, string>, CommonRepository<UserRole, string>>(sp =>
-                            new CommonRepository<UserRole, string>(
+                        services.AddScoped<IRepository<UserRole, string>, CommonRepository<BotContext, UserRole, string>>(sp =>
+                            new CommonRepository<BotContext, UserRole, string>(
                                 sp.GetService<IContextFactory<BotContext>>())
                             );
-                        services.AddScoped<IItemsWithRawDataRepository<Chat, int>, ItemsWithRawDataRepository<Chat, int>>(sp =>
-                            new ItemsWithRawDataRepository<Chat, int>(
+                        services.AddScoped<IItemsWithRawDataRepository<Chat, int>, ItemsWithRawDataRepository<BotContext, Chat, int>>(sp =>
+                            new ItemsWithRawDataRepository<BotContext, Chat, int>(
                                 sp.GetService<IContextFactory<BotContext>>())
                             );
-                        services.AddScoped<IItemsWithRawDataRepository<User, int>, ItemsWithRawDataRepository<User, int>>(sp =>
-                            new ItemsWithRawDataRepository<User, int>(
+                        services.AddScoped<IItemsWithRawDataRepository<User, int>, ItemsWithRawDataRepository<BotContext, User, int>>(sp =>
+                            new ItemsWithRawDataRepository<BotContext, User, int>(
                                 sp.GetService<IContextFactory<BotContext>>())
                             );
-                        services.AddScoped<IItemsWithRawDataRepository<Message, int>, ItemsWithRawDataRepository<Message, int>>(sp =>
-                            new ItemsWithRawDataRepository<Message, int>(
+                        services.AddScoped<IItemsWithRawDataRepository<Message, int>, ItemsWithRawDataRepository<BotContext, Message, int>>(sp =>
+                            new ItemsWithRawDataRepository<BotContext, Message, int>(
                                 sp.GetService<IContextFactory<BotContext>>())
                             );
 

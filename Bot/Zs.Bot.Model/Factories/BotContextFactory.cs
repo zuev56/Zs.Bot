@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Diagnostics;
+using System.IO;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
@@ -27,6 +28,8 @@ namespace Zs.Bot.Data.Factories
         // For migrations
         public BotContext CreateDbContext(string[] args)
         {
+            Trace.WriteLineIf(args != null && args.Length > 0, string.Join(',', args));
+            
             var solutionDir = Common.Extensions.Path.TryGetSolutionPath();
             var configuration = new ConfigurationBuilder()
                 .AddJsonFile(Path.Combine(solutionDir, "PrivateConfiguration.json"), optional: true)

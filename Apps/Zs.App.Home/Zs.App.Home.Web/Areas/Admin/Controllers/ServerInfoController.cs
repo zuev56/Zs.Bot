@@ -1,8 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Zs.App.Home.Web.Areas.Admin.Models;
 
 namespace Zs.App.Home.Web.Areas.Admin.Controllers
@@ -15,9 +11,20 @@ namespace Zs.App.Home.Web.Areas.Admin.Controllers
     [Route("admin/[controller]")]
     public class ServerInfoController : Controller
     {
+        //[Route("")]
+        //[Route("index")]
+        ////[Route("admin/ServerInfo/index")]
+        //[Route("~/")]
         public IActionResult Index()
         {
             return View(new ServerInfo());
+        }
+
+        //[HttpPost]
+        [Route("UpdateCommonInfo")]
+        public IActionResult UpdateCommonInfo()
+        {
+            return PartialView("_CommonInfo", new ServerInfo());
         }
     }
 }

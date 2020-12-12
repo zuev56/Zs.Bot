@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
-namespace Zs.App.Home.Model.Abstractions
+namespace Zs.App.Home.Web.Areas.ApiVk.Models
 {
-    /// <summary> Vk users activity log item </summary>
-    public interface IVkActivityLogItem
+    public class VkActivityLogItemVM
     {
         public int Id { get; set; }
         public int UserId { get; set; }
@@ -12,5 +14,7 @@ namespace Zs.App.Home.Model.Abstractions
         public int? OnlineApp { get; set; }
         public bool IsOnlineMobile { get; set; }
         public int LastSeen { get; set; }
+        //public string UserName { get; set; }
+
     }
 }

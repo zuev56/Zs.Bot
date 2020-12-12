@@ -249,7 +249,7 @@ namespace Zs.Bot.Messenger.Telegram
                             OnMessageEdited(args);
                         }
                         else
-                            _logger.LogWarningAsync("The message not found in the database", args, nameof(TelegramMessenger));
+                           await _logger.LogWarningAsync("The message not found in the database", args, nameof(TelegramMessenger));
                     }
                     else
                     {
@@ -263,7 +263,8 @@ namespace Zs.Bot.Messenger.Telegram
                         //    return;
 
                         // 2. Обрабатываем в зависимости от того, команда это или данные                           
-                        if (BotCommand.IsCommand(args.Message.Text) 
+                        if (_commandManager is not null
+                            && BotCommand.IsCommand(args.Message.Text) 
                             && !await _commandManager.TryEnqueueCommandAsync(args.Message))
                         {
                             await AddMessageToOutboxAsync(args.Chat, $"Unknown command '{args.Message.Text}'");

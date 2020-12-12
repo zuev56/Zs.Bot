@@ -39,7 +39,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Zs.App.Home", "Zs.App.Home"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.App.Home.Bot", "Apps\Zs.App.Home\Zs.App.Home.Bot\Zs.App.Home.Bot.csproj", "{1E35FCAD-981F-4FFF-9DDE-EB1A40D38853}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.App.Home.Model", "Apps\Zs.App.Home\Zs.App.Home.Model\Zs.App.Home.Model.csproj", "{BC1C3D76-A322-4F5A-B445-CBC3D8FA85FB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.App.Home.Data", "Apps\Zs.App.Home\Zs.App.Home.Model\Zs.App.Home.Data.csproj", "{BC1C3D76-A322-4F5A-B445-CBC3D8FA85FB}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.Bot.Data", "Bot\Zs.Bot.Model\Zs.Bot.Data.csproj", "{158BBAF1-0A1B-4D02-B180-3F55D5C56D62}"
 EndProject

@@ -1,21 +1,26 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Net;
-using System.Threading.Tasks;
 
 namespace Zs.App.Home.Web.Areas.Admin.Models
 {
     public class ServerInfo
     {
+
+        [Display(Name = "Current Date")]
+        public DateTime CurrentDateGMT => DateTime.Now;
+        [Display(Name = "Current Date UTC")]
+        public DateTime CurrentDateUTC => DateTime.UtcNow;
+        [Display(Name = "Machine Name")]
         public string Name { get; }
+        [Display(Name = "IP addresses")]
         public List<string> IPs { get; }
         public MemoryInfo Memory { get; }
         public List<DriveInfo> Drives { get; } = new List<DriveInfo>();
         public List<ProcessInfo> Processes { get; } = new List<ProcessInfo>();
-
 
         public ServerInfo()
         {

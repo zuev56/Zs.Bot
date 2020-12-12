@@ -1,23 +1,16 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Threading.Tasks;
+using Zs.App.Home.Model;
 using Zs.App.Home.Model.Data;
-using Zs.App.Home.Web.Areas.VkAPI.Services;
-using Zs.Bot.Data;
-using BotContextFactory = Zs.Bot.Data.Factories.BotContextFactory;
-using HomeContextFactory = Zs.App.Home.Model.ContextFactory;
+using Zs.App.Home.Web.Areas.ApiVk.Services;
+using Zs.Bot.Data.Abstractions;
+using Zs.Bot.Data.Repositories;
+using Zs.Common.Abstractions;
 
 namespace Zs.App.Home.Web
 {
@@ -33,11 +26,11 @@ namespace Zs.App.Home.Web
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            //services.AddDbContext<HomeContext>(options =>
-            //    options.UseNpgsql(_configuration.GetConnectionString("Default"))
-            //           .EnableDetailedErrors(true)
-            //           .EnableSensitiveDataLogging(true));
-            //
+            services.AddDbContext<HomeContext>(options =>
+                options.UseNpgsql(_configuration.GetConnectionString("Default"))
+                       .EnableDetailedErrors(true)
+                       .EnableSensitiveDataLogging(true));
+
             //services.AddDbContext<BotContext>(options =>
             //    options.UseNpgsql(_configuration.GetConnectionString("Default"))
             //           .EnableDetailedErrors(true)
@@ -47,15 +40,24 @@ namespace Zs.App.Home.Web
             //    options.UseNpgsql(_configuration.GetConnectionString("Default"))
             //           .EnableDetailedErrors(true)
             //           .EnableSensitiveDataLogging(true));
+            services.AddScoped<IContextFactory<HomeContext>, HomeContextFactory>(sp =>
+                new HomeContextFactory(sp.GetService<DbContextOptions<HomeContext>>()));
 
-            //services.AddScoped<IVkActivityService, VkActivityService>(sp =>
-            //{
-            //    var contextFactory = new HomeContextFactory(
-            //        sp.GetService<DbContextOptions<BotContext>>(),
-            //        sp.GetService<DbContextOptions<HomeContext>>());
-            //
-            //    return new VkActivityService(contextFactory);
-            //});
+            services.AddScoped<IRepository<VkActivityLogItem, int>, CommonRepository<HomeContext, VkActivityLogItem, int>>(sp =>
+                new CommonRepository<HomeContext, VkActivityLogItem, int>(
+                    sp.GetService<IContextFactory<HomeContext>>())
+                );
+
+            services.AddScoped<IRepository<VkUser, int>, CommonRepository<HomeContext, VkUser, int>>(sp =>
+                new CommonRepository<HomeContext, VkUser, int>(
+                    sp.GetService<IContextFactory<HomeContext>>())
+                );
+
+            services.AddScoped<IVkActivityService, VkActivityService>(sp =>
+                new VkActivityService(
+                    sp.GetService<IRepository<VkActivityLogItem, int>>(),
+                    sp.GetService<IRepository<VkUser, int>>())
+                );
 
             //services.AddDatabaseDeveloperPageExceptionFilter();
             
@@ -105,13 +107,13 @@ namespace Zs.App.Home.Web
                 // Кажется, в закомментированных строках нет смысла
                 //endpoints.MapControllers();
                 
-                //endpoints.MapControllerRoute(
-                //    name: "AreaRoute",
-                //    pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
-
                 endpoints.MapControllerRoute(
-                    name: "default",
-                    pattern: "{controller=Home}/{action=Index}/{id?}");
+                    name: "AreaRoute",
+                    pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
+
+                //endpoints.MapControllerRoute(
+                //    name: "default",
+                //    pattern: "{controller=Home}/{action=Index}/{id?}");
 
                 //endpoints.MapRazorPages();
             });

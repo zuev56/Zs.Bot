@@ -1,17 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Zs.App.Home.Model.Abstractions;
+using Zs.Bot.Data.Abstractions;
 
 namespace Zs.App.Home.Model
 {
-    /// <summary> <inheritdoc/> </summary>
+    /// <summary> Vk user </summary>
     [Table("users", Schema = "vk")]
-    public partial class VkUser : IVkUser
+    public partial class VkUser : IDbEntity<VkUser, int>
     {
         [Key]
         [Required(ErrorMessage = "Property 'UserId' is required")]
@@ -37,5 +33,8 @@ namespace Zs.App.Home.Model
         [Required(ErrorMessage = "Property 'InsertDate' is required")]
         [Column("insert_date", TypeName = "timestamp with time zone")]
         public DateTime InsertDate { get; set; }
+
+        public Func<VkUser> GetItemToSave => () => this;
+        public Func<VkUser, VkUser> GetItemToUpdate => (existingItem) => this;
     }
 }

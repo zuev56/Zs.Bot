@@ -1,17 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Zs.App.Home.Model.Abstractions;
+using Zs.Bot.Data.Abstractions;
 
 namespace Zs.App.Home.Model
 {
-    /// <summary> <inheritdoc/> </summary>
+    /// <summary> Vk users activity log item </summary>
     [Table("activity_log", Schema = "vk")]
-    public partial class VkActivityLogItem : IVkActivityLogItem
+    public partial class VkActivityLogItem : IDbEntity<VkActivityLogItem, int>
     {
         [Key]
         [Required(ErrorMessage = "Property 'ActivityLogId' is required")]
@@ -39,7 +35,11 @@ namespace Zs.App.Home.Model
         [Required(ErrorMessage = "Property 'LastSeen' is required")]
         [Column("last_seen", TypeName = "integer")]
         public int LastSeen { get; set; }
+        public Func<VkActivityLogItem> GetItemToSave => () => this;
+        public Func<VkActivityLogItem, VkActivityLogItem> GetItemToUpdate => (existingItem) => this;
 
+
+        [NotMapped]
         public VkUser VkUser { get; set; }
     }
 }
