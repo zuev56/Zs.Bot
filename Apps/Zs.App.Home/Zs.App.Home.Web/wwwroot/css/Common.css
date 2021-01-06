@@ -1,0 +1,25 @@
+﻿.top-panel {
+    padding: 0.5em 1em 0 1em;
+    border: groove 2px rgb(248, 248, 248);
+    border-radius: 0.3em;
+    background: rgba(215, 235, 255, 0.18)
+}
+
+.left-panel {
+    float: left;
+    width: 30%;
+    overflow-y: scroll;
+    padding: 1em;
+    border: groove 2px rgb(248, 248, 248);
+    border-radius: 0.3em;
+    background: rgba(215, 235, 255, 0.18)
+}
+
+.content-panel {
+    margin-top: 0.5em;
+    margin-left: 30.7%;
+    padding: 1em;
+    border: groove 2px rgb(248, 248, 248);
+    border-radius: 0.3em;
+    background: rgba(215, 235, 255, 0.18)
+}

@@ -1,0 +1,72 @@
+﻿@model Zs.App.Home.Web.Areas.Admin.Models.ServerInfo.Environment
+
+<table class="table-bordered alert" cellpadding="3" cellspacing="3" >
+    <thead>
+        <tr>
+            <th> <label style="font-weight: bold"> Parameter </label> </th>
+            <th> <label style="font-weight: bold"> Value </label> </th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td> @Html.DisplayNameFor(model => Model.MachineName) </td>
+            <td align="center"> @Html.DisplayFor(model => Model.MachineName) </td>
+        </tr>
+        <tr>
+            <td> @Html.DisplayNameFor(model => Model.CurrentDateGMT) </td>
+            <td align="center"> @Html.DisplayFor(model => Model.CurrentDateGMT) </td>
+        </tr>
+        <tr>
+            <td> @Html.DisplayNameFor(model => Model.CurrentDateUTC) </td>
+            <td align="center"> @Html.DisplayFor(model => Model.CurrentDateUTC) </td>
+        </tr>
+        <tr>
+            <td> @Html.DisplayNameFor(model => Model.OSVersion) </td>
+            <td align="center"> @Html.DisplayFor(model => Model.OSVersion) </td>
+        </tr>
+        <tr>
+            <td> @Html.DisplayNameFor(model => Model.Running) </td>
+            <td align="center"> @Html.DisplayFor(model => Model.Running) </td>
+        </tr>
+        <tr>
+            <td> @Html.DisplayNameFor(model => Model.CurrentDirectory) </td>
+            <td align="center"> @Html.DisplayFor(model => Model.CurrentDirectory) </td>
+        </tr>
+        <tr>
+            <td> @Html.DisplayNameFor(model => Model.SystemDirectory) </td>
+            <td align="center"> @Html.DisplayFor(model => Model.SystemDirectory) </td>
+        </tr>
+        <tr>
+            <td> @Html.DisplayNameFor(model => Model.CpuCount) </td>
+            <td align="center"> @Html.DisplayFor(model => Model.CpuCount) </td>
+        </tr>
+        <tr>
+            <td> @Html.DisplayNameFor(model => Model.RuntimeFramework) </td>
+            <td align="center"> @Html.DisplayFor(model => Model.RuntimeFramework) </td>
+        </tr>
+        <tr>
+            <td> @Html.DisplayNameFor(model => Model.RuntimeOS) </td>
+            <td align="center"> @Html.DisplayFor(model => Model.RuntimeOS) </td>
+        </tr>
+        <tr>
+            <td> @Html.DisplayNameFor(model => Model.RuntimeId) </td>
+            <td align="center"> @Html.DisplayFor(model => Model.RuntimeId) </td>
+        </tr>
+        <tr>
+            <td> @Html.DisplayName("Architecture: OS/Process") </td>
+            <td align="center"> @Html.DisplayFor(model => Model.RuntimeOSArchitecture)/@Html.DisplayFor(model => Model.RuntimeProcessArchitecture) </td>
+        </tr>
+        <tr>
+            <td valign="top"> @Html.DisplayNameFor(model => Model.IPs) </td>
+            <td>
+                <ul>
+                    @foreach (var ip in Model.IPs)
+                    {
+                        <li>@Html.DisplayFor(model => ip)</li>
+                    }
+                </ul>
+            </td>
+        </tr>
+    </tbody>
+</table>
+

@@ -20,7 +20,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Bot\Messengers\Zs.Bot.Messenger.Telegram\Zs.Bot.Messenger.Telegram.csproj" />
     <ProjectReference Include="..\..\Bot\Zs.Bot.Model\Zs.Bot.Data.csproj" />
-    <ProjectReference Include="..\..\Bot\Zs.Bot.Services\Zs.Bot.Services.csproj" />
     <ProjectReference Include="..\..\Common\Zs.Common\Zs.Common.csproj" />
   </ItemGroup>
 

@@ -5,9 +5,9 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Zs.App.Home.Web.Areas.Admin.Models
+namespace Zs.App.Home.Web.Areas.Admin.Models.ServerInfo
 {
-    public record DriveInfo
+    public record Drive
     {
         [Display(Name = "Label")]
         public string Name { get; internal set; }

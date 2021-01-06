@@ -4,10 +4,10 @@
     $('#buttonUpdateCommonInfo').click(function () {
         //alert("button clicked");
         $.ajax({
-            type: 'GET',
-            url: '/admin/ServerInfo/UpdateCommonInfo',
+            type: "GET",
+            url: "/admin/ServerInfo/AjaxUpdateCommonInfo",
             success: function (result) {
-                $('#commonInfo').html(result)
+                $('#commonInfo').html(result);
             }
         });
     });

@@ -6,7 +6,7 @@ using Zs.App.Home.Web.Areas.ApiVk.Services;
 namespace Zs.App.Home.Web.Areas.ApiVk.Controllers
 {
     [Area("apivk")]
-    [Route("apivk/[controller]")]
+    [Route("apivk/[controller]")] // необходим для формаирования полного маршрута при использовании короткого маршрута в HttpGet
     public class ActivityLogController : Controller
     {
         private readonly IVkActivityService _vkActivityService;
@@ -17,8 +17,8 @@ namespace Zs.App.Home.Web.Areas.ApiVk.Controllers
             _vkActivityService = vkActivityService ?? throw new ArgumentNullException(nameof(vkActivityService));
         }
 
-        [HttpGet]
-        [Route("test")]
+        [HttpGet("test", Name = "Test1")]
+        //[Route("test")]
         public async Task<IActionResult> Test(ushort page = 1)
         {
             try
@@ -40,8 +40,8 @@ namespace Zs.App.Home.Web.Areas.ApiVk.Controllers
             }
         }
 
-        [HttpGet]
-        [Route("all/{page?}")]
+        [HttpGet("all/{page?}", Name = "GetLastActivityPage")]//("{id}", Name = "GetPage")]
+       // [Route("all/{page?}")]
         public async Task<IActionResult> Get(ushort page = 1)
         {
             try
@@ -65,8 +65,8 @@ namespace Zs.App.Home.Web.Areas.ApiVk.Controllers
         }
 
 
-        [HttpGet("{id}", Name = "GetUserActivity")]
-        [Route("User/{id?}")]
+        [HttpGet("User/{id?}", Name = "GetUserActivity")]
+        //[Route("User/{id?}")]
         public async Task<IActionResult> Get(int id = 0)
         {
             try

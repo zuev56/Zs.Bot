@@ -1,0 +1,37 @@
+﻿@model Zs.App.Home.Web.Areas.App.Models.Vk.VkVM 
+
+<dl style="position:relative; clear:both; top:0; left:0; display:grid; grid-template-rows:auto auto; grid-auto-columns:1fr; grid-auto-flow:column">
+    <dt>
+        Поиск
+    </dt>
+    <dd>
+        <input id="usersFilter" type="text" onkeyup="LoadUsers(this.value);" />
+    </dd>
+    <dt>
+        @Html.DisplayNameFor(m => m.FromDate)
+    </dt>
+    <dd>
+        @Html.EditorFor(m => m.FromDate, new { htmlAttributes = new { onchange = "OnFilterChanged();" } })
+    </dd>
+    <dt>
+        @Html.DisplayNameFor(m => m.ToDate)
+    </dt>
+    <dd>
+        @Html.EditorFor(m => m.ToDate, new { htmlAttributes = new { onchange = "OnFilterChanged();" } })
+    </dd>
+    <dt>
+    </dt>
+    <dd>
+        <input type="Button" value="Cорт. по активн." title="Сортировать по активности" onclick="LoadUsersWithActivity();" />
+    </dd>
+    <dt>
+    </dt>
+    <dd>
+        <input type="Button" value="За период" onclick="GetPeriodUserActivity();" />
+    </dd>
+    <dt>
+    </dt>
+    <dd>
+        <input type="Button" value="За всё время" onclick="GetDetailedUserActivity();" />
+    </dd>
+</dl>

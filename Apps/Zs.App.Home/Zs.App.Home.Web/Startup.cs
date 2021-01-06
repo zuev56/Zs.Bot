@@ -8,6 +8,7 @@ using Microsoft.Extensions.Hosting;
 using Zs.App.Home.Model;
 using Zs.App.Home.Model.Data;
 using Zs.App.Home.Web.Areas.ApiVk.Services;
+using Zs.App.Home.Web.Areas.App.Services;
 using Zs.Bot.Data.Abstractions;
 using Zs.Bot.Data.Repositories;
 using Zs.Common.Abstractions;
@@ -30,16 +31,7 @@ namespace Zs.App.Home.Web
                 options.UseNpgsql(_configuration.GetConnectionString("Default"))
                        .EnableDetailedErrors(true)
                        .EnableSensitiveDataLogging(true));
-
-            //services.AddDbContext<BotContext>(options =>
-            //    options.UseNpgsql(_configuration.GetConnectionString("Default"))
-            //           .EnableDetailedErrors(true)
-            //           .EnableSensitiveDataLogging(true));
-            //
-            //services.AddDbContext<ApplicationDbContext>(options =>
-            //    options.UseNpgsql(_configuration.GetConnectionString("Default"))
-            //           .EnableDetailedErrors(true)
-            //           .EnableSensitiveDataLogging(true));
+            
             services.AddScoped<IContextFactory<HomeContext>, HomeContextFactory>(sp =>
                 new HomeContextFactory(sp.GetService<DbContextOptions<HomeContext>>()));
 
@@ -58,12 +50,17 @@ namespace Zs.App.Home.Web
                     sp.GetService<IRepository<VkActivityLogItem, int>>(),
                     sp.GetService<IRepository<VkUser, int>>())
                 );
+            services.AddScoped<IVkUserActivityPresenterService, VkUserActivityPresenterService>(sp =>
+                new VkUserActivityPresenterService(
+                    sp.GetService<IRepository<VkActivityLogItem, int>>(),
+                    sp.GetService<IRepository<VkUser, int>>())
+                );
 
             //services.AddDatabaseDeveloperPageExceptionFilter();
-            
+
             //services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = false)
             //    .AddEntityFrameworkStores<ApplicationDbContext>();
-            
+
             services.AddControllersWithViews();
 
             //services.Configure<ForwardedHeadersOptions>(options =>
@@ -104,16 +101,19 @@ namespace Zs.App.Home.Web
 
             app.UseEndpoints(endpoints =>
             {
-                // Кажется, в закомментированных строках нет смысла
-                //endpoints.MapControllers();
-                
+                // Для маршрутов с областями
                 endpoints.MapControllerRoute(
                     name: "AreaRoute",
                     pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
 
-                //endpoints.MapControllerRoute(
-                //    name: "default",
-                //    pattern: "{controller=Home}/{action=Index}/{id?}");
+                // Вроде нужно для маршрутов в виде атрибута - уточнить https://docs.microsoft.com/en-us/aspnet/core/blazor/fundamentals/routing?view=aspnetcore-5.0
+                endpoints.MapControllers();
+                
+                // Для маршрутов без областей
+                endpoints.MapControllerRoute(
+                    name: "default",
+                    pattern: "{controller=Home}/{action=Index}/{id?}");
+
 
                 //endpoints.MapRazorPages();
             });

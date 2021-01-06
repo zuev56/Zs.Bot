@@ -1,25 +1,25 @@
-﻿@model Zs.App.Home.Web.Areas.Admin.Models.ServerInfo
+﻿@model Zs.App.Home.Web.Areas.Admin.Models.ServerInfo.Server
 
 @{
     Layout = "_Layout";
     ViewData["Title"] = "Server information";
 }
 
-<div>
+<div style="display:table-cell; vertical-align:middle; width:800px">
     <fieldset>
         <legend> Common server info </legend>
         <input id="buttonUpdateCommonInfo" type="button" value="Update" />
         <div id="commonInfo">
-            @await Html.PartialAsync("_CommonInfo.cshtml", Model)
+            @await Html.PartialAsync("_EnvironmentInfo.cshtml", Model.EnvironmentInfo)
         </div>
     </fieldset>
 
-    <fieldset>
+    <fieldset style="height: 300px; overflow-y:auto; float: left">
         <legend>Drives</legend>
         @await Html.PartialAsync("_DrivesTable.cshtml", Model.Drives)
     </fieldset>
 
-    <fieldset>
+    <fieldset style="height: 400px; overflow-y:auto; float: left;">
         <legend>Services (daemons)</legend>
         @await Html.PartialAsync("_DaemonsTable.cshtml", Model.Processes)
     </fieldset>
@@ -28,5 +28,6 @@
 @section Scripts
 {
     @*<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>*@
-    <script src="/js/Admin/ServerInfo.js" ></script>
-} 
+    @*<script src="/js/Admin/ServerInfo.js"></script>*@
+    <script src="~/js/Admin/ServerInfo.js" asp-append-version="true"></script>
+}
