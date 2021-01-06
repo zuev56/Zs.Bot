@@ -1,0 +1,12 @@
+﻿@model List<Zs.App.Home.Web.Areas.App.Models.Vk.VkUserVM>
+
+<ol>
+    @foreach (var user in Model.OrderByDescending(u => u.ActivitySec))
+    {
+        string listValue = user.ActivitySec != -1
+            ? $"[{TimeSpan.FromSeconds(user.ActivitySec).TotalHours.ToString("0.#")} ч.] {user.UserName}"
+            : user.UserName;
+
+        <li onclick="SelectUser(@user.Id);">@listValue</li>
+    }
+</ol>

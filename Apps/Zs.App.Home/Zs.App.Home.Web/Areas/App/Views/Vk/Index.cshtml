@@ -1,0 +1,26 @@
+﻿@model Zs.App.Home.Web.Areas.App.Models.Vk.VkVM
+
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Vk User Activity";
+}
+
+<div style="align-items:center; width:100%">
+    <!-- Фильтры -->
+    <div class="top-panel" style="width:100%">
+        @await Html.PartialAsync("_Filters", Model)
+    </div>
+
+    <div style="width:100%">
+        <input data-val="true" id="UserId" type="hidden" />
+        <div id="VkUsers" class="left-panel" style=" height:500px;"></div>
+
+        <div id="VkUserActivity" class="content-panel"></div>
+        <div id="VkDetailedUserActivity" class="content-panel"></div>
+    </div>
+</div>
+
+@section Scripts
+{
+    <script src="~/js/App/Vk.js" asp-append-version="true"></script>
+}

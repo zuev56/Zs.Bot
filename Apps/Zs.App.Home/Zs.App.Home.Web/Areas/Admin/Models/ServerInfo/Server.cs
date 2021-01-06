@@ -1,35 +1,24 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+﻿using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Net;
 
-namespace Zs.App.Home.Web.Areas.Admin.Models
+namespace Zs.App.Home.Web.Areas.Admin.Models.ServerInfo
 {
-    public class ServerInfo
+    public class Server
     {
+        public Environment EnvironmentInfo { get; } = new Environment();
+        public Memory Memory { get; }
+        public List<Drive> Drives { get; } = new List<Drive>();
+        public List<Process> Processes { get; } = new List<Process>();
 
-        [Display(Name = "Current Date")]
-        public DateTime CurrentDateGMT => DateTime.Now;
-        [Display(Name = "Current Date UTC")]
-        public DateTime CurrentDateUTC => DateTime.UtcNow;
-        [Display(Name = "Machine Name")]
-        public string Name { get; }
-        [Display(Name = "IP addresses")]
-        public List<string> IPs { get; }
-        public MemoryInfo Memory { get; }
-        public List<DriveInfo> Drives { get; } = new List<DriveInfo>();
-        public List<ProcessInfo> Processes { get; } = new List<ProcessInfo>();
-
-        public ServerInfo()
+        public Server()
         {
-            Name = Environment.MachineName;
-            IPs = Dns.GetHostAddresses(Dns.GetHostName()).Select(ip => ip.ToString()).ToList();
+            //Name = Environment.MachineName;
+            //IPs = Dns.GetHostAddresses(Dns.GetHostName()).Select(ip => ip.ToString()).ToList();
 
             foreach (var drive in System.IO.DriveInfo.GetDrives())
             {
-                Drives.Add(new DriveInfo
+                Drives.Add(new Drive
                 {
                     Name = drive.Name,
                     Type = drive.DriveType,
@@ -39,7 +28,7 @@ namespace Zs.App.Home.Web.Areas.Admin.Models
                 });
             }
 
-            var allProcesses = Process.GetProcesses()
+            var allProcesses = System.Diagnostics.Process.GetProcesses()
                 .Select(p => new
                 {
                     Name = p.ProcessName,
@@ -59,7 +48,7 @@ namespace Zs.App.Home.Web.Areas.Admin.Models
 
             foreach (var process in grouppedProcesses)
             {
-                Processes.Add(new ProcessInfo
+                Processes.Add(new Process
                 {
                     Name = process.Name,
                     DuplicatesInName = process.Count,

@@ -10,6 +10,7 @@ using Zs.Common.Extensions;
 
 namespace Zs.App.Home.Web.Areas.ApiVk.Services
 {
+    /// <summary> API service </summary>
     public class VkActivityService : IVkActivityService
     {
         private readonly IRepository<VkActivityLogItem, int> _vkActivityLogRepo;
@@ -60,9 +61,9 @@ namespace Zs.App.Home.Web.Areas.ApiVk.Services
             };
         }
 
-        public async Task<List<UserStatisticsVM>> GetUserStatistics(int userId, DateTime fromDate, DateTime toDate)
+        public async Task<List<VkPeriodUserActivityVM>> GetUserStatistics(int userId, DateTime fromDate, DateTime toDate)
         {
-            var list = new List<UserStatisticsVM>();
+            var list = new List<VkPeriodUserActivityVM>();
             
             if (userId > 0)
             {
@@ -87,7 +88,7 @@ namespace Zs.App.Home.Web.Areas.ApiVk.Services
             }
             else
             {
-                var bag = new ConcurrentBag<UserStatisticsVM>();
+                var bag = new ConcurrentBag<VkPeriodUserActivityVM>();
                 var users = await _vkUsersRepo.FindAllAsync();
                         
                 var pOptions = new ParallelOptions()
@@ -109,7 +110,7 @@ namespace Zs.App.Home.Web.Areas.ApiVk.Services
         }
     
     
-        public static UserStatisticsVM GetUserStatistics(
+        public static VkPeriodUserActivityVM GetUserStatistics(
             int dbUserId, string userName, IEnumerable<VkActivityLogItem> log)
         {
             if (log == null)
@@ -155,7 +156,7 @@ namespace Zs.App.Home.Web.Areas.ApiVk.Services
             var mobileEntrance = log.Count(l => l.IsOnline == true && l.IsOnlineMobile);
             var browserEntrance = log.Count(l => l.IsOnline == true && !l.IsOnlineMobile);
 
-            return new UserStatisticsVM()
+            return new VkPeriodUserActivityVM()
             {
                 UserId = dbUserId,
                 UserName = userName,

@@ -1,0 +1,10 @@
+﻿@model Zs.App.Home.Web.Areas.Admin.Models.VisitorInfo.Visitor
+
+@{ 
+    Layout = "_Layout";
+    ViewData["Title"] = "Visitor information";
+}
+
+<div style="float:left; width:100%; height:400px;">
+    @await Html.PartialAsync("_JsonPanel", Model.Json)
+</div>

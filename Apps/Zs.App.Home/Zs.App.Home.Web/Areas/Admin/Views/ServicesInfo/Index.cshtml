@@ -1,0 +1,13 @@
+﻿@model List<Zs.App.Home.Web.Areas.Admin.Models.ServicesInfo.Service>
+
+@{ 
+    Layout = "_Layout";
+    ViewData["Title"] = "Observed Services";
+}
+
+<div>
+    @foreach (var service in Model)
+    {
+        <ol>@service.Name</ol>
+    }
+</div>
