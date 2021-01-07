@@ -1,4 +1,25 @@
 
+-- С переходом к миграциям эта фанкция перестала использоваться. Скорее всего придётся восстановить её.
+-- !!! ТОЛЬКО ПОТОМ ЗАНЯТЬСЯ ОБНОВЛЕНИЕМ БД ChatAdmin, т.к. там данные меняются и это важно фиксировать
+--CREATE FUNCTION helper.reset_update_date()
+--    RETURNS trigger
+--    LANGUAGE 'plpgsql'
+--    COST 100
+--    VOLATILE NOT LEAKPROOF
+--AS $BODY$
+--BEGIN
+--   NEW.update_date = now(); 
+--   RETURN NEW;
+--END;
+--$BODY$;
+--
+--ALTER FUNCTION helper.reset_update_date()
+--    OWNER TO postgres;
+--
+--COMMENT ON FUNCTION helper.reset_update_date()
+--    IS 'Общая триггерная функция обовления поля update_date';
+
+
 -- Get permissions for a specific user role
 CREATE OR REPLACE FUNCTION bot.sf_get_permission_array(
     user_role_code_ varchar(10))
