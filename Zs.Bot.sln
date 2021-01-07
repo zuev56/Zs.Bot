@@ -49,8 +49,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Zs.App.ChatAdmin", "Zs.App.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.App.ChatAdmin.Bot", "Apps\Zs.App.ChatAdmin\Zs.App.ChatAdmin.Bot\Zs.App.ChatAdmin.Bot.csproj", "{CC86FCA4-C15E-42C5-A6CB-1A313C7D1B2F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.App.Home.SPA", "Apps\Zs.App.Home\Zs.App.Home.SPA\Zs.App.Home.SPA.csproj", "{270445E7-C943-4923-8557-6E156677C30A}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -101,10 +99,6 @@ Global
 		{CC86FCA4-C15E-42C5-A6CB-1A313C7D1B2F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CC86FCA4-C15E-42C5-A6CB-1A313C7D1B2F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CC86FCA4-C15E-42C5-A6CB-1A313C7D1B2F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{270445E7-C943-4923-8557-6E156677C30A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{270445E7-C943-4923-8557-6E156677C30A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{270445E7-C943-4923-8557-6E156677C30A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{270445E7-C943-4923-8557-6E156677C30A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -125,7 +119,6 @@ Global
 		{7C795B28-D593-4DC6-8BB3-60500B8140C9} = {AD5D1E3A-1744-476A-A684-F5427694E0E3}
 		{1FF30B74-CD99-471C-B055-75F53AD79DF0} = {6ABB3FF5-110B-42CA-A78E-1414529F472D}
 		{CC86FCA4-C15E-42C5-A6CB-1A313C7D1B2F} = {1FF30B74-CD99-471C-B055-75F53AD79DF0}
-		{270445E7-C943-4923-8557-6E156677C30A} = {AD5D1E3A-1744-476A-A684-F5427694E0E3}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {F6A9C4CA-DF26-4772-9119-627935D70E7C}

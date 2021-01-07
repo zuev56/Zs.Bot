@@ -18,7 +18,7 @@
     },
     "Zs.App.Home.Web": {
       "commandName": "Project",
-      "commandLineArgs": "M:\\Zs.Bot\\PrivateConfiguration.json",
+      "commandLineArgs": "S:\\Repos\\Zs.Bot\\PrivateConfiguration.json",
       "launchBrowser": true,
       "launchUrl": "admin/serverinfo",
       "environmentVariables": {
