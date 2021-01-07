@@ -1,12 +1,12 @@
-﻿using System;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
+using System;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using Zs.App.Home.Model;
 using Zs.App.Home.Model.Data;
 using Zs.Bot.Data;
@@ -86,10 +86,6 @@ namespace Zs.App.Home.Bot
                                    .EnableDetailedErrors(true)
                                    .EnableSensitiveDataLogging(true));
 
-                        // Пока остаётся для миграций
-                        //services.AddSingleton<IContextFactory, Zs.App.Home.Model.ContextFactory>(sp =>
-                        //    new Zs.App.Home.Model.ContextFactory(sp.GetService<DbContextOptions<BotContext>>(), sp.GetService<DbContextOptions<HomeContext>>()));
-
                         services.AddSingleton<IContextFactory<BotContext>, BotContextFactory>(sp =>
                             new BotContextFactory(sp.GetService<DbContextOptions<BotContext>>()));
                         
@@ -130,7 +126,6 @@ namespace Zs.App.Home.Bot
                                 sp.GetService<IZsLogger>())
                             );
 
-                        
                         services.AddScoped<IRepository<VkActivityLogItem, int>, CommonRepository<HomeContext, VkActivityLogItem, int>>(sp =>
                             new CommonRepository<HomeContext, VkActivityLogItem, int>(
                                 sp.GetService<IContextFactory<HomeContext>>())
@@ -159,6 +154,23 @@ namespace Zs.App.Home.Bot
 
                         services.AddScoped<IScheduler, Scheduler>(sp =>
                             new Scheduler(hostContext.Configuration, sp.GetService<IZsLogger>())
+                            );
+
+                        services.AddScoped<IRepository<Command, string>, CommonRepository<BotContext, Command, string>>(sp =>
+                            new CommonRepository<BotContext, Command, string>(
+                                sp.GetService<IContextFactory<BotContext>>())
+                            );
+                        services.AddScoped<IRepository<UserRole, string>, CommonRepository<BotContext, UserRole, string>>(sp =>
+                            new CommonRepository<BotContext, UserRole, string>(
+                                sp.GetService<IContextFactory<BotContext>>())
+                            );
+                        services.AddScoped<ICommandManager, CommandManager>(sp =>
+                            new CommandManager(
+                                hostContext.Configuration.GetConnectionString("Default"),
+                                sp.GetService<IRepository<Command, string>>(),
+                                sp.GetService<IRepository<UserRole, string>>(),
+                                sp.GetService<IItemsWithRawDataRepository<User, int>>(),
+                                sp.GetService<IZsLogger>())
                             );
 
                         services.AddSingleton<IHostedService, UserWatcher>(x =>

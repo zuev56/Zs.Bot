@@ -1,14 +1,15 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
+using System;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
 using Zs.App.Home.Model;
 using Zs.App.Home.Model.VkAPI;
 using Zs.Bot.Data.Abstractions;
+using Zs.Bot.Data.Models;
 using Zs.Bot.Services.Messaging;
 using Zs.Common.Abstractions;
 using Zs.Common.Enums;
@@ -24,6 +25,7 @@ namespace Zs.App.Home.Bot
         private readonly IScheduler _scheduler;
         private readonly IRepository<VkUser, int> _vkUsersRepo;
         private readonly IRepository<VkActivityLogItem, int> _vkActivityLogRepo;
+        private readonly IItemsWithRawDataRepository<Message, int> _messagesRepo;
         private readonly IZsLogger _logger;
         //private readonly IConnectionAnalyser _connectionAnalyser;
         private readonly bool _detailedLogging;
@@ -38,6 +40,7 @@ namespace Zs.App.Home.Bot
             IScheduler scheduler,
             IRepository<VkUser, int> vkUsersRepo,
             IRepository<VkActivityLogItem, int> vkActivityLogRepo,
+            IItemsWithRawDataRepository<Message, int> messagesRepo,
             IZsLogger logger = null)
         {
             try
@@ -47,6 +50,7 @@ namespace Zs.App.Home.Bot
                 _scheduler = scheduler;
                 _vkUsersRepo = vkUsersRepo ?? throw new ArgumentNullException(nameof(vkUsersRepo));
                 _vkActivityLogRepo = vkActivityLogRepo ?? throw new ArgumentNullException(nameof(vkActivityLogRepo));
+                _messagesRepo = messagesRepo;
                 _logger = logger;
 
                 _version = float.Parse(_configuration["Vk:Version"], CultureInfo.InvariantCulture);
@@ -103,10 +107,10 @@ namespace Zs.App.Home.Bot
             var sendDayErrorsAndWarnings = new SqlJob(
                 TimeSpan.FromHours(1),
                 QueryResultType.String,
-                 @" select string_agg('**' || log_type || '**  ' || to_char(insert_date, 'HH24:MI:SS') || E'\n' || log_initiator || ':  ' || log_message, E'\n\n' order by insert_date desc)
-                              from bot.logs
-                             where log_type in ('Warning', 'Error')
-                               and insert_date > now() - interval '1 hour'",
+                 @"select string_agg('**' || log_type || '**  ' || to_char(insert_date, 'HH24:MI:SS') || E'\n' || log_initiator || ':  ' || log_message, E'\n\n' order by insert_date desc)
+                             from bot.logs
+                            where log_type in ('Warning', 'Error')
+                              and insert_date > now() - interval '1 hour'",
                 _configuration.GetConnectionString("Default"),
                 startDate: Job.NextHour(),
                 description: "sendDayErrorsAndWarnings"
@@ -139,7 +143,13 @@ namespace Zs.App.Home.Bot
             try
             {
                 if (result != null && DateTime.Now.Hour > 8 && DateTime.Now.Hour < 22)
-                   await _messenger.AddMessageToOutboxAsync(result?.TextValue, "ADMIN");
+                {
+                    // TODO: поиск текущего сообщения среди отправленных за сегодня
+                    var todaysMessage = await _messagesRepo.FindAsync(m => m.Text == result.TextValue && m.InsertDate > DateTime.Today);
+
+                    if (todaysMessage == null)
+                        await _messenger.AddMessageToOutboxAsync(result?.TextValue, "ADMIN");
+                }                   
             }
             catch (Exception ex)
             {
@@ -147,6 +157,7 @@ namespace Zs.App.Home.Bot
             }
         }
 
+        /// <summary> Activity data collection </summary>
         private async Task GetUsersStatus()
         {
             try
@@ -190,7 +201,6 @@ namespace Zs.App.Home.Bot
                     var lastActivityDbItem = await _vkActivityLogRepo.FindAsync(
                         l => l.UserId == dbUser.Id, 
                         orderBy: query => query.OrderByDescending(l => l.Id));
-                        //homeContext.VkActivityLog.OrderByDescending(l => l.Id).FirstOrDefault(l => l.UserId == dbUser.Id);
 
                     var currentOnlineStatus = user.Online == 1 ? true : false;
                     var currentMobileStatus = user.OnlineMobile == 1 ? true : false;

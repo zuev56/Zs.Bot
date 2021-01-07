@@ -162,7 +162,7 @@ namespace Zs.App.Home.Data.Migrations
                             Id = -1,
                             ChatTypeId = "PRIVATE",
                             Description = "UnitTestChat",
-                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 497, DateTimeKind.Local).AddTicks(4076),
+                            InsertDate = new DateTime(2021, 1, 7, 17, 46, 8, 22, DateTimeKind.Local).AddTicks(8785),
                             Name = "UnitTestChat",
                             RawData = "{ \"test\": \"test\" }",
                             RawDataHash = "-1063294487",
@@ -172,7 +172,7 @@ namespace Zs.App.Home.Data.Migrations
                         {
                             Id = 1,
                             ChatTypeId = "PRIVATE",
-                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 497, DateTimeKind.Local).AddTicks(4646),
+                            InsertDate = new DateTime(2021, 1, 7, 17, 46, 8, 22, DateTimeKind.Local).AddTicks(9283),
                             Name = "zuev56",
                             RawData = "{ \"Id\": 210281448 }",
                             RawDataHash = "-1063294487",
@@ -213,28 +213,28 @@ namespace Zs.App.Home.Data.Migrations
                         new
                         {
                             Id = "CHANNEL",
-                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 496, DateTimeKind.Local).AddTicks(9606),
+                            InsertDate = new DateTime(2021, 1, 7, 17, 46, 8, 22, DateTimeKind.Local).AddTicks(4606),
                             Name = "Channel",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Id = "GROUP",
-                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 497, DateTimeKind.Local).AddTicks(148),
+                            InsertDate = new DateTime(2021, 1, 7, 17, 46, 8, 22, DateTimeKind.Local).AddTicks(5134),
                             Name = "Group",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Id = "PRIVATE",
-                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 497, DateTimeKind.Local).AddTicks(152),
+                            InsertDate = new DateTime(2021, 1, 7, 17, 46, 8, 22, DateTimeKind.Local).AddTicks(5139),
                             Name = "Private",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Id = "UNDEFINED",
-                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 497, DateTimeKind.Local).AddTicks(155),
+                            InsertDate = new DateTime(2021, 1, 7, 17, 46, 8, 22, DateTimeKind.Local).AddTicks(5141),
                             Name = "Undefined",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         });
@@ -291,7 +291,7 @@ namespace Zs.App.Home.Data.Migrations
                             Id = "/test",
                             Description = "Тестовый запрос к боту. Возвращает ''Test''",
                             Group = "moderatorCmdGroup",
-                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(7015),
+                            InsertDate = new DateTime(2021, 1, 7, 17, 46, 8, 24, DateTimeKind.Local).AddTicks(4814),
                             Script = "SELECT 'Test'",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
@@ -300,7 +300,7 @@ namespace Zs.App.Home.Data.Migrations
                             Id = "/nulltest",
                             Description = "Тестовый запрос к боту. Возвращает NULL",
                             Group = "moderatorCmdGroup",
-                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(7495),
+                            InsertDate = new DateTime(2021, 1, 7, 17, 46, 8, 24, DateTimeKind.Local).AddTicks(5271),
                             Script = "SELECT null",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
@@ -310,7 +310,7 @@ namespace Zs.App.Home.Data.Migrations
                             DefaultArgs = "<UserRoleId>",
                             Description = "Получение справки по доступным функциям",
                             Group = "userCmdGroup",
-                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(7940),
+                            InsertDate = new DateTime(2021, 1, 7, 17, 46, 8, 24, DateTimeKind.Local).AddTicks(5921),
                             Script = "SELECT bot.sf_cmd_get_help({0})",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
@@ -320,7 +320,7 @@ namespace Zs.App.Home.Data.Migrations
                             DefaultArgs = "select 'Pass your query as parameter in double quotes'",
                             Description = "SQL-запрос",
                             Group = "adminCmdGroup",
-                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(7949),
+                            InsertDate = new DateTime(2021, 1, 7, 17, 46, 8, 24, DateTimeKind.Local).AddTicks(5939),
                             Script = "select (with userQuery as ({0}) select json_agg(q) from userQuery q)",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         });
@@ -494,84 +494,84 @@ namespace Zs.App.Home.Data.Migrations
                         new
                         {
                             Id = "UKN",
-                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(4044),
+                            InsertDate = new DateTime(2021, 1, 7, 17, 46, 8, 24, DateTimeKind.Local).AddTicks(1892),
                             Name = "Unknown",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Id = "TXT",
-                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(4537),
+                            InsertDate = new DateTime(2021, 1, 7, 17, 46, 8, 24, DateTimeKind.Local).AddTicks(2364),
                             Name = "Text",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Id = "PHT",
-                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(4542),
+                            InsertDate = new DateTime(2021, 1, 7, 17, 46, 8, 24, DateTimeKind.Local).AddTicks(2369),
                             Name = "Photo",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Id = "AUD",
-                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(4543),
+                            InsertDate = new DateTime(2021, 1, 7, 17, 46, 8, 24, DateTimeKind.Local).AddTicks(2370),
                             Name = "Audio",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Id = "VID",
-                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(4545),
+                            InsertDate = new DateTime(2021, 1, 7, 17, 46, 8, 24, DateTimeKind.Local).AddTicks(2371),
                             Name = "Video",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Id = "VOI",
-                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(4547),
+                            InsertDate = new DateTime(2021, 1, 7, 17, 46, 8, 24, DateTimeKind.Local).AddTicks(2373),
                             Name = "Voice",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Id = "DOC",
-                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(4548),
+                            InsertDate = new DateTime(2021, 1, 7, 17, 46, 8, 24, DateTimeKind.Local).AddTicks(2374),
                             Name = "Document",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Id = "STK",
-                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(4549),
+                            InsertDate = new DateTime(2021, 1, 7, 17, 46, 8, 24, DateTimeKind.Local).AddTicks(2375),
                             Name = "Sticker",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Id = "LOC",
-                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(4551),
+                            InsertDate = new DateTime(2021, 1, 7, 17, 46, 8, 24, DateTimeKind.Local).AddTicks(2376),
                             Name = "Location",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Id = "CNT",
-                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(4552),
+                            InsertDate = new DateTime(2021, 1, 7, 17, 46, 8, 24, DateTimeKind.Local).AddTicks(2377),
                             Name = "Contact",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Id = "SRV",
-                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(4553),
+                            InsertDate = new DateTime(2021, 1, 7, 17, 46, 8, 24, DateTimeKind.Local).AddTicks(2379),
                             Name = "Service message",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Id = "OTH",
-                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(4554),
+                            InsertDate = new DateTime(2021, 1, 7, 17, 46, 8, 24, DateTimeKind.Local).AddTicks(2380),
                             Name = "Other",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         });
@@ -610,35 +610,35 @@ namespace Zs.App.Home.Data.Migrations
                         new
                         {
                             Id = "TG",
-                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 494, DateTimeKind.Local).AddTicks(5629),
+                            InsertDate = new DateTime(2021, 1, 7, 17, 46, 8, 19, DateTimeKind.Local).AddTicks(8442),
                             Name = "Telegram",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Id = "VK",
-                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 495, DateTimeKind.Local).AddTicks(6015),
+                            InsertDate = new DateTime(2021, 1, 7, 17, 46, 8, 21, DateTimeKind.Local).AddTicks(446),
                             Name = "Вконтакте",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Id = "SK",
-                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 495, DateTimeKind.Local).AddTicks(6040),
+                            InsertDate = new DateTime(2021, 1, 7, 17, 46, 8, 21, DateTimeKind.Local).AddTicks(460),
                             Name = "Skype",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Id = "FB",
-                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 495, DateTimeKind.Local).AddTicks(6043),
+                            InsertDate = new DateTime(2021, 1, 7, 17, 46, 8, 21, DateTimeKind.Local).AddTicks(462),
                             Name = "Facebook",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Id = "DC",
-                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 495, DateTimeKind.Local).AddTicks(6044),
+                            InsertDate = new DateTime(2021, 1, 7, 17, 46, 8, 21, DateTimeKind.Local).AddTicks(464),
                             Name = "Discord",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         });
@@ -710,7 +710,7 @@ namespace Zs.App.Home.Data.Migrations
                         {
                             Id = -10,
                             FullName = "for exported message reading",
-                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(1374),
+                            InsertDate = new DateTime(2021, 1, 7, 17, 46, 8, 23, DateTimeKind.Local).AddTicks(9752),
                             IsBot = false,
                             Name = "Unknown",
                             RawData = "{ \"test\": \"test\" }",
@@ -722,7 +722,7 @@ namespace Zs.App.Home.Data.Migrations
                         {
                             Id = -1,
                             FullName = "UnitTest",
-                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(1854),
+                            InsertDate = new DateTime(2021, 1, 7, 17, 46, 8, 24, DateTimeKind.Local).AddTicks(327),
                             IsBot = false,
                             Name = "UnitTestUser",
                             RawData = "{ \"test\": \"test\" }",
@@ -734,7 +734,7 @@ namespace Zs.App.Home.Data.Migrations
                         {
                             Id = 1,
                             FullName = "Сергей Зуев",
-                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(1860),
+                            InsertDate = new DateTime(2021, 1, 7, 17, 46, 8, 24, DateTimeKind.Local).AddTicks(332),
                             IsBot = false,
                             Name = "zuev56",
                             RawData = "{ \"Id\": 210281448 }",
@@ -782,7 +782,7 @@ namespace Zs.App.Home.Data.Migrations
                         new
                         {
                             Id = "OWNER",
-                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 497, DateTimeKind.Local).AddTicks(7059),
+                            InsertDate = new DateTime(2021, 1, 7, 17, 46, 8, 23, DateTimeKind.Local).AddTicks(1432),
                             Name = "Owner",
                             Permissions = "[ \"All\" ]",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
@@ -790,7 +790,7 @@ namespace Zs.App.Home.Data.Migrations
                         new
                         {
                             Id = "ADMIN",
-                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 497, DateTimeKind.Local).AddTicks(7553),
+                            InsertDate = new DateTime(2021, 1, 7, 17, 46, 8, 23, DateTimeKind.Local).AddTicks(1907),
                             Name = "Administrator",
                             Permissions = "[ \"adminCmdGroup\", \"moderatorCmdGroup\", \"userCmdGroup\" ]",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
@@ -798,7 +798,7 @@ namespace Zs.App.Home.Data.Migrations
                         new
                         {
                             Id = "MODERATOR",
-                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 497, DateTimeKind.Local).AddTicks(7557),
+                            InsertDate = new DateTime(2021, 1, 7, 17, 46, 8, 23, DateTimeKind.Local).AddTicks(1912),
                             Name = "Moderator",
                             Permissions = "[ \"moderatorCmdGroup\", \"userCmdGroup\" ]",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
@@ -806,7 +806,7 @@ namespace Zs.App.Home.Data.Migrations
                         new
                         {
                             Id = "USER",
-                            InsertDate = new DateTime(2020, 12, 12, 16, 57, 9, 497, DateTimeKind.Local).AddTicks(7561),
+                            InsertDate = new DateTime(2021, 1, 7, 17, 46, 8, 23, DateTimeKind.Local).AddTicks(1914),
                             Name = "User",
                             Permissions = "[ \"userCmdGroup\" ]",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)

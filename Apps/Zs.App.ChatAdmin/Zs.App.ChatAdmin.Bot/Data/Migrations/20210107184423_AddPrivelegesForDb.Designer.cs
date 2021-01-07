@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Zs.App.ChatAdmin.Data;
@@ -9,9 +10,10 @@ using Zs.App.ChatAdmin.Data;
 namespace Zs.App.ChatAdmin.Data.Migrations
 {
     [DbContext(typeof(ChatAdminContext))]
-    partial class ChatAdminContextModelSnapshot : ModelSnapshot
+    [Migration("20210107184423_AddPrivelegesForDb")]
+    partial class AddPrivelegesForDb
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

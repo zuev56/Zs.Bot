@@ -79,7 +79,7 @@ namespace Zs.Bot.Messenger.Telegram
                            : new TelegramBotClient(token);
 
                 _botClient.IsReceiving = true;
-                _botClient.Timeout = TimeSpan.FromSeconds(5);
+                //_botClient.Timeout = TimeSpan.FromSeconds(10);
 
                 _botClient.ApiResponseReceived += BotClient_ApiResponseReceived;
                 _botClient.OnCallbackQuery += BotClient_OnCallbackQuery;

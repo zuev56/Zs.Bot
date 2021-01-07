@@ -2,7 +2,6 @@
 using System;
 using System.Reflection;
 using System.Text;
-using Zs.Bot.Data.Abstractions;
 using Zs.Bot.Data.Models;
 using Zs.Common.Extensions;
 
@@ -136,7 +135,8 @@ namespace Zs.Bot.Data
             var resources = new[]
             {
                 "StoredFunctions.sql",
-                "SequencesUpdate.sql"
+                "SequencesUpdate.sql",
+                "Priveleges.sql"
             };
 
             var sb = new StringBuilder();
