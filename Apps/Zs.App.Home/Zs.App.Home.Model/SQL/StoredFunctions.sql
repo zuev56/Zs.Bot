@@ -15,7 +15,7 @@ DECLARE
     _dbUserIds int[];
     _activeDbUserIds int[];
     _notActiveDbUserIds int[];
-    _exactOfflineHours int;
+    _exactOfflineHours int = -1;
     _result text = null;
 BEGIN
     _vkUserIds = string_to_array(_vkUserIdsStr, ',');
@@ -38,6 +38,10 @@ BEGIN
 
     -- Надо вычислять время для каждого отдельного пользователя из массива _notActiveDbUserIds
     -- extract(epoch from (now() - insert_date))::int / 3600
+
+    -- Временно
+    _exactOfflineHours = _offlineHours;
+
     IF (cardinality(_notActiveDbUserIds) > 0)
     THEN
         select 'В течение ' || _exactOfflineHours || ' часов не было активности от: ' 

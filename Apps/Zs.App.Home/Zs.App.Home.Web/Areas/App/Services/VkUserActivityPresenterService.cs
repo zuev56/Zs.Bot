@@ -1,8 +1,9 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
 using Zs.App.Home.Model;
 using Zs.App.Home.Web.Areas.ApiVk.Models;
 using Zs.App.Home.Web.Areas.App.Models.Vk;
@@ -49,6 +50,7 @@ namespace Zs.App.Home.Web.Areas.App.Services
             {
                 UserId              = user.Id,
                 UserName            = $"{user.FirstName} {user.LastName}",
+                Url                 = $"https://vk.com/id{JsonDocument.Parse(user.RawData).RootElement.GetProperty("id")}",
                 BrowserActivityTime = TimeSpan.FromSeconds(GetBrowserActivitySec(log)),
                 MobileActivityTime  = TimeSpan.FromSeconds(GetMobileActivitySec(log)),
                 EntranceCounter     = log.Count(l => l.IsOnline == true),
@@ -74,7 +76,7 @@ namespace Zs.App.Home.Web.Areas.App.Services
                 MobileEntrance = log.Count(l => l.IsOnline == true && l.IsOnlineMobile),
                 ActivityCalendar = GetActivityForEveryDay(log),
                 //MaxDailyActivityTime = log.
-
+                Url = $"https://vk.com/id{JsonDocument.Parse(user.RawData).RootElement.GetProperty("id")}",
                 BrowserActivityTime = TimeSpan.FromSeconds(GetBrowserActivitySec(log.OrderBy(l => l.Id).SkipWhile(l => l.IsOnline != true).ToList())),
                 MobileActivityTime = TimeSpan.FromSeconds(GetMobileActivitySec(log.OrderBy(l => l.Id).SkipWhile(l => l.IsOnline != true).ToList())),
             };
@@ -153,22 +155,14 @@ namespace Zs.App.Home.Web.Areas.App.Services
             return users.Select(u => new VkUserVM
             {
                 Id = u.Id,
-                UserName = $"{u.FirstName} {u.LastName}"
+                UserName = $"{u.FirstName} {u.LastName}",
+                //Url = $"vk.com/id{JsonDocument.Parse(u.RawData).RootElement.GetProperty("id")}"                
             }).ToList();
         }
 
         public async Task<List<VkUserVM>> GetVkUserListWithActivity(string filterText, DateTime fromDate, DateTime toDate)
         {
-            var users = !string.IsNullOrWhiteSpace(filterText)
-                ? await _vkUsersRepo.FindAllAsync(u => EF.Functions.ILike(u.FirstName, $"%{filterText}%") || EF.Functions.ILike(u.LastName, $"%{filterText}%"))
-                : await _vkUsersRepo.FindAllAsync();
-
-            var userVMs = users.Select(u => new VkUserVM
-            {
-                Id = u.Id,
-                UserName = $"{u.FirstName} {u.LastName}"
-            }).ToList();
-
+            var userVMs = await GetVkUserList(filterText);
             var log = await GetOrderedLog(userVMs.Select(u => u.Id).ToArray(), fromDate, toDate);
 
             userVMs.AsParallel().ForAll(u => u.ActivitySec = GetActivitySec(log.Where(l => l.UserId == u.Id).OrderBy(l => l.LastSeen).ToList()));

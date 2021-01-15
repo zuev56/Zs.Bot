@@ -11,13 +11,13 @@
         @Html.DisplayNameFor(m => m.FromDate)
     </dt>
     <dd>
-        @Html.EditorFor(m => m.FromDate, new { htmlAttributes = new { onchange = "OnFilterChanged();" } })
+        @Html.EditorFor(m => m.FromDate, new { htmlAttributes = new { onchange = "OnTimeIntervalChanged();" } })
     </dd>
     <dt>
         @Html.DisplayNameFor(m => m.ToDate)
     </dt>
     <dd>
-        @Html.EditorFor(m => m.ToDate, new { htmlAttributes = new { onchange = "OnFilterChanged();" } })
+        @Html.EditorFor(m => m.ToDate, new { htmlAttributes = new { onchange = "OnTimeIntervalChanged();" } })
     </dd>
     <dt>
     </dt>

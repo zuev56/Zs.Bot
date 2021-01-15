@@ -18,6 +18,8 @@ using Zs.Common.Services.WebAPI;
 
 namespace Zs.App.Home.Bot
 {
+    // TODO: В хранимке vk.sf_cmd_get_not_active_users выводить точное количество времени отсутствия
+
     internal class UserWatcher : IHostedService
     {
         private readonly IConfiguration _configuration;
@@ -32,6 +34,8 @@ namespace Zs.App.Home.Bot
         private readonly float _version;
         private readonly string _accessToken;
         private readonly int[] _userIds;
+        private IJob _userActivityLogger;
+        private readonly int _activityLogIntervalSec = 1000; // TODO: брать из конфига
 
 
         public UserWatcher(
@@ -90,21 +94,21 @@ namespace Zs.App.Home.Bot
 
         private void CreateJobs()
         {
-            var logUserStatus = new ProgramJob(
-                TimeSpan.FromSeconds(10),
-                async () => await GetUsersStatus(),
+            _userActivityLogger = new ProgramJob(
+                TimeSpan.FromSeconds(_activityLogIntervalSec),
+                async () => await SaveVkUsersActivity(),
                 description: "logUserStatus");
 
-            var informAboutNotActiveUsers12h = new SqlJob(
+            var notActiveUsers12hInformer = new SqlJob(
                 TimeSpan.FromHours(1),
                 QueryResultType.String,
                 $"select vk.sf_cmd_get_not_active_users('{string.Join(',', _configuration.GetSection("Vk:TrackedUserIds").Get<int[]>())}', 12)",
                 _configuration.GetConnectionString("Default"),
                 startDate: DateTime.Now + TimeSpan.FromSeconds(5),
-                description: "informAboutNotActiveUsers12h"
+                description: "notActiveUsers12hInformer"
                 );
 
-            var sendDayErrorsAndWarnings = new SqlJob(
+            var dayErrorsAndWarningsInformer = new SqlJob(
                 TimeSpan.FromHours(1),
                 QueryResultType.String,
                  @"select string_agg('**' || log_type || '**  ' || to_char(insert_date, 'HH24:MI:SS') || E'\n' || log_initiator || ':  ' || log_message, E'\n\n' order by insert_date desc)
@@ -113,29 +117,29 @@ namespace Zs.App.Home.Bot
                               and insert_date > now() - interval '1 hour'",
                 _configuration.GetConnectionString("Default"),
                 startDate: Job.NextHour(),
-                description: "sendDayErrorsAndWarnings"
+                description: "dayErrorsAndWarningsInformer"
                 );
 
-            var sendNightErrorsAndWarnings = new SqlJob(
+            var nightErrorsAndWarningsInformer = new SqlJob(
                 TimeSpan.FromDays(1),
                 QueryResultType.String,
-                 @" select string_agg('**' || log_type || '**  ' || to_char(insert_date, 'HH24:MI:SS') || E'\n' || log_initiator || ':  ' || log_message, E'\n\n' order by insert_date desc)"
-                + "\n from bot.logs"
-                + "\nwhere log_type in ('Warning', 'Error')"
-                + "\n  and insert_date > now() - interval '12 hours'",
+                 @" select string_agg('**' || log_type || '**  ' || to_char(insert_date, 'HH24:MI:SS') || E'\n' || log_initiator || ':  ' || log_message, E'\n\n' order by insert_date desc)
+                              from bot.logs
+                             where log_type in ('Warning', 'Error')
+                               and insert_date > now() - interval '12 hours'",
                 _configuration.GetConnectionString("Default"),
                 startDate: DateTime.Today + TimeSpan.FromHours(24+10),
-                description: "sendNightErrorsAndWarnings"
+                description: "nightErrorsAndWarningsInformer"
                 );
 
-            informAboutNotActiveUsers12h.ExecutionCompleted += Job_ExecutionCompleted;
-            sendDayErrorsAndWarnings.ExecutionCompleted += Job_ExecutionCompleted;
-            sendNightErrorsAndWarnings.ExecutionCompleted += Job_ExecutionCompleted;
+            notActiveUsers12hInformer.ExecutionCompleted += Job_ExecutionCompleted;
+            dayErrorsAndWarningsInformer.ExecutionCompleted += Job_ExecutionCompleted;
+            nightErrorsAndWarningsInformer.ExecutionCompleted += Job_ExecutionCompleted;
 
-            _scheduler.Jobs.Add(logUserStatus);
-            _scheduler.Jobs.Add(informAboutNotActiveUsers12h);
-            _scheduler.Jobs.Add(sendDayErrorsAndWarnings);
-            _scheduler.Jobs.Add(sendNightErrorsAndWarnings);
+            _scheduler.Jobs.Add(_userActivityLogger);
+            _scheduler.Jobs.Add(notActiveUsers12hInformer);
+            _scheduler.Jobs.Add(dayErrorsAndWarningsInformer);
+            _scheduler.Jobs.Add(nightErrorsAndWarningsInformer);
         }
 
         private async void Job_ExecutionCompleted(IJob job, IJobExecutionResult result)
@@ -144,7 +148,6 @@ namespace Zs.App.Home.Bot
             {
                 if (result != null && DateTime.Now.Hour > 8 && DateTime.Now.Hour < 22)
                 {
-                    // TODO: поиск текущего сообщения среди отправленных за сегодня
                     var todaysMessage = await _messagesRepo.FindAsync(m => m.Text == result.TextValue && m.InsertDate > DateTime.Today);
 
                     if (todaysMessage == null)
@@ -158,76 +161,113 @@ namespace Zs.App.Home.Bot
         }
 
         /// <summary> Activity data collection </summary>
-        private async Task GetUsersStatus()
+        private async Task SaveVkUsersActivity()
         {
             try
             {
-                //https://api.vk.com/method/users.get?user_ids=8790237,1234567&fields=online&access_token=cf11cfd68111cfe68111cf89bf1a6bb54b1a3fad6d&v=5.122
-                var url = await _vkUsersRepo.FindAsync() != null
-                    ? $"https://api.vk.com/method/users.get?user_ids={string.Join(',',_userIds)}&fields=online,online_mobile,online_app,last_seen&access_token={_accessToken}&v={_version.ToString(CultureInfo.InvariantCulture)}"
-                    : $"https://api.vk.com/method/users.get?user_ids={string.Join(',', _userIds)}&fields=photo_id,verified,sex,bdate,city,country,home_town,photo_max_orig,online,domain,has_mobile,contacts,site,education,universities,schools,status,last_seen,followers_count,occupation,nickname,relatives,relation,personal,connections,exports,activities,interests,music,movies,tv,books,games,about,quotes,can_post,can_see_all_posts,can_see_audio,can_write_private_message,can_send_friend_request,is_favorite,is_hidden_from_feed,timezone,screen_name,maiden_name,is_friend,friend_status,career,military,blacklisted,blacklisted_by_me,can_be_invited_group&access_token={_accessToken}&v={_version}";
+                string url = null;
+                if (await _vkUsersRepo.FindAsync() != null)
+                {
+                    url = $"https://api.vk.com/method/users.get?user_ids={string.Join(',', _userIds)}"
+                        + $"&fields=online,online_mobile,online_app,last_seen&access_token={_accessToken}&v={_version.ToString(CultureInfo.InvariantCulture)}";
+                }
+                else
+                {
+                    url = $"https://api.vk.com/method/users.get?user_ids={string.Join(',', _userIds)}"
+                        + $"&fields=photo_id,verified,sex,bdate,city,country,home_town,photo_max_orig,online,domain,has_mobile,"
+                        + $"contacts,site,education,universities,schools,status,last_seen,followers_count,occupation,nickname,"
+                        + $"relatives,relation,personal,connections,exports,activities,interests,music,movies,tv,books,games,"
+                        + $"about,quotes,can_post,can_see_all_posts,can_see_audio,can_write_private_message,can_send_friend_request,"
+                        + $"is_favorite,is_hidden_from_feed,timezone,screen_name,maiden_name,is_friend,friend_status,career,military,"
+                        + $"blacklisted,blacklisted_by_me,can_be_invited_group&access_token={_accessToken}&v={_version.ToString(CultureInfo.InvariantCulture)}";
+                    
+                    // Delay to add all users in the database on the first execution
+                    _userActivityLogger.IdleStepsCount = 10000;
+                }
 
-                //var str = await ApiHelper.GetResponce(url);
                 var response = await ApiHelper.GetResponce<ApiResponse>(url, throwOnError: true);
 
                 if (response is null)
                 {
-                    // Для всех пользователей создаём записи в журнале
-                    // с неопределённым статусом, если они ещё не созданы
-                    var users = await _vkUsersRepo.FindAllAsync();
-                    users.ForEach(async u => await _vkActivityLogRepo.SaveAsync(
-                        new VkActivityLogItem()
-                        {
-                            UserId = u.Id,
-                            IsOnlineMobile = false,
-                            LastSeen = -1,
-                            IsOnline = null,
-                            InsertDate = DateTime.Now
-                        }
-                    ));
-
+                    await SetUndefinedActivityToAllVkUsers();
                     return;
                 }
 
-                foreach (var user in response.Users)
+                foreach (var apiUser in response.Users)
                 {
-                    var dbUser = await _vkUsersRepo.FindBySqlAsync($"select * from vk.users where cast(raw_data ->> 'id' as integer) = {user.Id}");
-                    if (dbUser is null)
-                    {
-                        await _vkUsersRepo.SaveAsync((VkUser)user);
-                        dbUser = await _vkUsersRepo.FindBySqlAsync($"select * from vk.users where cast(raw_data ->> 'id' as integer) = {user.Id}");
-                    }
-
-                    var lastActivityDbItem = await _vkActivityLogRepo.FindAsync(
-                        l => l.UserId == dbUser.Id, 
-                        orderBy: query => query.OrderByDescending(l => l.Id));
-
-                    var currentOnlineStatus = user.Online == 1 ? true : false;
-                    var currentMobileStatus = user.OnlineMobile == 1 ? true : false;
-                    var currentApp = user.OnlineApp;
-
-                    if (lastActivityDbItem == null
-                        || lastActivityDbItem.IsOnline != currentOnlineStatus
-                        || lastActivityDbItem.IsOnlineMobile != currentMobileStatus
-                        || lastActivityDbItem.OnlineApp != currentApp)
-                    {
-                        await _vkActivityLogRepo.SaveAsync(
-                            new VkActivityLogItem()
-                            {
-                                UserId = dbUser.Id,
-                                IsOnline = currentOnlineStatus,
-                                IsOnlineMobile = currentMobileStatus,
-                                OnlineApp = user.OnlineApp,
-                                LastSeen = user.LastSeenUnix?.Time ?? 0,
-                                InsertDate = DateTime.Now
-                            });
-                    }
+                    var dbUser = await GetVkUserFromDatabase(apiUser);
+                    await LogVkUserActivity(apiUser, dbUser);
                 }
+
+                // Now the delay is not needed
+                if (_userActivityLogger.IdleStepsCount > 0)
+                    _userActivityLogger.IdleStepsCount = 0;
             }
             catch (Exception ex)
             {
                _logger?.LogErrorAsync(ex, nameof(UserWatcher));
             }
         }
+
+        private async Task SetUndefinedActivityToAllVkUsers()
+        {
+            // Для всех пользователей создаём записи в журнале
+            // с неопределённым статусом, если они ещё не созданы
+            var users = await _vkUsersRepo.FindAllAsync();
+            users.ForEach(async u => await _vkActivityLogRepo.SaveAsync(
+                new VkActivityLogItem()
+                {
+                    UserId = u.Id,
+                    IsOnlineMobile = false,
+                    LastSeen = -1,
+                    IsOnline = null,
+                    InsertDate = DateTime.Now
+                }
+            ));
+        }
+
+        private async Task<VkUser> GetVkUserFromDatabase(ApiUser apiUser)
+        {
+            var query = $"select * from vk.users where cast(raw_data ->> 'id' as integer) = {apiUser.Id}";
+
+            var dbUser = await _vkUsersRepo.FindBySqlAsync(query);
+            if (dbUser is null)
+            {
+                await _vkUsersRepo.SaveAsync((VkUser)apiUser);
+                dbUser = await _vkUsersRepo.FindBySqlAsync(query);
+            }
+
+            return dbUser;
+        }
+
+        private async Task LogVkUserActivity(ApiUser apiUser, VkUser dbUser)
+        {
+            var lastActivityDbItem = await _vkActivityLogRepo.FindAsync(
+                                    l => l.UserId == dbUser.Id,
+                                    orderBy: query => query.OrderByDescending(l => l.Id));
+
+            var currentOnlineStatus = apiUser.Online == 1 ? true : false;
+            var currentMobileStatus = apiUser.OnlineMobile == 1 ? true : false;
+            var currentApp = apiUser.OnlineApp;
+
+            if (lastActivityDbItem == null
+                || lastActivityDbItem.IsOnline != currentOnlineStatus
+                || lastActivityDbItem.IsOnlineMobile != currentMobileStatus
+                || lastActivityDbItem.OnlineApp != currentApp)
+            {
+                await _vkActivityLogRepo.SaveAsync(
+                    new VkActivityLogItem()
+                    {
+                        UserId = dbUser.Id,
+                        IsOnline = currentOnlineStatus,
+                        IsOnlineMobile = currentMobileStatus,
+                        OnlineApp = apiUser.OnlineApp,
+                        LastSeen = apiUser.LastSeenUnix?.Time ?? 0,
+                        InsertDate = DateTime.Now
+                    });
+            }
+        }
+
+
     }
 }
