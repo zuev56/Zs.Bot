@@ -13,6 +13,7 @@ using Zs.Bot.Data.Models;
 using Zs.Bot.Services.Messaging;
 using Zs.Common.Abstractions;
 using Zs.Common.Enums;
+using Zs.Common.Extensions;
 using Zs.Common.Services.Scheduler;
 using Zs.Common.Services.WebAPI;
 
@@ -67,7 +68,7 @@ namespace Zs.App.Home.Bot
             catch (Exception ex)
             {
                 var tiex = new TypeInitializationException(typeof(UserWatcher).FullName, ex);
-               _logger?.LogErrorAsync(tiex, nameof(UserWatcher));
+               _logger?.LogErrorAsync(tiex, nameof(UserWatcher)).Wait();
             }
         }
 
@@ -96,13 +97,13 @@ namespace Zs.App.Home.Bot
         {
             _userActivityLogger = new ProgramJob(
                 TimeSpan.FromSeconds(_activityLogIntervalSec),
-                async () => await SaveVkUsersActivity(),
+                async () => await SaveVkUsersActivityAsync(),
                 description: "logUserStatus");
 
             var notActiveUsers12hInformer = new SqlJob(
                 TimeSpan.FromHours(1),
                 QueryResultType.String,
-                $"select vk.sf_cmd_get_not_active_users('{string.Join(',', _configuration.GetSection("Vk:TrackedUserIds").Get<int[]>())}', 12)",
+                $"select vk.sf_cmd_get_not_active_users('{string.Join(',', _configuration.GetSection("Vk:TrackedUserIds").Get<int[]>())}', {_configuration.GetSection("Vk:AlarmAfterInactiveHours").Get<int>()})",
                 _configuration.GetConnectionString("Default"),
                 startDate: DateTime.Now + TimeSpan.FromSeconds(5),
                 description: "notActiveUsers12hInformer"
@@ -148,20 +149,20 @@ namespace Zs.App.Home.Bot
             {
                 if (result != null && DateTime.Now.Hour > 8 && DateTime.Now.Hour < 22)
                 {
-                    var todaysMessage = await _messagesRepo.FindAsync(m => m.Text == result.TextValue && m.InsertDate > DateTime.Today);
+                    var todaysMessages = await _messagesRepo.FindAllAsync(m => m.InsertDate > DateTime.Today && m.Text.Contains("is not active for"));
 
-                    if (todaysMessage == null)
+                    if (!todaysMessages.Any(m => m.Text.WithoutDigits() == result.TextValue.WithoutDigits()))
                         await _messenger.AddMessageToOutboxAsync(result?.TextValue, "ADMIN");
                 }                   
             }
             catch (Exception ex)
             {
-               _logger?.LogErrorAsync(ex, nameof(UserWatcher));
+                await _logger?.LogErrorAsync(ex, nameof(UserWatcher));
             }
         }
 
         /// <summary> Activity data collection </summary>
-        private async Task SaveVkUsersActivity()
+        private async Task SaveVkUsersActivityAsync()
         {
             try
             {
@@ -180,7 +181,9 @@ namespace Zs.App.Home.Bot
                         + $"about,quotes,can_post,can_see_all_posts,can_see_audio,can_write_private_message,can_send_friend_request,"
                         + $"is_favorite,is_hidden_from_feed,timezone,screen_name,maiden_name,is_friend,friend_status,career,military,"
                         + $"blacklisted,blacklisted_by_me,can_be_invited_group&access_token={_accessToken}&v={_version.ToString(CultureInfo.InvariantCulture)}";
-                    
+
+                    await _logger?.LogInfoAsync("Filling VkUsers repository");
+
                     // Delay to add all users in the database on the first execution
                     _userActivityLogger.IdleStepsCount = 10000;
                 }
@@ -190,13 +193,15 @@ namespace Zs.App.Home.Bot
                 if (response is null)
                 {
                     await SetUndefinedActivityToAllVkUsers();
+
+                    await _logger?.LogWarningAsync("Response is null. Setting undefined activity to all VkUsers");
                     return;
                 }
 
                 foreach (var apiUser in response.Users)
                 {
                     var dbUser = await GetVkUserFromDatabase(apiUser);
-                    await LogVkUserActivity(apiUser, dbUser);
+                    await LogVkUserActivityAsync(apiUser, dbUser);
                 }
 
                 // Now the delay is not needed
@@ -205,14 +210,13 @@ namespace Zs.App.Home.Bot
             }
             catch (Exception ex)
             {
-               _logger?.LogErrorAsync(ex, nameof(UserWatcher));
+                await _logger?.LogErrorAsync(ex, nameof(UserWatcher));
             }
         }
 
         private async Task SetUndefinedActivityToAllVkUsers()
         {
-            // Для всех пользователей создаём записи в журнале
-            // с неопределённым статусом, если они ещё не созданы
+            // TODO: Check if last user activity is set as undefined
             var users = await _vkUsersRepo.FindAllAsync();
             users.ForEach(async u => await _vkActivityLogRepo.SaveAsync(
                 new VkActivityLogItem()
@@ -240,7 +244,7 @@ namespace Zs.App.Home.Bot
             return dbUser;
         }
 
-        private async Task LogVkUserActivity(ApiUser apiUser, VkUser dbUser)
+        private async Task LogVkUserActivityAsync(ApiUser apiUser, VkUser dbUser)
         {
             var lastActivityDbItem = await _vkActivityLogRepo.FindAsync(
                                     l => l.UserId == dbUser.Id,
@@ -267,7 +271,6 @@ namespace Zs.App.Home.Bot
                     });
             }
         }
-
 
     }
 }

@@ -30,7 +30,6 @@ namespace Zs.App.Home.Bot
     {
         private static int _reloadCounter = 0;
 
-
         public static async Task Main(string[] args)
         {
             try
@@ -51,12 +50,23 @@ namespace Zs.App.Home.Bot
             }
             catch (Exception ex)
             {
-                _reloadCounter++;
-                Console.WriteLine($"\n\n{ex}\nMessage:"
-                                + $"\n{ex.Message}"
-                                + $"\n\nStackTrace:\n{ex.StackTrace}");
+                var text = $"\n\n{ex}\nMessage:\n{ex.Message}\n\nStackTrace:\n{ex.StackTrace}";
+
+                TrySaveFailInfo(text);
+                Console.WriteLine(text);
+
                 Console.ReadKey();
             }
+        }
+
+        private static void TrySaveFailInfo(string text)
+        {
+            try
+            {
+                string path = System.IO.Path.Combine(Directory.GetCurrentDirectory(), $"Critical_failure_{DateTime.Now::yyyy.MM.dd HH:mm:ss.ff}.log");
+                File.AppendAllText(path, text);
+            }
+            catch { }
         }
 
         public static async Task ServiceLoader(string configPath)

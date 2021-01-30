@@ -3,6 +3,7 @@
 --2. ФУНКЦИЯ, ПОКАЗЫВАЮЩАЯ СТАТИСТИКУ ПО ВСЕМ ПОЛЬЗОВАТЕЛЯМ НА ОСНОВЕ ФУНКЦИИ 1
 
 
+
 -- ФУНКЦИЯ, ОПОВЕЩАЮЩАЯ, ЕСЛИ ПОЛЬЗОВАТЕЛЬ НЕ БЫЛ В СЕТИ ЗАДАННОЕ КОЛИЧЕСТВО ЧАСОВ
 CREATE OR REPLACE FUNCTION vk.sf_cmd_get_not_active_users(
     _vkUserIdsStr text,
@@ -15,7 +16,6 @@ DECLARE
     _dbUserIds int[];
     _activeDbUserIds int[];
     _notActiveDbUserIds int[];
-    _exactOfflineHours int = -1;
     _result text = null;
 BEGIN
     _vkUserIds = string_to_array(_vkUserIdsStr, ',');
@@ -23,31 +23,27 @@ BEGIN
 
     SELECT array_agg(user_id) INTO _dbUserIds
     FROM vk.users
-    WHERE cast(raw_data ->> 'id' AS integer) = any(_vkUserIds);
+    WHERE cast(raw_data ->> 'id' AS integer) = ANY(_vkUserIds);
     RAISE NOTICE '2. _dbUserIds: %', _dbUserIds;
    
     SELECT INTO _activeDbUserIds array_agg(DISTINCT user_id)
     FROM vk.activity_log
     WHERE insert_date > now() - (_offlineHours || ' hours')::interval
-      and user_id = any(_dbUserIds)
-      and is_online = true;
+      AND user_id = ANY(_dbUserIds)
+      AND is_online = true;
     RAISE NOTICE '3. _activeDbUserIds: %', _activeDbUserIds;
 
     SELECT array(SELECT unnest(_dbUserIds) EXCEPT SELECT unnest(_activeDbUserIds)) into _notActiveDbUserIds;
     RAISE NOTICE '4. _notActiveUserIds: %', _notActiveDbUserIds;
 
-    -- Надо вычислять время для каждого отдельного пользователя из массива _notActiveDbUserIds
-    -- extract(epoch from (now() - insert_date))::int / 3600
-
-    -- Временно
-    _exactOfflineHours = _offlineHours;
-
+    -- Формирование сообщения "<UserName> is not active for <_exactOfflineHours> hours"
     IF (cardinality(_notActiveDbUserIds) > 0)
     THEN
-        select 'В течение ' || _exactOfflineHours || ' часов не было активности от: ' 
-            || (select array_to_string(array_agg(first_name || ' ' || last_name), ', ')
-                from vk.users
-                where user_id = any(_notActiveDbUserIds)) INTO _result;
+        SELECT string_agg((u.first_name || ' ' || u.last_name || ' is not active for ' ||
+            EXTRACT(epoch FROM (now() - (SELECT insert_date FROM vk.activity_log WHERE user_id = u.user_id ORDER BY insert_date DESC LIMIT 1)))::int / 3600
+            || ' hours'), chr(10)) INTO _result
+        FROM vk.users u
+        WHERE u.user_id = ANY(_notActiveDbUserIds);
     END IF;
 
     RETURN _result;
