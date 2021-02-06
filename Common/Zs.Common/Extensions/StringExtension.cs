@@ -1,9 +1,10 @@
-﻿using System;
+﻿using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using Newtonsoft.Json.Linq;
+using System.Text.RegularExpressions;
 
 namespace Zs.Common.Extensions
 {
@@ -27,7 +28,7 @@ namespace Zs.Common.Extensions
         public static IEnumerable<string> SplitToParts(this string value, int partLength)
         {
             if (value == null)
-                throw new ArgumentNullException(nameof(value));
+                throw new NullReferenceException();
             
             if (partLength <= 0)
                 throw new ArgumentException("Part length has to be positive.", nameof(partLength));
@@ -36,6 +37,13 @@ namespace Zs.Common.Extensions
                 yield return value.Substring(i, Math.Min(partLength, value.Length - i));
         }
 
+        public static string WithoutDigits(this string value)
+        {
+            if (value == null)
+                throw new NullReferenceException();
+
+            return Regex.Replace(value, @"[\d]", "");
+        }
 
         /// <summary> Sort parametres and make pretty JSON string </summary>
         public static string NormalizeJsonString(this string json)

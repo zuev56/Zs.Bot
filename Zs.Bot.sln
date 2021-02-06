@@ -23,14 +23,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{3FAF19
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.UnitTest.App.ChatAdmin", "UnitTests\Zs.UnitTest.App.ChatAdmin\Zs.UnitTest.App.ChatAdmin.csproj", "{5E658E9C-AA4D-42C9-9EFA-D0BE60E537C3}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.Common", "Common\Zs.Common\Zs.Common.csproj", "{B047D3FF-44B7-4507-AA36-FD8306D27AE6}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{18CCC3CE-1498-4B8C-BB6C-136A3A839EEC}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
 		.filenesting.json = .filenesting.json
 		PrivateConfiguration.json = PrivateConfiguration.json
-		PrivateConfiguration_Example20200927.json = PrivateConfiguration_Example20200927.json
+		PrivateConfiguration_Example_20210206.json = PrivateConfiguration_Example_20210206.json
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Api", "Api", "{9C4F1BF3-3AEA-4FD5-85AC-13ACE38A5357}"
@@ -39,15 +37,17 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Zs.App.Home", "Zs.App.Home"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.App.Home.Bot", "Apps\Zs.App.Home\Zs.App.Home.Bot\Zs.App.Home.Bot.csproj", "{1E35FCAD-981F-4FFF-9DDE-EB1A40D38853}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.App.Home.Data", "Apps\Zs.App.Home\Zs.App.Home.Model\Zs.App.Home.Data.csproj", "{BC1C3D76-A322-4F5A-B445-CBC3D8FA85FB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.App.Home.Data", "Apps\Zs.App.Home\Zs.App.Home.Data\Zs.App.Home.Data.csproj", "{BC1C3D76-A322-4F5A-B445-CBC3D8FA85FB}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.Bot.Data", "Bot\Zs.Bot.Model\Zs.Bot.Data.csproj", "{158BBAF1-0A1B-4D02-B180-3F55D5C56D62}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.Bot.Data", "Bot\Zs.Bot.Data\Zs.Bot.Data.csproj", "{158BBAF1-0A1B-4D02-B180-3F55D5C56D62}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.App.Home.Web", "Apps\Zs.App.Home\Zs.App.Home.Web\Zs.App.Home.Web.csproj", "{7C795B28-D593-4DC6-8BB3-60500B8140C9}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Zs.App.ChatAdmin", "Zs.App.ChatAdmin", "{1FF30B74-CD99-471C-B055-75F53AD79DF0}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.App.ChatAdmin.Bot", "Apps\Zs.App.ChatAdmin\Zs.App.ChatAdmin.Bot\Zs.App.ChatAdmin.Bot.csproj", "{CC86FCA4-C15E-42C5-A6CB-1A313C7D1B2F}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.Common", "Common\Zs.Common\Zs.Common.csproj", "{AB2BC7B4-A0BE-4C54-AF9A-58B09BD02D65}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -75,10 +75,6 @@ Global
 		{5E658E9C-AA4D-42C9-9EFA-D0BE60E537C3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5E658E9C-AA4D-42C9-9EFA-D0BE60E537C3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5E658E9C-AA4D-42C9-9EFA-D0BE60E537C3}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B047D3FF-44B7-4507-AA36-FD8306D27AE6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B047D3FF-44B7-4507-AA36-FD8306D27AE6}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B047D3FF-44B7-4507-AA36-FD8306D27AE6}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B047D3FF-44B7-4507-AA36-FD8306D27AE6}.Release|Any CPU.Build.0 = Release|Any CPU
 		{1E35FCAD-981F-4FFF-9DDE-EB1A40D38853}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{1E35FCAD-981F-4FFF-9DDE-EB1A40D38853}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1E35FCAD-981F-4FFF-9DDE-EB1A40D38853}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -99,6 +95,10 @@ Global
 		{CC86FCA4-C15E-42C5-A6CB-1A313C7D1B2F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CC86FCA4-C15E-42C5-A6CB-1A313C7D1B2F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CC86FCA4-C15E-42C5-A6CB-1A313C7D1B2F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AB2BC7B4-A0BE-4C54-AF9A-58B09BD02D65}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AB2BC7B4-A0BE-4C54-AF9A-58B09BD02D65}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AB2BC7B4-A0BE-4C54-AF9A-58B09BD02D65}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AB2BC7B4-A0BE-4C54-AF9A-58B09BD02D65}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -110,7 +110,6 @@ Global
 		{0BBC5A99-A707-4993-83B9-20175912CCF9} = {02EF059F-71AD-409E-A7F1-FBB90959890A}
 		{B217690F-F059-4F92-B4C1-BFF40C87EC3D} = {E77CA16B-EA06-4649-9E7D-9518F7D06033}
 		{5E658E9C-AA4D-42C9-9EFA-D0BE60E537C3} = {02EF059F-71AD-409E-A7F1-FBB90959890A}
-		{B047D3FF-44B7-4507-AA36-FD8306D27AE6} = {3FAF192A-78FD-454E-A32D-0AE923DB24D1}
 		{9C4F1BF3-3AEA-4FD5-85AC-13ACE38A5357} = {E77CA16B-EA06-4649-9E7D-9518F7D06033}
 		{AD5D1E3A-1744-476A-A684-F5427694E0E3} = {6ABB3FF5-110B-42CA-A78E-1414529F472D}
 		{1E35FCAD-981F-4FFF-9DDE-EB1A40D38853} = {AD5D1E3A-1744-476A-A684-F5427694E0E3}
@@ -119,6 +118,7 @@ Global
 		{7C795B28-D593-4DC6-8BB3-60500B8140C9} = {AD5D1E3A-1744-476A-A684-F5427694E0E3}
 		{1FF30B74-CD99-471C-B055-75F53AD79DF0} = {6ABB3FF5-110B-42CA-A78E-1414529F472D}
 		{CC86FCA4-C15E-42C5-A6CB-1A313C7D1B2F} = {1FF30B74-CD99-471C-B055-75F53AD79DF0}
+		{AB2BC7B4-A0BE-4C54-AF9A-58B09BD02D65} = {3FAF192A-78FD-454E-A32D-0AE923DB24D1}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {F6A9C4CA-DF26-4772-9119-627935D70E7C}

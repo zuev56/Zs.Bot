@@ -3,7 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Zs.App.Home.Model;
+using Zs.App.Home.Data.Models;
 using Zs.App.Home.Web.Areas.ApiVk.Models;
 using Zs.Bot.Data.Abstractions;
 using Zs.Common.Extensions;

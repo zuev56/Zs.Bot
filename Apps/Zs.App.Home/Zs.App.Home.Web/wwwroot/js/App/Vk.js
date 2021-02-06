@@ -79,8 +79,9 @@ function GetDetailedUserActivity() {
     });
 };
 
-function OnFilterChanged() {
-    GetPeriodUserActivity();
+function OnTimeIntervalChanged() {
+    if ($("#UserId").val() != "")
+        GetPeriodUserActivity();
 };
 
 function GetUserActivity(id, fromDate, toDate) {

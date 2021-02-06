@@ -5,8 +5,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Zs.App.Home.Model;
-using Zs.App.Home.Model.Data;
+using Zs.App.Home.Data;
+using Zs.App.Home.Data.Models;
 using Zs.App.Home.Web.Areas.ApiVk.Services;
 using Zs.App.Home.Web.Areas.App.Services;
 using Zs.Bot.Data.Abstractions;
@@ -52,6 +52,7 @@ namespace Zs.App.Home.Web
                 );
             services.AddScoped<IVkUserActivityPresenterService, VkUserActivityPresenterService>(sp =>
                 new VkUserActivityPresenterService(
+                    _configuration,
                     sp.GetService<IRepository<VkActivityLogItem, int>>(),
                     sp.GetService<IRepository<VkUser, int>>())
                 );

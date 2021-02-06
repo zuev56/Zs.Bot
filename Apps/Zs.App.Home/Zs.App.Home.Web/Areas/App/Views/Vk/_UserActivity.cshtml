@@ -4,7 +4,7 @@
     <tbody>
         <tr>
             <th>@Html.DisplayNameFor(m => m.UserName)</th>
-            <td>@Html.DisplayFor(m => m.UserName)</td>
+            <td><a href="@Model.Url" target="_blank">@Html.DisplayFor(m => m.UserName)</a></td>
         </tr>
         <tr>
             <th>@Html.DisplayNameFor(m => m.EntranceCounter)</th>

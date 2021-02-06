@@ -23,7 +23,7 @@ namespace Zs.Common.Services.WebAPI
                 var streamTask = _client.GetStreamAsync(requestUri);
                 return await JsonSerializer.DeserializeAsync<TResult>(await streamTask);
             }
-            catch (Exception ex)
+            catch
             {
                 if (throwOnError)
                     throw;

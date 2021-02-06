@@ -47,32 +47,32 @@ namespace Zs.Bot.Services.Logging
         public async Task LogErrorAsync(Exception e, [CallerMemberName] string initiator = null)
         {
             var jsonData = JsonConvert.SerializeObject(e, Formatting.Indented);
-            await TrySaveToDatabase(LogType.Error, e.Message, initiator, jsonData);
+            await TrySaveToDatabase(InfoMessageType.Error, e.Message, initiator, jsonData);
         }
 
         public async Task LogInfoAsync(string message, [CallerMemberName] string initiator = null)
         {
-            await TrySaveToDatabase(LogType.Info, message, initiator);
+            await TrySaveToDatabase(InfoMessageType.Info, message, initiator);
         }
 
         public async Task LogInfoAsync<T>(string message, T data, [CallerMemberName] string initiator = null)
         {
             var jsonData = JsonConvert.SerializeObject(data, Formatting.Indented);
-            await TrySaveToDatabase(LogType.Info, message, initiator, jsonData);
+            await TrySaveToDatabase(InfoMessageType.Info, message, initiator, jsonData);
         }
 
         public async Task LogWarningAsync(string message = null, [CallerMemberName] string initiator = null)
         {
-            await TrySaveToDatabase(LogType.Warning, message, initiator);
+            await TrySaveToDatabase(InfoMessageType.Warning, message, initiator);
         }
 
         public async Task LogWarningAsync<T>(string message, T data, [CallerMemberName] string initiator = null)
         {
             var jsonData = JsonConvert.SerializeObject(data, Formatting.Indented);
-            await TrySaveToDatabase(LogType.Warning, message, initiator, jsonData);
+            await TrySaveToDatabase(InfoMessageType.Warning, message, initiator, jsonData);
         }
 
-        private async Task TrySaveToDatabase(LogType type, string message, string initiator = null, string data = null)
+        private async Task TrySaveToDatabase(InfoMessageType type, string message, string initiator = null, string data = null)
         {
             try
             {
@@ -106,12 +106,12 @@ namespace Zs.Bot.Services.Logging
             }
         }
         
-        private void TrySaveInFile(LogType type, string message, string initiator, string data)
+        private void TrySaveInFile(InfoMessageType type, string message, string initiator, string data)
         {
             var formattedType = type switch
             {
-                LogType.Warning => "Warning",
-                LogType.Error   => "ERROR  ",
+                InfoMessageType.Warning => "Warning",
+                InfoMessageType.Error   => "ERROR  ",
                 _               => "Info   "
             };
 

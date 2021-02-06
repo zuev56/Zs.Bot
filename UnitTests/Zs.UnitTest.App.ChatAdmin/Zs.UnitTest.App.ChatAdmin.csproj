@@ -10,12 +10,11 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.8.3" />
     <PackageReference Include="MSTest.TestAdapter" Version="2.1.2" />
     <PackageReference Include="MSTest.TestFramework" Version="2.1.2" />
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="5.0.1" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="5.0.2" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\Apps\Zs.App.ChatAdmin\Zs.App.ChatAdmin.Bot\Zs.App.ChatAdmin.Bot.csproj" />
-    <ProjectReference Include="..\..\Common\Zs.Common\Zs.Common.csproj" />
   </ItemGroup>
 
 </Project>

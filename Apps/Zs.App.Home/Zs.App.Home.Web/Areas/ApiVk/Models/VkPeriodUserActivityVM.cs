@@ -11,6 +11,7 @@ namespace Zs.App.Home.Web.Areas.ApiVk.Models
         [JsonPropertyName("User")]
         [Display(Name = "Имя пользователя")]
         public string UserName { get; set; }
+        public string Url { get; set; }
         public DateTime FromDate { get; set; }
         public DateTime ToDate { get; set; }
         [JsonIgnore]

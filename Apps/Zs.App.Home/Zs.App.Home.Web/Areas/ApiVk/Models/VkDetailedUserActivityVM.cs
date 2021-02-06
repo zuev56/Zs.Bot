@@ -10,6 +10,7 @@ namespace Zs.App.Home.Web.Areas.ApiVk.Models
     {
         [Display(Name = "Имя пользователя")]
         public string UserName { get; set; }
+        public string Url { get; set; }
 
         private static Dictionary<DayOfWeek, TimeSpan> _avgWeekDayActivity = new Dictionary<DayOfWeek, TimeSpan>
         {
