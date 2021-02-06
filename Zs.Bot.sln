@@ -28,7 +28,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.editorconfig = .editorconfig
 		.filenesting.json = .filenesting.json
 		PrivateConfiguration.json = PrivateConfiguration.json
-		PrivateConfiguration_Example20200927.json = PrivateConfiguration_Example20200927.json
+		PrivateConfiguration_Example_20210206.json = PrivateConfiguration_Example_20210206.json
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Api", "Api", "{9C4F1BF3-3AEA-4FD5-85AC-13ACE38A5357}"
@@ -47,7 +47,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Zs.App.ChatAdmin", "Zs.App.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.App.ChatAdmin.Bot", "Apps\Zs.App.ChatAdmin\Zs.App.ChatAdmin.Bot\Zs.App.ChatAdmin.Bot.csproj", "{CC86FCA4-C15E-42C5-A6CB-1A313C7D1B2F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zs.Common", "Common\Zs.Common\Zs.Common.csproj", "{AB2BC7B4-A0BE-4C54-AF9A-58B09BD02D65}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.Common", "Common\Zs.Common\Zs.Common.csproj", "{AB2BC7B4-A0BE-4C54-AF9A-58B09BD02D65}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
