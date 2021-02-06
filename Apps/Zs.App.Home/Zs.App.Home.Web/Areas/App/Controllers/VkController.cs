@@ -1,6 +1,6 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Mvc;
+using System;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
 using Zs.App.Home.Web.Areas.App.Models.Vk;
 using Zs.App.Home.Web.Areas.App.Services;
 
@@ -24,7 +24,13 @@ namespace Zs.App.Home.Web.Areas.App.Controllers
             return View(new VkVM());
         }
 
+        [HttpGet]
+        public async Task<IActionResult> AjaxAddNewVkUser(int id)
+        {
+            var result = await _service.AddNewVkUser(id);
 
+            return result.IsSuccess ? Ok(result) : StatusCode(500, result);
+        }
 
         [HttpGet]
         [Route("AjaxGetUsers")]

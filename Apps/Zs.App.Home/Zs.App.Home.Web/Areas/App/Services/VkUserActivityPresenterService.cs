@@ -1,14 +1,20 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
-using Zs.App.Home.Model;
+using Zs.App.Home.Data.Models;
+using Zs.App.Home.Data.Models.VkAPI;
 using Zs.App.Home.Web.Areas.ApiVk.Models;
 using Zs.App.Home.Web.Areas.App.Models.Vk;
+using Zs.App.Home.Web.Models;
 using Zs.Bot.Data.Abstractions;
+using Zs.Common.Abstractions;
 using Zs.Common.Extensions;
+using Zs.Common.Services.WebAPI;
 
 namespace Zs.App.Home.Web.Areas.App.Services
 {
@@ -17,19 +23,23 @@ namespace Zs.App.Home.Web.Areas.App.Services
         Task<VkPeriodUserActivityVM> GetUserActivity(int userId, DateTime fromDate, DateTime? toDate = null);
         Task<List<VkUserVM>> GetVkUserList(string filterText);
         Task<List<VkUserVM>> GetVkUserListWithActivity(string filterText, DateTime fromDate, DateTime toDate);
-        Task<VkDetailedUserActivityVM> GetDetailedUserActivity(int userId);
+        Task<VkDetailedUserActivityVM> GetDetailedUserActivity(int dbUserId);
+        Task<IServiceResult> AddNewVkUser(int vkIserId);
     }
 
     /// <summary> Service for showing user activity </summary>
     public class VkUserActivityPresenterService : IVkUserActivityPresenterService
     {
+        private readonly IConfiguration _configuration;
         private readonly IRepository<VkActivityLogItem, int> _vkActivityLogRepo;
         private readonly IRepository<VkUser, int> _vkUsersRepo;
 
         public VkUserActivityPresenterService(
+            IConfiguration configuration,
             IRepository<VkActivityLogItem, int> vkActivityLogRepo,
             IRepository<VkUser, int> vkUsersRepo)
         {
+            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _vkActivityLogRepo = vkActivityLogRepo ?? throw new ArgumentNullException(nameof(vkActivityLogRepo));
             _vkUsersRepo = vkUsersRepo ?? throw new ArgumentNullException(nameof(vkActivityLogRepo));
         }
@@ -173,14 +183,52 @@ namespace Zs.App.Home.Web.Areas.App.Services
                 => GetBrowserActivitySec(log) + GetMobileActivitySec(log);
         }
 
+        public async Task<IServiceResult> AddNewVkUser(int vkIserId)
+        {
+            try
+            {
+                var version = float.Parse(_configuration["Vk:Version"], CultureInfo.InvariantCulture).ToString(CultureInfo.InvariantCulture);
+                var accessToken = _configuration["Vk:AccessToken"];
+                var url = $"https://api.vk.com/method/users.get?user_ids={vkIserId}"
+                        + $"&fields=photo_id,verified,sex,bdate,city,country,home_town,photo_max_orig,online,domain,has_mobile,"
+                        + $"contacts,site,education,universities,schools,status,last_seen,followers_count,occupation,nickname,"
+                        + $"relatives,relation,personal,connections,exports,activities,interests,music,movies,tv,books,games,"
+                        + $"about,quotes,can_post,can_see_all_posts,can_see_audio,can_write_private_message,can_send_friend_request,"
+                        + $"is_favorite,is_hidden_from_feed,timezone,screen_name,maiden_name,is_friend,friend_status,career,military,"
+                        + $"blacklisted,blacklisted_by_me,can_be_invited_group&access_token={accessToken}&v={version}";
 
-        private async Task<List<VkActivityLogItem>> GetOrderedLog(int[] userIds, DateTime fromDate, DateTime toDate)
+                var response = await ApiHelper.GetResponce<ApiResponse>(url, throwOnError: true);
+
+                if (response is null)
+                    return ServiceResponseVM.Error("Response is null");
+
+                var apiUser = response.Users.Single();
+                var dbUser = await _vkUsersRepo.FindBySqlAsync($"select * from vk.users where cast(raw_data ->> 'id' as integer) = {apiUser.Id}");
+
+                if (dbUser is null)
+                {
+                    return await _vkUsersRepo.SaveAsync((VkUser)apiUser)
+                        ? ServiceResponseVM.Success("New user is successfully added")
+                        : ServiceResponseVM.Error("User adding failed");
+                }
+                else
+                    return ServiceResponseVM.Warning($"The user with ID {vkIserId} already exists");
+
+            }
+            catch (Exception ex)
+            {
+                // Log
+                return ServiceResponseVM.Error("User adding failed");
+            }
+        }
+
+        private async Task<List<VkActivityLogItem>> GetOrderedLog(int[] dbUserIds, DateTime fromDate, DateTime toDate)
         {
             int fromDateUnix = fromDate.ToUnixEpoch();
             int toDateUnix = toDate.ToUnixEpoch();
 
             var log = await _vkActivityLogRepo
-                .FindAllAsync(l => userIds.Contains(l.UserId) && l.LastSeen >= fromDateUnix && l.LastSeen <= toDateUnix);
+                .FindAllAsync(l => dbUserIds.Contains(l.UserId) && l.LastSeen >= fromDateUnix && l.LastSeen <= toDateUnix);
             log = log.OrderBy(l => l.InsertDate).SkipWhile(l => l.IsOnline != true).ToList();
             return log;
         }
@@ -229,5 +277,6 @@ namespace Zs.App.Home.Web.Areas.App.Services
             }
             return result;
         }
+
     }
 }

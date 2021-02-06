@@ -33,18 +33,14 @@ namespace Zs.App.Home.Web
                                 + $"\n\n{ex}\nType:\n{ex.GetType()}"
                                 + $"\n\nStackTrace:\n{ex.StackTrace}");
                 Console.ReadKey();
-            }
-            
+            }            
         }
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
                 .ConfigureAppConfiguration((hostingContext, config) =>
                 {
-                    config.AddJsonFile(
-                        args[0],
-                        optional: false, // => is required
-                        reloadOnChange: true);
+                    config.AddJsonFile(args[0], optional: false, reloadOnChange: true);
                 })
                 .ConfigureWebHostDefaults(webBuilder =>
                 {

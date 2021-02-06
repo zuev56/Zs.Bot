@@ -38,7 +38,7 @@ namespace Zs.App.Home.Web.Areas.Admin.Services
         }
 
 
-        private List<Log> GetLastLog(int itemsCount, LogType type)
+        private List<Log> GetLastLog(int itemsCount, InfoMessageType type)
         {
             throw new NotImplementedException();
         }

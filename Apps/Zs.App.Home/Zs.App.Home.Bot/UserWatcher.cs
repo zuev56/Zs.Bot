@@ -6,8 +6,8 @@ using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Zs.App.Home.Model;
-using Zs.App.Home.Model.VkAPI;
+using Zs.App.Home.Data.Models;
+using Zs.App.Home.Data.Models.VkAPI;
 using Zs.Bot.Data.Abstractions;
 using Zs.Bot.Data.Models;
 using Zs.Bot.Services.Messaging;
@@ -36,7 +36,7 @@ namespace Zs.App.Home.Bot
         private readonly string _accessToken;
         private readonly int[] _userIds;
         private IJob _userActivityLogger;
-        private readonly int _activityLogIntervalSec = 1000; // TODO: брать из конфига
+        private readonly int _activityLogIntervalSec;
 
 
         public UserWatcher(
@@ -58,6 +58,7 @@ namespace Zs.App.Home.Bot
                 _messagesRepo = messagesRepo;
                 _logger = logger;
 
+                _activityLogIntervalSec = _configuration.GetSection("Vk:ActivityLogIntervalSec").Get<int>();
                 _version = float.Parse(_configuration["Vk:Version"], CultureInfo.InvariantCulture);
                 _accessToken = _configuration["Vk:AccessToken"];
                 _userIds = _configuration.GetSection("Vk:UserIds").Get<int[]>();

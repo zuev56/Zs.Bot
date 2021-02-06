@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Zs.App.Home.Model\Zs.App.Home.Data.csproj" />
+    <ProjectReference Include="..\Zs.App.Home.Data\Zs.App.Home.Data.csproj" />
   </ItemGroup>
 
   <ItemGroup>

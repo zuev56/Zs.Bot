@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -13,7 +13,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\Bot\Messengers\Zs.Bot.Messenger.Telegram\Zs.Bot.Messenger.Telegram.csproj" />
-    <ProjectReference Include="..\Zs.App.Home.Model\Zs.App.Home.Data.csproj" />
+    <ProjectReference Include="..\..\..\Common\Zs.Common\Zs.Common.csproj" />
+    <ProjectReference Include="..\Zs.App.Home.Data\Zs.App.Home.Data.csproj" />
   </ItemGroup>
 
   <ItemGroup>

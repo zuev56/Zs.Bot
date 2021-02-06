@@ -64,13 +64,13 @@ namespace Zs.UnitTest.Tools
                 var parseResult2 = "VmEntity".SafeParse<EntityTypes>();
                 var parseResult3 = "AllClasses".SafeParse<EntityTypes>();
 
-                var parseResult4 = "Info".SafeParse<LogType>();
+                var parseResult4 = "Info".SafeParse<InfoMessageType>();
                 //var parseResult5 = "Inform".SafeParse<LogType>();
 
                 Assert.AreEqual(parseResult1, EntityTypes.VmEntities);
                 Assert.AreEqual(parseResult2, EntityTypes.Undefined);
                 Assert.AreEqual(parseResult3, EntityTypes.AllClasses);
-                Assert.AreEqual(parseResult4, LogType.Info);
+                Assert.AreEqual(parseResult4, InfoMessageType.Info);
             }
             catch (Exception ex)
             {

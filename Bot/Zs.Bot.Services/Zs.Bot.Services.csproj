@@ -19,8 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Common\Zs.Common\Zs.Common.csproj" />
-    <ProjectReference Include="..\Zs.Bot.Model\Zs.Bot.Data.csproj" />
+    <ProjectReference Include="..\Zs.Bot.Data\Zs.Bot.Data.csproj" />
   </ItemGroup>
 
   <ItemGroup>
