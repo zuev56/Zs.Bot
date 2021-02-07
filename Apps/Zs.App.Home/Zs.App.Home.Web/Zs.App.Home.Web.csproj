@@ -9,6 +9,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Areas\App\Models\Telegram\**" />
+    <Content Remove="Areas\App\Models\Telegram\**" />
+    <EmbeddedResource Remove="Areas\App\Models\Telegram\**" />
+    <None Remove="Areas\App\Models\Telegram\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="5.0.2" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="5.0.2" />
     <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="3.8.0" />
@@ -17,10 +24,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Zs.App.Home.Data\Zs.App.Home.Data.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Areas\App\Models\Telegram\" />
+    <ProjectReference Include="..\Zs.App.Home.Services\Zs.App.Home.Services.csproj" />
   </ItemGroup>
 
   <ProjectExtensions><VisualStudio><UserProperties wwwroot_4lib_4bootstrap_4dist_4css_4bootstrap_1css_1map__JsonSchema="" /></VisualStudio></ProjectExtensions>

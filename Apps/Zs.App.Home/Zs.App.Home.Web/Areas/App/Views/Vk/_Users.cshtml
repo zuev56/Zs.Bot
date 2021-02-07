@@ -1,4 +1,4 @@
-﻿@model List<Zs.App.Home.Web.Areas.App.Models.Vk.VkUserVM>
+﻿@model IEnumerable<Zs.App.Home.Web.Areas.App.Models.Vk.UserVM>
 
 <ol>
     @foreach (var user in Model.OrderByDescending(u => u.ActivitySec))

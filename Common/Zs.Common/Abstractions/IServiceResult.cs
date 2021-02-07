@@ -1,24 +1,19 @@
 ﻿using System.Collections.Generic;
-using Zs.Common.Enums;
 
 namespace Zs.Common.Abstractions
 {
-    /// <summary> Результат выполнения метода сервиса, содержащий информацию в удобном виде для вывода пользователю </summary>
+    /// <summary> Service method execution result </summary>
     public interface IServiceResult
     {
         bool IsSuccess { get; }
+        bool HasWarnings { get; }
         IList<IInfoMessage> Messages { get; }
 
     }
 
+    /// <summary> Service method execution result </summary>
     public interface IServiceResult<TResult> : IServiceResult
     {
         TResult Result { get; }
-    }
-
-    public interface IInfoMessage
-    {
-        InfoMessageType Type { get; }
-        string Text { get; }
     }
 }

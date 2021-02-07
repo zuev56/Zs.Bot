@@ -1,7 +1,7 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Mvc;
+using System;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Zs.App.Home.Web.Areas.ApiVk.Services;
+using Zs.App.Home.Services.Vk;
 
 namespace Zs.App.Home.Web.Areas.ApiVk.Controllers
 {
@@ -9,10 +9,10 @@ namespace Zs.App.Home.Web.Areas.ApiVk.Controllers
     [Route("apivk/[controller]")] // необходим для формирования полного маршрута при использовании короткого маршрута в HttpGet
     public class ActivityLogController : Controller
     {
-        private readonly IVkActivityService _vkActivityService;
+        private readonly IActivityService _vkActivityService;
         //private readonly IZsLogger _logger;
 
-        public ActivityLogController(IVkActivityService vkActivityService)
+        public ActivityLogController(IActivityService vkActivityService)
         {
             _vkActivityService = vkActivityService ?? throw new ArgumentNullException(nameof(vkActivityService));
         }

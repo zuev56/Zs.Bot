@@ -1,7 +1,7 @@
 ﻿namespace Zs.App.Home.Web.Areas.App.Models.Vk
 {
 
-    public class VkUserVM
+    public class UserVM
     {
         public int Id { get; init; }
         public string UserName { get; init; }

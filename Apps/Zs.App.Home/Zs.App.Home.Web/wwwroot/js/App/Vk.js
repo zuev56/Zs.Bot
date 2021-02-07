@@ -46,6 +46,9 @@ function SelectUser(id) {
 };
 
 function GetPeriodUserActivity() {
+    if ($("#UserId").val() == "")
+        return;
+
     $.ajax({
         type: "GET",
         url: "/app/Vk/AjaxGetUserActivity",
@@ -65,6 +68,9 @@ function GetPeriodUserActivity() {
 };
 
 function GetDetailedUserActivity() {
+    if ($("#UserId").val() == "")
+        return;
+
     $.ajax({
         type: "GET",
         url: "/app/Vk/AjaxGetDetailedUserActivity",

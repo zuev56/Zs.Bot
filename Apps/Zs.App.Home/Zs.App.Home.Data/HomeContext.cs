@@ -2,16 +2,16 @@
 using System;
 using System.Reflection;
 using System.Text;
+using Zs.App.Home.Data.Models.Vk;
 using Zs.Bot.Data;
 using Zs.Common.Extensions;
-using Zs.App.Home.Data.Models;
 
 namespace Zs.App.Home.Data
 {
     public partial class HomeContext : DbContext
     {
-        public DbSet<VkActivityLogItem> VkActivityLog { get; set; }
-        public DbSet<VkUser> VkUsers { get; set; }
+        public DbSet<ActivityLogItem> VkActivityLog { get; set; }
+        public DbSet<User> VkUsers { get; set; }
 
         public HomeContext()
         {
@@ -46,10 +46,10 @@ namespace Zs.App.Home.Data
 
         private void SetDefaultValues(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<VkActivityLogItem>().Property(b => b.InsertDate).HasDefaultValueSql("now()");
+            modelBuilder.Entity<ActivityLogItem>().Property(b => b.InsertDate).HasDefaultValueSql("now()");
 
-            modelBuilder.Entity<VkUser>().Property(b => b.UpdateDate).HasDefaultValueSql("now()");
-            modelBuilder.Entity<VkUser>().Property(b => b.InsertDate).HasDefaultValueSql("now()");
+            modelBuilder.Entity<User>().Property(b => b.UpdateDate).HasDefaultValueSql("now()");
+            modelBuilder.Entity<User>().Property(b => b.InsertDate).HasDefaultValueSql("now()");
         }
 
         public static string GetOtherSqlScripts()
