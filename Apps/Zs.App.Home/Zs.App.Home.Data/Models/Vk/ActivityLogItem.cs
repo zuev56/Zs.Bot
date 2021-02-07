@@ -1,16 +1,16 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 using Zs.Bot.Data.Abstractions;
 
-namespace Zs.App.Home.Data.Models
+namespace Zs.App.Home.Data.Models.Vk
 {
     /// <summary> Vk users activity log item </summary>
     [Table("activity_log", Schema = "vk")]
-    public partial class VkActivityLogItem : IDbEntity<VkActivityLogItem, int>
+    public partial class ActivityLogItem : IDbEntity<ActivityLogItem, int>
     {
         [Key]
-        [Required(ErrorMessage = "Property 'ActivityLogId' is required")]
         [Column("activity_log_id", TypeName = "integer")]
         public int Id { get; set; }
 
@@ -21,25 +21,23 @@ namespace Zs.App.Home.Data.Models
         [Column("is_online", TypeName = "boolean")]
         public bool? IsOnline { get; set; }
 
-        [Required(ErrorMessage = "Property 'InsertDate' is required")]
         [Column("insert_date", TypeName = "timestamp with time zone")]
         public DateTime InsertDate { get; set; }
 
         [Column("online_app", TypeName = "integer")]
         public int? OnlineApp { get; set; }
 
-        [Required(ErrorMessage = "Property 'IsOnlineMobile' is required")]
         [Column("is_online_mobile", TypeName = "boolean")]
         public bool IsOnlineMobile { get; set; }
 
-        [Required(ErrorMessage = "Property 'LastSeen' is required")]
         [Column("last_seen", TypeName = "integer")]
         public int LastSeen { get; set; }
-        public Func<VkActivityLogItem> GetItemToSave => () => this;
-        public Func<VkActivityLogItem, VkActivityLogItem> GetItemToUpdate => (existingItem) => this;
+        [JsonIgnore]
+        public Func<ActivityLogItem> GetItemToSave => () => this;
+        [JsonIgnore]
+        public Func<ActivityLogItem, ActivityLogItem> GetItemToUpdate => (existingItem) => this;
 
 
-        [NotMapped]
-        public VkUser VkUser { get; set; }
+        public User User { get; set; }
     }
 }

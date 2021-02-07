@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Zs.App.Home.Web.Areas.ApiVk.Models
 {
-    public class VkActivityLogItemVM
+    public class ActivityLogItemVM
     {
         public int Id { get; set; }
         public int UserId { get; set; }

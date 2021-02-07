@@ -10,7 +10,8 @@ namespace Zs.App.Home.Web.Areas.App.Controllers
     {
         public IActionResult Index()
         {
-            return View();
+            throw new NotImplementedException();
+            //return View();
         }
     }
 }

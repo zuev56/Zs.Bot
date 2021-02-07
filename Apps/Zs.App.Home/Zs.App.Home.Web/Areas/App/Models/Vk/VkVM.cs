@@ -15,7 +15,7 @@ namespace Zs.App.Home.Web.Areas.App.Models.Vk
 
 
 
-        public List<VkUserVM> VkUsers { get; set; }
+        public List<UserVM> VkUsers { get; set; }
 
         public VkVM()
         {

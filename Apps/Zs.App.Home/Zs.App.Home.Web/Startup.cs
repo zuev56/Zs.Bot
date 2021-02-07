@@ -6,9 +6,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Zs.App.Home.Data;
-using Zs.App.Home.Data.Models;
-using Zs.App.Home.Web.Areas.ApiVk.Services;
-using Zs.App.Home.Web.Areas.App.Services;
+using Zs.App.Home.Data.Models.Vk;
+using Zs.App.Home.Services.Vk;
 using Zs.Bot.Data.Abstractions;
 using Zs.Bot.Data.Repositories;
 using Zs.Common.Abstractions;
@@ -32,42 +31,17 @@ namespace Zs.App.Home.Web
                        .EnableDetailedErrors(true)
                        .EnableSensitiveDataLogging(true));
             
-            services.AddScoped<IContextFactory<HomeContext>, HomeContextFactory>(sp =>
-                new HomeContextFactory(sp.GetService<DbContextOptions<HomeContext>>()));
-
-            services.AddScoped<IRepository<VkActivityLogItem, int>, CommonRepository<HomeContext, VkActivityLogItem, int>>(sp =>
-                new CommonRepository<HomeContext, VkActivityLogItem, int>(
-                    sp.GetService<IContextFactory<HomeContext>>())
-                );
-
-            services.AddScoped<IRepository<VkUser, int>, CommonRepository<HomeContext, VkUser, int>>(sp =>
-                new CommonRepository<HomeContext, VkUser, int>(
-                    sp.GetService<IContextFactory<HomeContext>>())
-                );
-
-            services.AddScoped<IVkActivityService, VkActivityService>(sp =>
-                new VkActivityService(
-                    sp.GetService<IRepository<VkActivityLogItem, int>>(),
-                    sp.GetService<IRepository<VkUser, int>>())
-                );
-            services.AddScoped<IVkUserActivityPresenterService, VkUserActivityPresenterService>(sp =>
-                new VkUserActivityPresenterService(
-                    _configuration,
-                    sp.GetService<IRepository<VkActivityLogItem, int>>(),
-                    sp.GetService<IRepository<VkUser, int>>())
-                );
+            services.AddScoped<IContextFactory<HomeContext>, HomeContextFactory>();
+            services.AddScoped<IRepository<ActivityLogItem, int>, CommonRepository<HomeContext, ActivityLogItem, int>>();
+            services.AddScoped<IRepository<User, int>, CommonRepository<HomeContext, User, int>>();
+            services.AddScoped<IActivityService, ActivityService>();
+            //services.AddScoped<IVkUserActivityPresenterService, VkUserActivityPresenterService>();
 
             //services.AddDatabaseDeveloperPageExceptionFilter();
-
             //services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = false)
             //    .AddEntityFrameworkStores<ApplicationDbContext>();
 
             services.AddControllersWithViews();
-
-            //services.Configure<ForwardedHeadersOptions>(options =>
-            //{
-            //    options.KnownProxies.Add(IPAddress.Parse("192.168.1.11"));
-            //});
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
