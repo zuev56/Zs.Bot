@@ -5,8 +5,9 @@ using System.Net.NetworkInformation;
 using System.Threading;
 using Zs.Common.Enums;
 using Zs.Common.Abstractions;
+using Zs.Common.Services.Abstractions;
 
-namespace Zs.Common.Services.Connectors
+namespace Zs.Common.Services.Connection
 {
     /// <summary> <inheritdoc/> </summary>
     public class ConnectionAnalyser : IConnectionAnalyser

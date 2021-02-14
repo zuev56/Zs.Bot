@@ -21,7 +21,8 @@ using Zs.Bot.Services.Logging;
 using Zs.Bot.Services.Messaging;
 using Zs.Common.Abstractions;
 using Zs.Common.Extensions;
-using Zs.Common.Services.Connectors;
+using Zs.Common.Services.Abstractions;
+using Zs.Common.Services.Connection;
 using Zs.Common.Services.Scheduler;
 using BotContextFactory = Zs.Bot.Data.Factories.BotContextFactory;
 

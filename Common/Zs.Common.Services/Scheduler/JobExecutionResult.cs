@@ -1,10 +1,8 @@
-﻿namespace Zs.Common.Services.Scheduler
-{
-    public interface IJobExecutionResult
-    {
-        string TextValue { get; }
-    }
+﻿using System;
+using Zs.Common.Services.Abstractions;
 
+namespace Zs.Common.Services.Scheduler
+{    
     public class JobExecutionResult<TResult> : IJobExecutionResult
     {
         private readonly TResult _result;

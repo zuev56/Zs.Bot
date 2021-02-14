@@ -1,26 +1,10 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Zs.Common.Services.Abstractions;
 
 namespace Zs.Common.Services.Scheduler
 {
-    public interface IJob
-    {
-        long Counter { get; }
-        string Description { get; set; }
-        bool IsRunning { get; }
-        /// <summary> Количество холостых выполнений, когда логика джоба не будет выполняться. Для откладывания выполнения джоба </summary>
-        int IdleStepsCount { get; set; }
-        IJobExecutionResult LastResult { get; }
-        DateTime? LastRunDate { get; }
-        DateTime? NextRunDate { get; }
-        TimeSpan Period { get; }
-
-        event Action<IJob, IJobExecutionResult> ExecutionCompleted;
-
-        Task Execute();
-    }
-
     /// <summary>
     /// A specified series of operations performed sequentially by <see cref="Scheduler"/>
     /// </summary>

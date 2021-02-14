@@ -2,7 +2,7 @@
 using System.Net;
 using Zs.Common.Enums;
 
-namespace Zs.Common.Abstractions
+namespace Zs.Common.Services.Abstractions
 {
     /// <summary>
     /// Analyzes internet connection

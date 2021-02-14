@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zs.Common.Enums;
-using Zs.Common.Services.Connectors;
+using Zs.Common.Services.Connection;
 
 namespace Zs.UnitTest.Bot
 {

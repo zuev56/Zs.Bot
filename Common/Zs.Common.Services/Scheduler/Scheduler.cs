@@ -4,16 +4,10 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Zs.Common.Abstractions;
+using Zs.Common.Services.Abstractions;
 
 namespace Zs.Common.Services.Scheduler
 {
-    public interface IScheduler
-    {
-        List<IJob> Jobs { get; }
-        void Start(uint dueTimeMs, uint periodMs);
-        void Stop();
-    }
-
     public class Scheduler : IScheduler
     {
         private readonly IZsLogger _logger;

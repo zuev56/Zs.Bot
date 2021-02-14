@@ -7,7 +7,8 @@ using Zs.App.ChatAdmin.Abstractions;
 using Zs.Bot.Services.Messaging;
 using Zs.Common.Abstractions;
 using Zs.Common.Enums;
-using Zs.Common.Services.Connectors;
+using Zs.Common.Services.Abstractions;
+using Zs.Common.Services.Connection;
 using Zs.Common.Services.Scheduler;
 
 namespace Zs.App.ChatAdmin

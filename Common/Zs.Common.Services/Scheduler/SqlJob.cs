@@ -2,6 +2,7 @@
 using Npgsql;
 using Zs.Common.Enums;
 using Zs.Common.Extensions;
+using Zs.Common.Services.Abstractions;
 
 namespace Zs.Common.Services.Scheduler
 {
