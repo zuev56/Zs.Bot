@@ -2,6 +2,14 @@
 
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
+    <PackageId>Zs.Common.Services</PackageId>
+    <Version>5.0.2</Version>
+    <Authors>zuev56 (Sergei Zuev)</Authors>
+    <Company>zuev56 (Sergei Zuev)</Company>
+    <Description>
+      This library contains base services for web and bot development that are used in Zs.* projects
+    </Description>
+    <RepositoryUrl>https://github.com/zuev56/Zs.Bot/tree/master/Common/Zs.Common.Services</RepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>

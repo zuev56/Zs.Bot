@@ -16,7 +16,7 @@ namespace Zs.Common.Services.Scheduler
 
         public List<IJob> Jobs { get; } = new List<IJob>();
 
-
+        // TODO: take bool detailedLogging, not IConfiguration
         public Scheduler(IConfiguration configuration = null, IZsLogger logger = null)
         {
             if (bool.TryParse(configuration?["DetailedLogging"], out bool detailedLogging))

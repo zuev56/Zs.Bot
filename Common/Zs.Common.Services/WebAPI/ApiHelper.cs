@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Text.Json;
 using System.Threading.Tasks;
+using Zs.Common.Extensions;
 
 namespace Zs.Common.Services.WebAPI
 {
@@ -10,7 +10,7 @@ namespace Zs.Common.Services.WebAPI
     {
         private static readonly HttpClient _client = new HttpClient();
 
-        public static async Task<TResult> GetResponce<TResult>(
+        public static async Task<TResult> GetAsync<TResult>(
             string requestUri,
             string mediaType = null,
             string userAgent = null,
@@ -19,9 +19,7 @@ namespace Zs.Common.Services.WebAPI
             try
             {
                 PrepareClient(mediaType, userAgent);
-
-                var streamTask = _client.GetStreamAsync(requestUri);
-                return await JsonSerializer.DeserializeAsync<TResult>(await streamTask);
+                return await _client.GetAsync<TResult>(requestUri);
             }
             catch
             {
@@ -32,7 +30,7 @@ namespace Zs.Common.Services.WebAPI
             }
         }
 
-        public static async Task<string> GetResponce(
+        public static async Task<string> GetAsync(
             string requestUri,
             string mediaType = null,
             string userAgent = null,
@@ -43,7 +41,7 @@ namespace Zs.Common.Services.WebAPI
                 PrepareClient(mediaType, userAgent);
                 return await _client.GetStringAsync(requestUri);
             }
-            catch (Exception ex)
+            catch
             {
                 if (throwOnError)
                     throw;
@@ -61,8 +59,7 @@ namespace Zs.Common.Services.WebAPI
 
             if (mediaType != null)
             {
-                _client.DefaultRequestHeaders.Accept.Add(
-                    new MediaTypeWithQualityHeaderValue(mediaType));
+                _client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue(mediaType));
             }
 
             if (userAgent != null)

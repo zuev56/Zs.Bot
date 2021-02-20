@@ -2,8 +2,18 @@
 
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
+    <PackageId>Zs.Common</PackageId>
+    <Version>5.0.2</Version>
+    <Authors>zuev56 (Sergei Zuev)</Authors>
+    <Company>zuev56 (Sergei Zuev)</Company>
+    <Description>
+        This library contains base interfaces, models, extension methods, etc. that are used in Zs.* projects
+    </Description>
+    <RepositoryUrl>https://github.com/zuev56/Zs.Bot/tree/master/Common/Zs.Common</RepositoryUrl>
   </PropertyGroup>
-
+  
+  <!-- Сделать разделение на Common.DB, Common.Services, Common.Web(?) -->
+  
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="5.0.2" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="5.0.0" />

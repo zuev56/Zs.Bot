@@ -83,7 +83,7 @@ namespace Zs.App.Home.Bot
                     {
                         config.AddJsonFile(
                             configPath,
-                            optional: false, // is required
+                            optional: false,
                             reloadOnChange: true);
                     })
                     .ConfigureServices((hostContext, services) =>
