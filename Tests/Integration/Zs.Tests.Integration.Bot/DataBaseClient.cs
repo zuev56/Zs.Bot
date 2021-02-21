@@ -6,7 +6,7 @@ using Zs.Bot.Data;
 using Zs.Bot.Data.Factories;
 using Zs.Common.Abstractions;
 
-namespace Zs.UnitTest.Bot
+namespace Zs.Tests.Integration.Bot
 {
     [TestClass]
     public class DataBaseClient

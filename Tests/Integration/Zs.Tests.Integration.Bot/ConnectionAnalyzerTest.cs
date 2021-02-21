@@ -1,10 +1,10 @@
-﻿using System;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 using System.Threading.Tasks;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zs.Common.Enums;
 using Zs.Common.Services.Connection;
 
-namespace Zs.UnitTest.Bot
+namespace Zs.Tests.Integration.Bot
 {
     [TestClass]
     public class ConnectionAnalyzerTest

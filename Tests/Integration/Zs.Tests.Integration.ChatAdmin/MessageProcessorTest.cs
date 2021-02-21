@@ -2,7 +2,7 @@
 using System;
 using Zs.Bot.Data.Models;
 
-namespace Zs.UnitTest.App.ChatAdmin
+namespace Zs.Tests.Integration.ChatAdmin
 {
     [TestClass]
     public class MessageProcessorTest : DataBaseClient

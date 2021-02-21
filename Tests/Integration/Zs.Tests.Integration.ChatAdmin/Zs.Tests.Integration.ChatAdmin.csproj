@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Apps\Zs.App.ChatAdmin\Zs.App.ChatAdmin.Bot\Zs.App.ChatAdmin.Bot.csproj" />
+    <ProjectReference Include="..\..\..\Apps\Zs.App.ChatAdmin\Zs.App.ChatAdmin.Bot\Zs.App.ChatAdmin.Bot.csproj" />
   </ItemGroup>
 
 </Project>

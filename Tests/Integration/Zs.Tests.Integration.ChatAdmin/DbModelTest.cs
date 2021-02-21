@@ -4,7 +4,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zs.Bot.Data;
 using Zs.App.ChatAdmin.Model;
 
-namespace Zs.UnitTest.App.ChatAdmin
+namespace Zs.Tests.Integration.ChatAdmin
 {
     [TestClass]
     public class DbModelTest : DataBaseClient

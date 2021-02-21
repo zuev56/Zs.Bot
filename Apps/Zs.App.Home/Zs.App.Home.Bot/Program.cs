@@ -2,9 +2,9 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Newtonsoft.Json;
 using System;
 using System.IO;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Zs.App.Home.Data;
@@ -160,8 +160,7 @@ namespace Zs.App.Home.Bot
             catch (Exception ex)
             {
                 _reloadCounter++;
-                //Console.WriteLine(JsonSerializer.Serialize(ex).NormalizeJsonString());
-                Console.WriteLine(JsonConvert.SerializeObject(ex).NormalizeJsonString());
+                Console.WriteLine(JsonSerializer.Serialize(ex).NormalizeJsonString());
 
                 if (_reloadCounter < 3)
                 {

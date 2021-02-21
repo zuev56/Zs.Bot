@@ -1,12 +1,9 @@
-﻿using System;
-using System.IO;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 using Zs.Common.Enums;
 using Zs.Common.Extensions;
 
-namespace Zs.UnitTest.Tools
+namespace Zs.Tests.Integration.Common
 {
     [Flags]
     public enum EntityTypes

@@ -4,7 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace Zs.UnitTest.Tools
+namespace Zs.Tests.Integration.Common
 {
     [TestClass]
     public class TaskExperience

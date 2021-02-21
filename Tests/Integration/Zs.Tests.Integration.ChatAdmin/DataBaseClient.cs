@@ -7,7 +7,7 @@ using Zs.App.ChatAdmin.Data;
 using Zs.Bot.Data;
 using ChatAdminContextFactory = Zs.App.ChatAdmin.Data.ContextFactory;
 
-namespace Zs.UnitTest.App.ChatAdmin
+namespace Zs.Tests.Integration.ChatAdmin
 {
     [TestClass]
     public class DataBaseClient

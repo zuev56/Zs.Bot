@@ -5,7 +5,7 @@ using Zs.Bot.Data;
 using Zs.Bot.Data.Abstractions;
 using Zs.Bot.Data.Models;
 
-namespace Zs.UnitTest.Bot
+namespace Zs.Tests.Integration.Bot
 {
     [TestClass]
     public class TelegramExportedMessageParser : DataBaseClient

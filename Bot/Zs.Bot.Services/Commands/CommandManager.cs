@@ -6,7 +6,6 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json.Linq;
 using Npgsql;
 using Zs.Bot.Data.Abstractions;
 using Zs.Bot.Data.Models;
@@ -234,7 +233,7 @@ namespace Zs.Bot.Services.Commands
                 throw new ArgumentNullException(nameof(userRoleId));
 
             var role = await _userRolesRepo.FindAsync(r => r.Id == userRoleId);
-            var permissionsArray = JArray.Parse(role.Permissions).ToObject<string[]>();
+            var permissionsArray = JsonSerializer.Deserialize<string[]>(role.Permissions);// JArray.Parse(role.Permissions).ToObject<string[]>();
 
             var dbCommands = permissionsArray.Any(p => string.Equals(p, "All", StringComparison.InvariantCultureIgnoreCase))
                 ? await _commandsRepo.FindAllAsync()

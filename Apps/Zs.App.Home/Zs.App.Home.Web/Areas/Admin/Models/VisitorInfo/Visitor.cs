@@ -1,6 +1,7 @@
 ﻿using System;
+using System.Text.Encodings.Web;
+using System.Text.Json;
 using Microsoft.AspNetCore.Http;
-using Newtonsoft.Json;
 
 namespace Zs.App.Home.Web.Areas.Admin.Models.VisitorInfo
 {
@@ -15,21 +16,20 @@ namespace Zs.App.Home.Web.Areas.Admin.Models.VisitorInfo
 
         public Visitor(HttpContext httpContext)
         {
-            var serializerSettings = new JsonSerializerSettings()
+            var jsonSerializerOptions = new JsonSerializerOptions()
             {
-                Formatting = Formatting.Indented,
-                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-
+                WriteIndented = true,
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
             };
 
-            _connectionJson = JsonConvert.SerializeObject(new 
+            _connectionJson = JsonSerializer.Serialize(new 
             {
                ClientAddress = $"{httpContext.Connection.RemoteIpAddress}:{httpContext.Connection.RemotePort}",
                httpContext.Connection.ClientCertificate
-            }, serializerSettings);
-            _headersJson = JsonConvert.SerializeObject(httpContext.Request.Headers, serializerSettings);
-            _cookiesJson = JsonConvert.SerializeObject(httpContext.Request.Cookies, serializerSettings);
-            _hostJson = JsonConvert.SerializeObject(httpContext.Request.Host, serializerSettings);
+            }, jsonSerializerOptions);
+            _headersJson = JsonSerializer.Serialize(httpContext.Request.Headers, jsonSerializerOptions);
+            _cookiesJson = JsonSerializer.Serialize(httpContext.Request.Cookies, jsonSerializerOptions);
+            _hostJson = JsonSerializer.Serialize(httpContext.Request.Host, jsonSerializerOptions);
         }
 
     }

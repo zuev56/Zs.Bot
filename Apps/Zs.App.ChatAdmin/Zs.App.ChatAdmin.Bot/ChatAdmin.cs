@@ -78,7 +78,7 @@ namespace Zs.App.ChatAdmin
             _connectionAnalyser.Start(5000, 30000);
             _scheduler.Start(3000, 1000);
             await _messenger.AddMessageToOutboxAsync($"Bot started", "ADMIN");
-            _logger.LogInfoAsync($"{nameof(ChatAdmin)} started", nameof(ChatAdmin));
+            await _logger.LogInfoAsync($"{nameof(ChatAdmin)} started", nameof(ChatAdmin));
         }
 
         public Task StopAsync(CancellationToken cancellationToken)
@@ -123,7 +123,7 @@ namespace Zs.App.ChatAdmin
         {
             if (_detailedLogging || result?.TextValue != null)
             {
-                _logger.LogInfoAsync(
+                await _logger.LogInfoAsync(
                     $"Job execution completed{(job?.Description != null ? $" [{job.Description}]" : "")}",
                     result?.TextValue ?? "<null>",
                     nameof(ChatAdmin));

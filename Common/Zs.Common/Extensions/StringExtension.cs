@@ -1,9 +1,9 @@
-﻿using Newtonsoft.Json.Linq;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
@@ -11,10 +11,11 @@ namespace Zs.Common.Extensions
 {
     public static class StringExtension
     {
-        private static readonly JsonSerializerOptions prettyJsonSerializerOptions
-            = new JsonSerializerOptions() { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
-
-        // TODO: Replace Newtonsoft.Json with System.Text.Json
+        private static readonly JsonSerializerOptions prettyJsonSerializerOptions = new JsonSerializerOptions() 
+        { 
+            WriteIndented = true, 
+            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping 
+        };
 
         public static string GetMD5Hash(this string value)
         {
@@ -51,45 +52,15 @@ namespace Zs.Common.Extensions
             return Regex.Replace(value, @"[\d]", "");
         }
 
-        /// <summary> Sort parametres and make pretty JSON string </summary>
+        /// <summary> Sort parametres and make pretty JSON string </summary>        
         public static string NormalizeJsonString(this string json)
-        {
-            var jTocken = JToken.Parse(json);
-
-            if (jTocken is JObject)
-            {
-                var parsedObject = JObject.Parse(json);
-                var normalizedObject = SortPropertiesAlphabetically(parsedObject);
-
-                return Newtonsoft.Json.JsonConvert.SerializeObject(normalizedObject, Newtonsoft.Json.Formatting.Indented);
-            }
-            else if (jTocken is JArray)
-            {
-                var parsedArray = JArray.Parse(json);
-
-                for (int i = 0; i < parsedArray.Count; i++)
-                {
-                    var normalizedItem = parsedArray[i].ToString().NormalizeJsonString();
-                    parsedArray[i] = JToken.Parse(normalizedItem);
-                }
-                return Newtonsoft.Json.JsonConvert.SerializeObject(parsedArray, Newtonsoft.Json.Formatting.Indented);
-            }
-            else
-            {
-                return json;
-            }
-        }
-
-        // Test System.Text.Json
-        // JObject  -> JsonElement
-        public static string NormalizeJsonString_2(this string json)
         {
             // TEST performance
             var jsonElement = JsonSerializer.Deserialize<JsonElement>(json);
 
             if (jsonElement.ValueKind == JsonValueKind.Object)
             {
-                var normalizedJsonElement = SortPropertiesAlphabetically_2(jsonElement);
+                var normalizedJsonElement = SortPropertiesAlphabetically(jsonElement);
                 return JsonSerializer.Serialize(normalizedJsonElement, prettyJsonSerializerOptions);
             }
             else if (jsonElement.ValueKind == JsonValueKind.Array)
@@ -98,7 +69,7 @@ namespace Zs.Common.Extensions
 
                 for (int i = 0; i < jsonArray.Count; i++)
                 {
-                    var normalizedItem = jsonArray[i].ToString().NormalizeJsonString_2();
+                    var normalizedItem = jsonArray[i].ToString().NormalizeJsonString();
                     jsonArray[i] = JsonSerializer.Deserialize<JsonElement>(normalizedItem);
                 }
                 return JsonSerializer.Serialize(jsonArray, prettyJsonSerializerOptions);
@@ -109,27 +80,7 @@ namespace Zs.Common.Extensions
             }
         }
 
-        private static JObject SortPropertiesAlphabetically(JObject original)
-        {
-            var result = new JObject();
-
-            foreach (var property in original.Properties().ToList().OrderBy(p => p.Name))
-            {
-                var value = property.Value as JObject;
-
-                if (value != null)
-                {
-                    value = SortPropertiesAlphabetically(value);
-                    result.Add(property.Name, value);
-                }
-                else
-                    result.Add(property.Name, property.Value);
-            }
-
-            return result;
-        }
-        
-        private static JsonElement SortPropertiesAlphabetically_2(JsonElement original)
+        private static JsonElement SortPropertiesAlphabetically(JsonElement original)
         {
             bool IsObjectOrArray(JsonElement original) => original.ValueKind == JsonValueKind.Object || original.ValueKind == JsonValueKind.Array;
 
@@ -142,7 +93,7 @@ namespace Zs.Common.Extensions
                     // Для составных объектов сначала вызываем этот метод
                     if (IsObjectOrArray(properties[i].Value))
                     {
-                        var jsonElement = SortPropertiesAlphabetically_2(properties[i].Value);
+                        var jsonElement = SortPropertiesAlphabetically(properties[i].Value);
                         keyValuePairs.Add(properties[i].Name, jsonElement);
                     }
                     else
@@ -156,16 +107,13 @@ namespace Zs.Common.Extensions
             else if (original.ValueKind == JsonValueKind.Array)
             {
                 var elements = original.EnumerateArray().ToList();
-
-                // Если элементы массива - сложные объекты, то для каждого рекурсивно вызываем этот метод
                 if (elements.Count > 0 && IsObjectOrArray(elements[0]))
                 {
                     for (int i = 0; i < elements.Count; i++)
                     {
-                        elements[i] = SortPropertiesAlphabetically_2(elements[i]);
+                        elements[i] = SortPropertiesAlphabetically(elements[i]);
                     }
                 }
-                // Примитивные элементы массива не сортируем
 
                 var bytes = JsonSerializer.SerializeToUtf8Bytes(elements);
                 return JsonDocument.Parse(bytes).RootElement.Clone();

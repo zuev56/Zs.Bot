@@ -12,15 +12,14 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.8.3" />
     <PackageReference Include="MSTest.TestAdapter" Version="2.1.2" />
     <PackageReference Include="MSTest.TestFramework" Version="2.1.2" />
-    <PackageReference Include="Newtonsoft.Json.Schema" Version="3.0.14-beta2" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="5.0.2" />
     <PackageReference Include="System.Collections.Immutable" Version="5.0.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Bot\Messengers\Zs.Bot.Messenger.Telegram\Zs.Bot.Messenger.Telegram.csproj" />
-    <ProjectReference Include="..\..\Bot\Zs.Bot.Data\Zs.Bot.Data.csproj" />
-    <ProjectReference Include="..\..\Common\Zs.Common.Services\Zs.Common.Services.csproj" />
+    <ProjectReference Include="..\..\..\Bot\Messengers\Zs.Bot.Messenger.Telegram\Zs.Bot.Messenger.Telegram.csproj" />
+    <ProjectReference Include="..\..\..\Bot\Zs.Bot.Data\Zs.Bot.Data.csproj" />
+    <ProjectReference Include="..\..\..\Common\Zs.Common.Services\Zs.Common.Services.csproj" />
   </ItemGroup>
 
 </Project>

@@ -5,7 +5,7 @@ using Zs.Bot.Data;
 using Zs.Bot.Data.Models;
 using Zs.Common.Extensions;
 
-namespace Zs.UnitTest.Bot
+namespace Zs.Tests.Integration.Bot
 {
     [TestClass]
     public class ModelTest : DataBaseClient
