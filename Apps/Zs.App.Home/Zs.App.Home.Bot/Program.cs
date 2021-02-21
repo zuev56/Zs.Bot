@@ -2,9 +2,9 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Newtonsoft.Json;
 using System;
 using System.IO;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Zs.App.Home.Data;
@@ -21,7 +21,8 @@ using Zs.Bot.Services.Logging;
 using Zs.Bot.Services.Messaging;
 using Zs.Common.Abstractions;
 using Zs.Common.Extensions;
-using Zs.Common.Services.Connectors;
+using Zs.Common.Services.Abstractions;
+using Zs.Common.Services.Connection;
 using Zs.Common.Services.Scheduler;
 using BotContextFactory = Zs.Bot.Data.Factories.BotContextFactory;
 
@@ -82,7 +83,7 @@ namespace Zs.App.Home.Bot
                     {
                         config.AddJsonFile(
                             configPath,
-                            optional: false, // is required
+                            optional: false,
                             reloadOnChange: true);
                     })
                     .ConfigureServices((hostContext, services) =>
@@ -159,8 +160,7 @@ namespace Zs.App.Home.Bot
             catch (Exception ex)
             {
                 _reloadCounter++;
-                //Console.WriteLine(JsonSerializer.Serialize(ex).NormalizeJsonString());
-                Console.WriteLine(JsonConvert.SerializeObject(ex).NormalizeJsonString());
+                Console.WriteLine(JsonSerializer.Serialize(ex).NormalizeJsonString());
 
                 if (_reloadCounter < 3)
                 {

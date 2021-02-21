@@ -236,7 +236,7 @@ namespace Zs.App.Home.Services.Vk
                         + $"is_favorite,is_hidden_from_feed,timezone,screen_name,maiden_name,is_friend,friend_status,career,military,"
                         + $"blacklisted,blacklisted_by_me,can_be_invited_group&access_token={_accessToken}&v={_version.ToString(CultureInfo.InvariantCulture)}";
 
-                var response = await ApiHelper.GetResponce<ApiResponse>(url, throwOnError: true);
+                var response = await ApiHelper.GetAsync<ApiResponse>(url, throwOnError: true);
 
                 if (response is null)
                     return ServiceResult.Error("Response is null");
@@ -516,7 +516,7 @@ namespace Zs.App.Home.Services.Vk
                     result.MessageToAdd = InfoMessage.Success("Filling VkUsers repository");
                 }
 
-                var response = await ApiHelper.GetResponce<ApiResponse>(url, throwOnError: true);
+                var response = await ApiHelper.GetAsync<ApiResponse>(url, throwOnError: true);
 
                 if (response is null)
                 {

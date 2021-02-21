@@ -1,3 +1,3 @@
 ﻿using System.Runtime.CompilerServices;
 
-[assembly: InternalsVisibleTo("Zs.UnitTest")]
+[assembly: InternalsVisibleTo("Zs.IntegrationTest")]

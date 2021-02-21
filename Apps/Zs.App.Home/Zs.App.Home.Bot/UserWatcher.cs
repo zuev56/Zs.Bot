@@ -14,6 +14,7 @@ using Zs.Bot.Services.Messaging;
 using Zs.Common.Abstractions;
 using Zs.Common.Enums;
 using Zs.Common.Extensions;
+using Zs.Common.Services.Abstractions;
 using Zs.Common.Services.Scheduler;
 
 namespace Zs.App.Home.Bot

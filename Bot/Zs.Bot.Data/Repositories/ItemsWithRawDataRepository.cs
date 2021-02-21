@@ -1,7 +1,8 @@
 ﻿using System;
+using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json.Linq;
 using Zs.Bot.Data.Abstractions;
 using Zs.Common.Abstractions;
 using Zs.Common.Exceptions;
@@ -61,9 +62,11 @@ namespace Zs.Bot.Data.Repositories
                 // Иначе дополняем историю текущим значением RawData из БД
                 else if (newItem.RawDataHistory is not null)
                 {
-                    JArray rawDataHistory = JArray.Parse(newItem.RawDataHistory);
-                    rawDataHistory.Add(existingItem.RawData);
-                    newItem.RawDataHistory = rawDataHistory.ToString().NormalizeJsonString();
+                    var rawDataHistory = JsonSerializer.Deserialize<JsonElement>(newItem.RawDataHistory)
+                                                       .EnumerateArray()
+                                                       .ToList();
+                    rawDataHistory.Add(JsonSerializer.Deserialize<JsonElement>(existingItem.RawData));
+                    newItem.RawDataHistory = JsonSerializer.Serialize(rawDataHistory).NormalizeJsonString();
                 }
 
                 // Пересчитываем хеш

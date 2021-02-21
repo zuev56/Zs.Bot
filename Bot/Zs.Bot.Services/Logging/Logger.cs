@@ -3,8 +3,9 @@ using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text.Encodings.Web;
+using System.Text.Json;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 using Zs.Bot.Data;
 using Zs.Bot.Data.Abstractions;
 using Zs.Bot.Data.Models;
@@ -20,6 +21,12 @@ namespace Zs.Bot.Services.Logging
         private string _emergencyLogDirrectory = AppDomain.CurrentDomain.BaseDirectory;
         private readonly object _locker = new object();
         private readonly IRepository<Log, int> _logsRepo;
+        private readonly JsonSerializerOptions _jsonSerializerOptions = new JsonSerializerOptions()
+        {
+            WriteIndented = true,
+            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+            MaxDepth = 64
+        };
 
         public string EmergencyLogDirrectory
         {
@@ -46,7 +53,7 @@ namespace Zs.Bot.Services.Logging
 
         public async Task LogErrorAsync(Exception e, [CallerMemberName] string initiator = null)
         {
-            var jsonData = JsonConvert.SerializeObject(e, Formatting.Indented);
+            var jsonData = JsonSerializer.Serialize(e, _jsonSerializerOptions);
             await TrySaveToDatabase(InfoMessageType.Error, e.Message, initiator, jsonData);
         }
 
@@ -57,7 +64,7 @@ namespace Zs.Bot.Services.Logging
 
         public async Task LogInfoAsync<T>(string message, T data, [CallerMemberName] string initiator = null)
         {
-            var jsonData = JsonConvert.SerializeObject(data, Formatting.Indented);
+            var jsonData = JsonSerializer.Serialize(data, _jsonSerializerOptions);
             await TrySaveToDatabase(InfoMessageType.Info, message, initiator, jsonData);
         }
 
@@ -68,7 +75,7 @@ namespace Zs.Bot.Services.Logging
 
         public async Task LogWarningAsync<T>(string message, T data, [CallerMemberName] string initiator = null)
         {
-            var jsonData = JsonConvert.SerializeObject(data, Formatting.Indented);
+            var jsonData = JsonSerializer.Serialize(data, _jsonSerializerOptions);
             await TrySaveToDatabase(InfoMessageType.Warning, message, initiator, jsonData);
         }
 

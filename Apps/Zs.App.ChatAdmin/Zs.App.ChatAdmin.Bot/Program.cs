@@ -1,11 +1,11 @@
-﻿using System;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using Zs.App.ChatAdmin.Abstractions;
 using Zs.App.ChatAdmin.Data;
 using Zs.Bot.Data;
@@ -19,7 +19,8 @@ using Zs.Bot.Services.DataSavers;
 using Zs.Bot.Services.Logging;
 using Zs.Bot.Services.Messaging;
 using Zs.Common.Abstractions;
-using Zs.Common.Services.Connectors;
+using Zs.Common.Services.Abstractions;
+using Zs.Common.Services.Connection;
 using Zs.Common.Services.Scheduler;
 using ChatAdminContextFactory = Zs.App.ChatAdmin.Data.ContextFactory;
 
@@ -80,13 +81,11 @@ namespace Zs.App.ChatAdmin
                                    .EnableDetailedErrors(true)
                                    .EnableSensitiveDataLogging(true));
 
-                        services.AddSingleton<IContextFactory, ChatAdminContextFactory>(sp =>
-                            new ChatAdminContextFactory(sp.GetService<DbContextOptions<BotContext>>(), sp.GetService<DbContextOptions<ChatAdminContext>>()));
+                        services.AddSingleton<IContextFactory, ChatAdminContextFactory>();
 
-                        services.AddSingleton<IContextFactory<BotContext>, BotContextFactory>(sp =>
-                            new BotContextFactory(sp.GetService<DbContextOptions<BotContext>>()));
+                        services.AddSingleton<IContextFactory<BotContext>, BotContextFactory>();
 
-                        services.AddSingleton<IZsLogger, Logger>(sp => new Logger(sp.GetService<IRepository<Log, int>>()));
+                        services.AddSingleton<IZsLogger, Logger>();
 
                         services.AddScoped<IConnectionAnalyser, ConnectionAnalyser>(sp =>
                         {
@@ -111,15 +110,8 @@ namespace Zs.App.ChatAdmin
                                 sp.GetService<IZsLogger>())
                             );
 
-                        services.AddScoped<IMessageDataSaver, MessageDataDBSaver>(sp => 
-                            new MessageDataDBSaver(
-                                sp.GetService<IItemsWithRawDataRepository<Chat, int>>(),
-                                sp.GetService<IItemsWithRawDataRepository<User, int>>(),
-                                sp.GetService<IItemsWithRawDataRepository<Message, int>>(),
-                                sp.GetService<IZsLogger>())
-                            );
-
-                        services.AddScoped<IMessageProcessor, MessageProcessor>(sp => 
+                        services.AddScoped<IMessageDataSaver, MessageDataDBSaver>();
+                        services.AddScoped<IMessageProcessor, MessageProcessor>(sp =>
                             new MessageProcessor(
                                 sp.GetService<IConfiguration>(),
                                 sp.GetService<IMessenger>(),
@@ -127,11 +119,7 @@ namespace Zs.App.ChatAdmin
                                 sp.GetService<IZsLogger>())
                             );
 
-                        services.AddScoped<IScheduler, Scheduler>(sp =>
-                            new Scheduler(
-                                sp.GetService<IConfiguration>(),
-                                sp.GetService<IZsLogger>())
-                            );
+                        services.AddScoped<IScheduler, Scheduler>();
                         services.AddScoped<ICommandManager, CommandManager>(sp =>
                             new CommandManager(
                                 hostContext.Configuration.GetConnectionString("Default"),
@@ -141,31 +129,12 @@ namespace Zs.App.ChatAdmin
                                 sp.GetService<IZsLogger>())
                             );
 
-                        services.AddScoped<IRepository<Log, int>, CommonRepository<BotContext, Log, int>>(sp =>
-                            new CommonRepository<BotContext, Log, int>(
-                                sp.GetService<IContextFactory<BotContext>>())
-                            );
-                        services.AddScoped<IRepository<Command, string>, CommonRepository<BotContext, Command, string>>(sp =>
-                            new CommonRepository<BotContext, Command, string>(
-                                sp.GetService<IContextFactory<BotContext>>())
-                            );
-                        services.AddScoped<IRepository<UserRole, string>, CommonRepository<BotContext, UserRole, string>>(sp =>
-                            new CommonRepository<BotContext, UserRole, string>(
-                                sp.GetService<IContextFactory<BotContext>>())
-                            );
-                        services.AddScoped<IItemsWithRawDataRepository<Chat, int>, ItemsWithRawDataRepository<BotContext, Chat, int>>(sp =>
-                            new ItemsWithRawDataRepository<BotContext, Chat, int>(
-                                sp.GetService<IContextFactory<BotContext>>())
-                            );
-                        services.AddScoped<IItemsWithRawDataRepository<User, int>, ItemsWithRawDataRepository<BotContext, User, int>>(sp =>
-                            new ItemsWithRawDataRepository<BotContext, User, int>(
-                                sp.GetService<IContextFactory<BotContext>>())
-                            );
-                        services.AddScoped<IItemsWithRawDataRepository<Message, int>, ItemsWithRawDataRepository<BotContext, Message, int>>(sp =>
-                            new ItemsWithRawDataRepository<BotContext, Message, int>(
-                                sp.GetService<IContextFactory<BotContext>>())
-                            );
-
+                        services.AddScoped<IRepository<Log, int>, CommonRepository<BotContext, Log, int>>();
+                        services.AddScoped<IRepository<Command, string>, CommonRepository<BotContext, Command, string>>();
+                        services.AddScoped<IRepository<UserRole, string>, CommonRepository<BotContext, UserRole, string>>();
+                        services.AddScoped<IItemsWithRawDataRepository<Chat, int>, ItemsWithRawDataRepository<BotContext, Chat, int>>();
+                        services.AddScoped<IItemsWithRawDataRepository<User, int>, ItemsWithRawDataRepository<BotContext, User, int>>();
+                        services.AddScoped<IItemsWithRawDataRepository<Message, int>, ItemsWithRawDataRepository<BotContext, Message, int>>();
 
                         services.AddSingleton<IHostedService, ChatAdmin>(sp =>
                             ActivatorUtilities.CreateInstance<ChatAdmin>(sp));
