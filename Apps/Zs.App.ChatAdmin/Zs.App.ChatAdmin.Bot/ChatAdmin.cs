@@ -31,7 +31,8 @@ namespace Zs.App.ChatAdmin
         private readonly IMessageProcessor _messageProcessor;
         private readonly IConnectionAnalyser _connectionAnalyser;
         private readonly IContextFactory _contextFactory;
-        private readonly bool _detailedLogging;
+        [Obsolete]
+        private readonly bool _detailedLogging = false;
 
 
         public ChatAdmin(
@@ -60,11 +61,6 @@ namespace Zs.App.ChatAdmin
 
                 _scheduler = scheduler ?? throw new ArgumentNullException(nameof(scheduler));
                 CreateJobs();
-
-                if (bool.TryParse(_configuration?["DetailedLogging"], out bool detailedLogging))
-                {
-                    _detailedLogging = detailedLogging;
-                }
             }
             catch (Exception ex)
             {

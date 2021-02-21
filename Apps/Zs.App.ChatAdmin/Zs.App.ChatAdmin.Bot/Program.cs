@@ -37,6 +37,7 @@ namespace Zs.App.ChatAdmin
             {
                 if (args?.Length == 0)
                 {
+                    // TODO: read all json files in directory
                     var localConfig = Path.Combine(Directory.GetCurrentDirectory(), "configuration.json");
                     args = new[] { localConfig };
                 }
@@ -91,7 +92,7 @@ namespace Zs.App.ChatAdmin
                         {
                             var ca = new ConnectionAnalyser(sp.GetService<IZsLogger>(),
                                 "https://vk.com/", "https://yandex.ru/", "https://www.google.ru/");
-                            if (hostContext.Configuration["Proxy:Socket"] != null)
+                            if (hostContext.Configuration.GetSection("Proxy:UseProxy")?.Get<bool>() == true)
                                 ca.InitializeProxy(hostContext.Configuration["Proxy:Socket"],
                                     hostContext.Configuration["Proxy:Login"],
                                     hostContext.Configuration["Proxy:Password"]);

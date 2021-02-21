@@ -105,12 +105,11 @@ namespace Zs.App.Home.Bot
                         services.AddScoped<IConnectionAnalyser, ConnectionAnalyser>(sp =>
                         {
                             var ca = new ConnectionAnalyser(sp.GetService<IZsLogger>(), "https://vk.com/", "https://yandex.ru/", "https://www.google.ru/");
-                            if (hostContext.Configuration["ProxySocket"] != null)
+                            if (hostContext.Configuration.GetSection("Proxy:UseProxy")?.Get<bool>() == true)
                                 ca.InitializeProxy(
-                                    hostContext.Configuration["ProxySocket"],
-                                    hostContext.Configuration["ProxyLogin"],
-                                    hostContext.Configuration["ProxyPassword"]
-                                    );
+                                    hostContext.Configuration["Proxy:Socket"],
+                                    hostContext.Configuration["Proxy:Login"],
+                                    hostContext.Configuration["Proxy:Password"]);
                             return ca;
                         });
 

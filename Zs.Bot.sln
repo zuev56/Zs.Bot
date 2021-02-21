@@ -28,7 +28,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.editorconfig = .editorconfig
 		.filenesting.json = .filenesting.json
 		PrivateConfiguration.json = PrivateConfiguration.json
-		PrivateConfiguration_Example_20210206.json = PrivateConfiguration_Example_20210206.json
+		PrivateConfiguration_Example_20210221.json = PrivateConfiguration_Example_20210221.json
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Api", "Api", "{9C4F1BF3-3AEA-4FD5-85AC-13ACE38A5357}"

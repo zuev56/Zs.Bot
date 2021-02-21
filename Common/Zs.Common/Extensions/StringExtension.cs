@@ -55,7 +55,6 @@ namespace Zs.Common.Extensions
         /// <summary> Sort parametres and make pretty JSON string </summary>        
         public static string NormalizeJsonString(this string json)
         {
-            // TEST performance
             var jsonElement = JsonSerializer.Deserialize<JsonElement>(json);
 
             if (jsonElement.ValueKind == JsonValueKind.Object)
@@ -90,7 +89,6 @@ namespace Zs.Common.Extensions
                 var keyValuePairs = new Dictionary<string, JsonElement>(properties.Count);
                 for (int i = 0; i < properties.Count; i++)
                 {
-                    // Для составных объектов сначала вызываем этот метод
                     if (IsObjectOrArray(properties[i].Value))
                     {
                         var jsonElement = SortPropertiesAlphabetically(properties[i].Value);
@@ -121,6 +119,6 @@ namespace Zs.Common.Extensions
             else
                 return original;
         }
-
     }
+
 }

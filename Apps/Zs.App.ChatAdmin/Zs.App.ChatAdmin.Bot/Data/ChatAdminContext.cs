@@ -27,19 +27,10 @@ namespace Zs.App.ChatAdmin.Data
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            // optionsBuilder.UseNpgsql(connectionString) выполняется в Startup.cs
-            //var solutionDir = Common.Extensions.Path.TryGetSolutionPath();
-            //var configuration = new ConfigurationBuilder()
-            //    .AddJsonFile(System.IO.Path.Combine(solutionDir, "PrivateConfiguration.json"), optional: false)
-            //    .Build();
-            //var connectionString = configuration.GetConnectionString("Default");
-
-            //optionsBuilder.UseNpgsql(connectionString);
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            //modelBuilder.UseCollation("SQL_Latin1_General_CP1_CI_AS");
             modelBuilder.UseSerialColumns();
 
             BotContext.SetDefaultValues(modelBuilder);

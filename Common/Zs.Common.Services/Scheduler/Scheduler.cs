@@ -12,17 +12,13 @@ namespace Zs.Common.Services.Scheduler
     {
         private readonly IZsLogger _logger;
         private Timer _timer;
+        [Obsolete]
         private readonly bool _detailedLogging;
 
         public List<IJob> Jobs { get; } = new List<IJob>();
 
-        // TODO: take bool detailedLogging, not IConfiguration
-        public Scheduler(IConfiguration configuration = null, IZsLogger logger = null)
+        public Scheduler(IZsLogger logger = null)
         {
-            if (bool.TryParse(configuration?["DetailedLogging"], out bool detailedLogging))
-            {
-                _detailedLogging = detailedLogging;
-            }
             _logger = logger;
         }
 
