@@ -14,6 +14,7 @@ using Zs.Common.Enums;
 
 namespace Zs.Bot.Services.Logging
 {
+    [Obsolete("Use Microsoft.Extensions.Logging")]
     public class Logger : IZsLogger
     {
         private static int _logMessageMaxLength = -1;

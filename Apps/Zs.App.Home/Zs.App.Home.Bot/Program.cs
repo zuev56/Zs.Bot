@@ -2,6 +2,8 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Serilog;
 using System;
 using System.IO;
 using System.Text.Json;
@@ -17,7 +19,6 @@ using Zs.Bot.Data.Repositories;
 using Zs.Bot.Messenger.Telegram;
 using Zs.Bot.Services.Commands;
 using Zs.Bot.Services.DataSavers;
-using Zs.Bot.Services.Logging;
 using Zs.Bot.Services.Messaging;
 using Zs.Common.Abstractions;
 using Zs.Common.Extensions;
@@ -38,6 +39,7 @@ namespace Zs.App.Home.Bot
             {
                 if (args?.Length == 0)
                 {
+                    // TODO: read all json files in directory
                     var localConfig = System.IO.Path.Combine(Directory.GetCurrentDirectory(), "configuration.json");
                     args = new[] { localConfig };
                 }
@@ -48,7 +50,11 @@ namespace Zs.App.Home.Bot
                 if (!File.Exists(args[0]))
                     throw new FileNotFoundException($"Wrong configuration path:\n{args[0]}");
 
-                await ServiceLoader(args[0]);
+                var configuration = new ConfigurationBuilder()
+                   .AddJsonFile(args[0], optional: false, reloadOnChange: true)
+                   .Build();
+
+                await ServiceLoader(configuration);
             }
             catch (Exception ex)
             {
@@ -71,40 +77,31 @@ namespace Zs.App.Home.Bot
             catch { }
         }
 
-        public static async Task ServiceLoader(string configPath)
+        public static async Task ServiceLoader(IConfiguration configuration)
         {
+            Serilog.Log.Logger = new LoggerConfiguration()
+                .ReadFrom.Configuration(configuration, "Serilog")
+                .CreateLogger();
+
             try
             {
-                if (configPath is null)
-                    throw new ArgumentNullException(nameof(configPath));
-
                 var builder = new HostBuilder()
-                    .ConfigureAppConfiguration((hostingContext, config) =>
-                    {
-                        config.AddJsonFile(
-                            configPath,
-                            optional: false,
-                            reloadOnChange: true);
-                    })
+                    .ConfigureAppConfiguration((hostingContext, config) => config.AddConfiguration(configuration))
+                    .ConfigureLogging(logging => logging.AddSerilog())
                     .ConfigureServices((hostContext, services) =>
                     {
                         services.AddDbContext<HomeContext>(options =>
-                            options.UseNpgsql(hostContext.Configuration.GetConnectionString("Default"))
-                                   .EnableDetailedErrors(true)
-                                   .EnableSensitiveDataLogging(true));
+                            options.UseNpgsql(hostContext.Configuration.GetConnectionString("Default")));
 
                         services.AddDbContext<BotContext>(options  =>
-                            options.UseNpgsql(hostContext.Configuration.GetConnectionString("Default"))
-                                   .EnableDetailedErrors(true)
-                                   .EnableSensitiveDataLogging(true));
+                            options.UseNpgsql(hostContext.Configuration.GetConnectionString("Default")));
 
                         services.AddSingleton<IContextFactory<BotContext>, BotContextFactory>();                        
                         services.AddSingleton<IContextFactory<HomeContext>, HomeContextFactory>();
-                        services.AddSingleton<IZsLogger, Logger>();
 
                         services.AddScoped<IConnectionAnalyser, ConnectionAnalyser>(sp =>
                         {
-                            var ca = new ConnectionAnalyser(sp.GetService<IZsLogger>(), "https://vk.com/", "https://yandex.ru/", "https://www.google.ru/");
+                            var ca = new ConnectionAnalyser(sp.GetService<ILogger<ConnectionAnalyser>>(), "https://vk.com/", "https://yandex.ru/", "https://www.google.ru/");
                             if (hostContext.Configuration.GetSection("Proxy:UseProxy")?.Get<bool>() == true)
                                 ca.InitializeProxy(
                                     hostContext.Configuration["Proxy:Socket"],
@@ -124,30 +121,28 @@ namespace Zs.App.Home.Bot
                                 sp.GetService<IMessageDataSaver>(),
                                 sp.GetService<ICommandManager>(),
                                 sp.GetService<IConnectionAnalyser>().WebProxy,
-                                sp.GetService<IZsLogger>())
+                                sp.GetService<ILogger<TelegramMessenger>>())
                             );
 
                         services.AddScoped<IRepository<ActivityLogItem, int>, CommonRepository<HomeContext, ActivityLogItem, int>>();
                         services.AddScoped<IRepository<Data.Models.Vk.User, int>, CommonRepository<HomeContext, Data.Models.Vk.User, int>>();
-
-                        services.AddScoped<IRepository<Log, int>, CommonRepository<BotContext, Log, int>>();
+                        services.AddScoped<IRepository<Command, string>, CommonRepository<BotContext, Command, string>>();
+                        services.AddScoped<IRepository<UserRole, string>, CommonRepository<BotContext, UserRole, string>>();
+                        services.AddScoped<IRepository<Zs.Bot.Data.Models.Log, int>, CommonRepository<BotContext, Zs.Bot.Data.Models.Log, int>>();
                         services.AddScoped<IItemsWithRawDataRepository<Chat, int>, ItemsWithRawDataRepository<BotContext, Chat, int>>();
                         services.AddScoped<IItemsWithRawDataRepository<Zs.Bot.Data.Models.User, int>, ItemsWithRawDataRepository<BotContext, Zs.Bot.Data.Models.User, int>>();
                         services.AddScoped<IItemsWithRawDataRepository<Message, int>, ItemsWithRawDataRepository<BotContext, Message, int>>();
 
                         services.AddScoped<IActivityService, ActivityService>();
-
                         services.AddScoped<IScheduler, Scheduler>();
 
-                        services.AddScoped<IRepository<Command, string>, CommonRepository<BotContext, Command, string>>();
-                        services.AddScoped<IRepository<UserRole, string>, CommonRepository<BotContext, UserRole, string>>();
                         services.AddScoped<ICommandManager, CommandManager>(sp =>
                             new CommandManager(
                                 hostContext.Configuration.GetConnectionString("Default"),
                                 sp.GetService<IRepository<Command, string>>(),
                                 sp.GetService<IRepository<UserRole, string>>(),
                                 sp.GetService<IItemsWithRawDataRepository<Zs.Bot.Data.Models.User, int>>(),
-                                sp.GetService<IZsLogger>())
+                                sp.GetService<ILogger<CommandManager>>())
                             );
 
                         services.AddSingleton<IHostedService, UserWatcher>(x =>
@@ -164,7 +159,7 @@ namespace Zs.App.Home.Bot
                 if (_reloadCounter < 3)
                 {
                     Thread.Sleep(1000);
-                    await ServiceLoader(configPath).ConfigureAwait(false);
+                    await ServiceLoader(configuration).ConfigureAwait(false);
                 }
 
                 Console.ReadLine();

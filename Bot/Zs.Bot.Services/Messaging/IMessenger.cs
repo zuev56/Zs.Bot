@@ -26,7 +26,7 @@ namespace Zs.Bot.Services.Messaging
 
 
         /// <summary> Add a text message to the queue for sending </summary>
-        Task AddMessageToOutboxAsync(Chat chat, string messageText, Message messageToReply = null);
+        Task AddMessageToOutbox(Chat chat, string messageText, Message messageToReply = null);
 
         /// <summary> Add a text message to the queue for sending </summary>
         Task AddMessageToOutboxAsync(string messageText, params string[] userRoleCodes);

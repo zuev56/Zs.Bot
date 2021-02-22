@@ -6,6 +6,7 @@ using System.Threading;
 using Zs.Common.Enums;
 using Zs.Common.Abstractions;
 using Zs.Common.Services.Abstractions;
+using Microsoft.Extensions.Logging;
 
 namespace Zs.Common.Services.Connection
 {
@@ -13,7 +14,7 @@ namespace Zs.Common.Services.Connection
     public class ConnectionAnalyser : IConnectionAnalyser
     {
         private readonly object _locker = new object();
-        private readonly IZsLogger _logger;
+        private readonly ILogger<ConnectionAnalyser> _logger;
         private readonly string[] _internetServers;
         private Timer _timer;
 
@@ -36,7 +37,7 @@ namespace Zs.Common.Services.Connection
             _internetServers = testHosts?.Length > 0 ? testHosts : throw new ArgumentException($"{nameof(testHosts)} must contains at least 1 element");
         }
 
-        public ConnectionAnalyser(IZsLogger logger, params string[] testHosts)
+        public ConnectionAnalyser(ILogger<ConnectionAnalyser> logger, params string[] testHosts)
             : this(testHosts)
         {
             _logger = logger;
@@ -50,11 +51,11 @@ namespace Zs.Common.Services.Connection
                 _timer = new Timer(new TimerCallback(AnalyzeConnection));
                 _timer.Change(dueTime, period);
 
-                _logger?.LogInfoAsync($"{nameof(ConnectionAnalyser)} started", nameof(ConnectionAnalyser));
+                _logger?.LogInformation($"{nameof(ConnectionAnalyser)} started");
             }
             catch (Exception ex)
             {
-                _logger?.LogErrorAsync(ex, nameof(ConnectionAnalyser));
+                _logger?.LogError(ex, $"{nameof(ConnectionAnalyser)} starting error");
             }
         }
 
@@ -64,11 +65,11 @@ namespace Zs.Common.Services.Connection
             try
             {
                 _timer.Dispose();
-                _logger?.LogInfoAsync($"{nameof(ConnectionAnalyser)} stopped", nameof(ConnectionAnalyser));
+                _logger?.LogInformation($"{nameof(ConnectionAnalyser)} stopped");
             }
             catch (Exception ex)
             {
-                _logger?.LogErrorAsync(ex, nameof(ConnectionAnalyser));
+                _logger?.LogInformation(ex, $"{nameof(ConnectionAnalyser)} stopping error");
             }
         }
 
@@ -79,9 +80,8 @@ namespace Zs.Common.Services.Connection
             if (!string.IsNullOrWhiteSpace(userName)
                 && !string.IsNullOrWhiteSpace(password))
             {
-                var credentials = new NetworkCredential(userName, password);
-                WebProxy.Credentials = credentials;
-                _logger?.LogInfoAsync("Proxy used", nameof(ConnectionAnalyser));
+                WebProxy.Credentials = new NetworkCredential(userName, password);
+                _logger?.LogInformation("Proxy used", nameof(ConnectionAnalyser));
             }
         }
 
@@ -148,7 +148,7 @@ namespace Zs.Common.Services.Connection
                     if (analyzeResult != CurrentStatus)
                     {
                         CurrentStatus = analyzeResult;
-                        _logger?.LogInfoAsync($"Connection status changed: {CurrentStatus}", nameof(ConnectionAnalyser));
+                        _logger?.LogInformation($"Connection status changed: {CurrentStatus}");
 
                         ConnectionStatusChanged?.Invoke(CurrentStatus);
                     }
@@ -156,7 +156,7 @@ namespace Zs.Common.Services.Connection
             }
             catch (Exception ex)
             {
-                _logger?.LogErrorAsync(ex, nameof(ConnectionAnalyser));
+                _logger?.LogError(ex, "Connection analyze error");
             }
         }
 

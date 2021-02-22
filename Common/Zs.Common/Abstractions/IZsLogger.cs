@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace Zs.Common.Abstractions
 {
-
+    [Obsolete("Use Microsoft.Extensions.Logging")]
     public interface IZsLogger
     {
         string EmergencyLogDirrectory { get; set; }

@@ -1,15 +1,15 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Npgsql;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
-using Npgsql;
 using Zs.Bot.Data.Abstractions;
 using Zs.Bot.Data.Models;
-using Zs.Common.Abstractions;
 using Zs.Common.Exceptions;
 using Zs.Common.Extensions;
 using Zs.Common.Helpers;
@@ -22,7 +22,7 @@ namespace Zs.Bot.Services.Commands
     public class CommandManager : ICommandManager
     {
         private readonly string _connectionString;
-        private readonly IZsLogger _logger;
+        private readonly ILogger<CommandManager> _logger;
         private readonly IRepository<Command, string> _commandsRepo;
         private readonly IRepository<UserRole, string> _userRolesRepo;
         private readonly IItemsWithRawDataRepository<User, int> _usersRepo;
@@ -35,7 +35,7 @@ namespace Zs.Bot.Services.Commands
             IRepository<Command, string> commandsRepo,
             IRepository<UserRole, string> userRolesRepo,
             IItemsWithRawDataRepository<User, int> usersRepo,
-            IZsLogger logger = null)
+            ILogger<CommandManager> logger = null)
         {
             if (string.IsNullOrWhiteSpace(connectionString))
                 throw new ArgumentException(nameof(connectionString));
@@ -58,7 +58,7 @@ namespace Zs.Bot.Services.Commands
 
         private void EnqueueCommand(BotCommand command)
         {
-            _logger?.LogInfoAsync("Command received", command, nameof(CommandManager));
+            _logger?.LogInformation("Command received", command, nameof(CommandManager));
             _commandBuffer.Enqueue(command);
         }
 
@@ -110,13 +110,13 @@ namespace Zs.Bot.Services.Commands
                         catch (PostgresException pEx)
                         {
                             pEx.Data.Add("BotCommand", botCommand);
-                            _logger?.LogErrorAsync(pEx, nameof(CommandManager));
-                            cmdExecResult = "Command execution: request processing error!";
+                            _logger?.LogError(pEx, nameof(CommandManager));
+                            cmdExecResult = "Command execution: query processing error!";
                         }
                         catch (Exception ex)
                         {
                             ex.Data.Add("BotCommand", botCommand);
-                            _logger?.LogErrorAsync(ex, nameof(CommandManager));
+                            _logger?.LogError(ex, "Command execution error");
 
                             cmdExecResult = ex.Message == "Column is null"
                                 ? "NULL"
@@ -134,7 +134,8 @@ namespace Zs.Bot.Services.Commands
             }
             catch (Exception ex)
             {
-                _logger?.LogErrorAsync(ex, nameof(CommandManager));
+                ex.Data.Add("BotCommand", botCommand);
+                _logger?.LogError(ex, "Command execution error");
                 return $"Command '{botCommand.Name}' execution failed!";
             }
 
@@ -208,7 +209,7 @@ namespace Zs.Bot.Services.Commands
             catch (Exception ex)
             {
                 ex.Data.Add("Command", logCmdName);
-                _logger?.LogErrorAsync(ex, nameof(CommandManager));
+                _logger?.LogError(ex, "Commands queue processing error");
             }
         }
 
@@ -264,7 +265,7 @@ namespace Zs.Bot.Services.Commands
 
                     if (botCommand != null)
                     {
-                        _logger?.LogInfoAsync("Command received", botCommand, nameof(CommandManager));
+                        _logger?.LogInformation("Command received", botCommand);
                         EnqueueCommand(botCommand);
                         return true;
                     }
@@ -274,7 +275,7 @@ namespace Zs.Bot.Services.Commands
             }
             catch (Exception e)
             {
-                _logger?.LogErrorAsync(e, nameof(CommandManager));
+                _logger?.LogError(e, "Command enqueuing error");
                 return false;
             }
             

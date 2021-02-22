@@ -1,11 +1,12 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System;
 using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Telegram.Bot;
 using Telegram.Bot.Args;
 using Telegram.Bot.Exceptions;
@@ -15,7 +16,6 @@ using Zs.Bot.Data.Models;
 using Zs.Bot.Services.Commands;
 using Zs.Bot.Services.DataSavers;
 using Zs.Bot.Services.Messaging;
-using Zs.Common.Abstractions;
 using Zs.Common.Enums;
 using Zs.Common.Helpers;
 using TelegramChat = Telegram.Bot.Types.Chat;
@@ -27,7 +27,7 @@ namespace Zs.Bot.Messenger.Telegram
 {
     public class TelegramMessenger : IMessenger
     {
-        private readonly IZsLogger _logger;
+        private readonly ILogger<TelegramMessenger> _logger;
         private readonly IItemsWithRawDataRepository<Chat, int> _chatsRepo;
         private readonly IItemsWithRawDataRepository<User, int> _usersRepo;
         private readonly IItemsWithRawDataRepository<Message, int> _messagesRepo;
@@ -43,7 +43,7 @@ namespace Zs.Bot.Messenger.Telegram
         public event EventHandler<MessageActionEventArgs> MessageReceived;
         public event EventHandler<MessageActionEventArgs> MessageSent;
         public event EventHandler<MessageActionEventArgs> MessageDeleted;
-        public bool ApiLogIsEnabled { get; set; } = false;
+
         public IToGenegalItemConverter ItemConverter { get; set; } = new ItemConverter();
 
 
@@ -55,7 +55,7 @@ namespace Zs.Bot.Messenger.Telegram
             IMessageDataSaver messageDataSaver = null,
             ICommandManager commandManager = null,
             IWebProxy webProxy = null,
-            IZsLogger logger = null)
+            ILogger<TelegramMessenger> logger = null)
         {
             try
             {
@@ -106,15 +106,12 @@ namespace Zs.Bot.Messenger.Telegram
                     UpdateType.Poll,
                     UpdateType.PollAnswer
                 });
-#if DEBUG
-                ApiLogIsEnabled = false;
-#endif
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                var te = new TypeInitializationException(typeof(TelegramMessenger).FullName, e);
+                var tex = new TypeInitializationException(typeof(TelegramMessenger).FullName, ex);
                 if (_logger != null)
-                    _logger?.LogErrorAsync(te, nameof(TelegramMessenger));
+                    _logger?.LogError(tex, $"{nameof(TelegramMessenger)} initialization error");
                 else
                     throw;
             }
@@ -124,53 +121,46 @@ namespace Zs.Bot.Messenger.Telegram
 
         private void BotClient_ApiResponseReceived(object sender, ApiResponseEventArgs e)
         {
-            if (ApiLogIsEnabled)
-                _logger?.LogInfoAsync("ApiResponseReceived", e.ResponseMessage, "Telegram.Bot.API");
+            _logger?.LogTrace("ApiResponseReceived", e);
         }
 
         private void BotClient_MakingApiRequest(object sender, ApiRequestEventArgs e)
         {
-            if (ApiLogIsEnabled)
-                _logger?.LogInfoAsync("MakingApiRequest", e, "Telegram.Bot.API");
+            _logger?.LogTrace("MakingApiRequest", e);
         }
 
         private void BotClient_OnCallbackQuery(object sender, CallbackQueryEventArgs e)
         {
-            if (ApiLogIsEnabled)
-                _logger?.LogInfoAsync("OnCallbackQuery", e, "Telegram.Bot.API");
+            _logger?.LogTrace("OnCallbackQuery", e);
         }
 
         private void BotClient_OnInlineQuery(object sender, InlineQueryEventArgs e)
         {
-            if (ApiLogIsEnabled)
-                _logger?.LogInfoAsync("OnInlineQuery", e, "Telegram.Bot.API");
+            _logger?.LogTrace("OnInlineQuery", e);
         }
 
         private void BotClient_OnInlineResultChosen(object sender, ChosenInlineResultEventArgs e)
         {
-            if (ApiLogIsEnabled)
-                _logger?.LogInfoAsync("OnInlineResultChosen", e, "Telegram.Bot.API");
+            _logger?.LogTrace("OnInlineResultChosen", e);
         }
 
         private void BotClient_OnMessage(object sender, MessageEventArgs args)
         {
             try
             {
-                if (ApiLogIsEnabled)
-                    _logger?.LogInfoAsync("OnMessage", args, "Telegram.Bot.API");
+                _logger?.LogTrace("OnMessage", args);
 
                 _inputMessageBuffer.Enqueue(new TgMessage(args.Message));
             }
             catch (Exception e)
             {
-                _logger?.LogErrorAsync(e, $"Не удалось поместить входящее сообщение в буфер. TelegramMessageId={args?.Message?.MessageId}");
+                _logger?.LogError(e, $"Input message buffering error. TelegramMessageId={args?.Message?.MessageId}", args);
             }
         }
 
         private void BotClient_OnMessageEdited(object sender, MessageEventArgs e)
         {
-            if (ApiLogIsEnabled)
-                _logger?.LogInfoAsync("OnMessageEdited", e, "Telegram.Bot.API");
+            _logger?.LogTrace("OnMessageEdited", e);
 
             _inputMessageBuffer.Enqueue(new TgMessage(e.Message));
         }
@@ -178,7 +168,7 @@ namespace Zs.Bot.Messenger.Telegram
         private void BotClient_OnReceiveError(object sender, ReceiveErrorEventArgs e)
         {
             if (e?.ApiRequestException?.Message != "Request timed out")
-                _logger?.LogErrorAsync(e.ApiRequestException, "Telegram.Bot.API");
+                _logger?.LogError(e.ApiRequestException, "Telegram.Bot.API error", e);
         }
 
         private void BotClient_OnReceiveGeneralError(object sender, ReceiveGeneralErrorEventArgs e)
@@ -186,20 +176,19 @@ namespace Zs.Bot.Messenger.Telegram
             if (e.Exception is System.Net.Http.HttpRequestException)
                 return;
 
-            _logger?.LogErrorAsync(e.Exception, "Telegram.Bot.API");
+            _logger?.LogError(e.Exception, "Telegram.Bot.API general error");
         }
 
         private void BotClient_OnUpdate(object sender, UpdateEventArgs e)
         {
-            if (ApiLogIsEnabled)
-                _logger?.LogInfoAsync("OnUpdate", e, "Telegram.Bot.API");
+            _logger?.LogTrace("OnUpdate", e);
         }
 
         #endregion
         private async void CommandManager_CommandCompleted(object sender, CommandResult result)
         {
             var chat = await _chatsRepo.FindByKeyAsync(result.ChatIdForAnswer);
-            await AddMessageToOutboxAsync(chat, result.Text);
+            await AddMessageToOutbox(chat, result.Text);
         }
 
         private void InputMessageBuffer_OnEnqueue(object sender, TgMessage item)
@@ -244,12 +233,11 @@ namespace Zs.Bot.Messenger.Telegram
                     {
                         if (await TrySetExistingMessageId(args.Message))
                         {
-
                             await _messageDataSaver?.EditSavedMessage(args);
                             OnMessageEdited(args);
                         }
                         else
-                           await _logger.LogWarningAsync("The message not found in the database", args, nameof(TelegramMessenger));
+                           _logger.LogWarning("The message not found in the database", args);
                     }
                     else
                     {
@@ -267,7 +255,7 @@ namespace Zs.Bot.Messenger.Telegram
                             && BotCommand.IsCommand(args.Message.Text) 
                             && !await _commandManager.TryEnqueueCommandAsync(args.Message))
                         {
-                            await AddMessageToOutboxAsync(args.Chat, $"Unknown command '{args.Message.Text}'");
+                            await AddMessageToOutbox(args.Chat, $"Unknown command '{args.Message.Text}'");
                         }
                         //else if (File)
                         //{
@@ -277,15 +265,12 @@ namespace Zs.Bot.Messenger.Telegram
                     }
 
                     msgForLog = null;
-//#if DEBUG
-                    //Trace.WriteLine($"InputMessageProcessed: {tgMessage?.Text}, ThreadId: {Thread.CurrentThread.ManagedThreadId}");
-//#endif
                 }
             }
             catch (Exception ex)
             {
                 ex.Data.Add("Message", msgForLog);
-                _logger?.LogErrorAsync(ex, nameof(TelegramMessenger));
+                _logger?.LogError(ex, "Input message processing error");
             }
         }
 
@@ -326,20 +311,17 @@ namespace Zs.Bot.Messenger.Telegram
                     OnMessageSent(args);
 
                     msgForLog = null;
-//#if DEBUG
-//                    Trace.WriteLine($"OutputMessageProcessed: {tgMessage?.Text}, Fails: {tgMessage.SendingFails}, ThreadId: {Thread.CurrentThread.ManagedThreadId}");
-//#endif
                 }
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                e.Data.Add("Message", msgForLog);
-                _logger?.LogErrorAsync(e, nameof(TelegramMessenger));
+                ex.Data.Add("Message", msgForLog);
+                _logger?.LogError(ex, "Output message processing error");
             }
         }
         
         /// <inheritdoc />
-        public Task AddMessageToOutboxAsync(Chat chat, string messageText, Message messageToReply = null)
+        public Task AddMessageToOutbox(Chat chat, string messageText, Message messageToReply = null)
         {
             try
             {
@@ -363,7 +345,7 @@ namespace Zs.Bot.Messenger.Telegram
             }
             catch (Exception ex)
             {
-                _logger?.LogErrorAsync(ex, nameof(TelegramMessenger));
+                _logger?.LogError(ex, "Adding message to outbox error");
                 throw;
             }
             return Task.CompletedTask;
@@ -392,7 +374,7 @@ namespace Zs.Bot.Messenger.Telegram
             }
             catch (Exception ex)
             {
-                _logger?.LogErrorAsync(ex, nameof(TelegramMessenger));
+                _logger?.LogError(ex, "Adding message to outbox error");
             }
         }
         
@@ -405,7 +387,7 @@ namespace Zs.Bot.Messenger.Telegram
             var dbChat = await _chatsRepo.FindAsync(c => c.Id == dbMessage.ChatId);
             if (dbChat == null)
             {
-                _logger?.LogWarningAsync($"Chat with ChatId = {dbMessage.ChatId} not found in database", nameof(TelegramMessenger));
+                _logger?.LogWarning($"Chat with ChatId = {dbMessage.ChatId} not found in database", dbMessage);
                 return false;
             }
 
@@ -522,9 +504,9 @@ namespace Zs.Bot.Messenger.Telegram
 
                 return OperationResult.Success;
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                _logger?.LogErrorAsync(e, nameof(TelegramMessenger));
+                _logger?.LogError(ex, "Message deleting error", chat, message);
                 return OperationResult.Failure;
             }
         }
@@ -580,7 +562,7 @@ namespace Zs.Bot.Messenger.Telegram
                     {
                         message.IsSucceed = false;
                         ex.Data.Add("Message", message);
-                        _logger?.LogErrorAsync(ex, nameof(TelegramMessenger));
+                        _logger?.LogError(ex, "Message sending error");
                         return OperationResult.Failure;
                     }
                     else
@@ -601,7 +583,7 @@ namespace Zs.Bot.Messenger.Telegram
                     {
                         message.IsSucceed = false;
                         ex.Data.Add("Message", message);
-                        _logger?.LogErrorAsync(ex, nameof(TelegramMessenger));
+                        _logger?.LogError(ex, "Message sending error");
                         return OperationResult.Failure;
                     }
                     catch { return OperationResult.Failure; }

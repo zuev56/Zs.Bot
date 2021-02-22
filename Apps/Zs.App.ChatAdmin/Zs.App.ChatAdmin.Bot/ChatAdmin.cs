@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -25,7 +26,7 @@ namespace Zs.App.ChatAdmin
     internal class ChatAdmin : IHostedService
     {
         private readonly IConfiguration _configuration;
-        private readonly IZsLogger _logger;
+        private readonly ILogger<ChatAdmin> _logger;
         private readonly IMessenger _messenger;
         private readonly IScheduler _scheduler;
         private readonly IMessageProcessor _messageProcessor;
@@ -42,7 +43,7 @@ namespace Zs.App.ChatAdmin
             IContextFactory contextFactory,
             IMessageProcessor messageProcessor,
             IScheduler scheduler,
-            IZsLogger logger)
+            ILogger<ChatAdmin> logger)
         {
             try
             {
@@ -65,7 +66,7 @@ namespace Zs.App.ChatAdmin
             catch (Exception ex)
             {
                 var tiex = new TypeInitializationException(typeof(ChatAdmin).FullName, ex);
-                _logger.LogErrorAsync(tiex, nameof(ChatAdmin));
+                _logger.LogError(tiex, $"{nameof(ChatAdmin)} initialization error");
             }
         }
 
@@ -74,14 +75,14 @@ namespace Zs.App.ChatAdmin
             _connectionAnalyser.Start(5000, 30000);
             _scheduler.Start(3000, 1000);
             await _messenger.AddMessageToOutboxAsync($"Bot started", "ADMIN");
-            await _logger.LogInfoAsync($"{nameof(ChatAdmin)} started", nameof(ChatAdmin));
+            _logger.LogInformation($"{nameof(ChatAdmin)} started");
         }
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
             _connectionAnalyser.Stop();
             _scheduler.Stop();
-            _logger.LogInfoAsync($"{nameof(ChatAdmin)} stopped", nameof(ChatAdmin));
+            _logger.LogInformation($"{nameof(ChatAdmin)} stopped");
 
             return Task.CompletedTask;
         }
@@ -107,7 +108,7 @@ namespace Zs.App.ChatAdmin
                 _ => "Connection status is undefined"
             };
 
-            _logger.LogWarningAsync(logMessage, nameof(ConnectionAnalyser));
+            _logger.LogWarning(logMessage);
         }
 
         private async void Messenger_MessageReceived(object sender, MessageActionEventArgs e)
@@ -119,10 +120,9 @@ namespace Zs.App.ChatAdmin
         {
             if (_detailedLogging || result?.TextValue != null)
             {
-                await _logger.LogInfoAsync(
+                _logger.LogInformation(
                     $"Job execution completed{(job?.Description != null ? $" [{job.Description}]" : "")}",
-                    result?.TextValue ?? "<null>",
-                    nameof(ChatAdmin));
+                    result?.TextValue ?? "<null>");
             }
 
             if (result != null && DateTime.Now.Hour > 9 && DateTime.Now.Hour < 23)
