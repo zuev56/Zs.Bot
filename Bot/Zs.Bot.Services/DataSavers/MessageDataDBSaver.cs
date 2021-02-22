@@ -1,11 +1,9 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
 using Zs.Bot.Data.Abstractions;
 using Zs.Bot.Data.Models;
-using Zs.Bot.Services.Commands;
 using Zs.Bot.Services.Messaging;
-using Zs.Common.Abstractions;
 
 namespace Zs.Bot.Services.DataSavers
 {
@@ -14,7 +12,7 @@ namespace Zs.Bot.Services.DataSavers
     /// </summary>
     public class MessageDataDBSaver : IMessageDataSaver
     {
-        private readonly IZsLogger _logger;
+        private readonly ILogger<MessageDataDBSaver> _logger;
         private readonly IItemsWithRawDataRepository<Chat, int> _chatsRepo;
         private readonly IItemsWithRawDataRepository<User, int> _usersRepo;
         private readonly IItemsWithRawDataRepository<Message, int> _messagesRepo;
@@ -24,7 +22,7 @@ namespace Zs.Bot.Services.DataSavers
             IItemsWithRawDataRepository<Chat, int> chatsRepo,
             IItemsWithRawDataRepository<User, int> usersRepo,
             IItemsWithRawDataRepository<Message, int> messagesRepo,
-            IZsLogger logger = null)
+            ILogger<MessageDataDBSaver> logger = null)
         {
             try
             {
@@ -36,7 +34,7 @@ namespace Zs.Bot.Services.DataSavers
             catch (Exception ex)
             {
                 var tex = new TypeInitializationException(typeof(MessageDataDBSaver).FullName, ex);
-                _logger?.LogErrorAsync(tex, nameof(MessageDataDBSaver));
+                _logger?.LogError(tex, $"{nameof(MessageDataDBSaver)} initialization error");
             }
         }
 
@@ -63,7 +61,7 @@ namespace Zs.Bot.Services.DataSavers
                 ex.Data.Add("User", args?.User);
                 ex.Data.Add("Chat", args?.Chat);
                 ex.Data.Add("Message", args?.Message);
-                _logger?.LogErrorAsync(ex, nameof(MessageDataDBSaver));
+                _logger?.LogError(ex, "New message data saving error");
             }
         }
 
@@ -77,7 +75,7 @@ namespace Zs.Bot.Services.DataSavers
                 await _messagesRepo.SaveAsync(args.Message);
             }
             else
-                _logger?.LogWarningAsync("The edited message is not found in the database", args.Message, nameof(MessageDataDBSaver));
+                _logger?.LogWarning("The edited message is not found in the database", args);
         }
 
     }

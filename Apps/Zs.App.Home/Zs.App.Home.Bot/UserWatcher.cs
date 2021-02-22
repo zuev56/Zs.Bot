@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Globalization;
 using System.Linq;
@@ -30,8 +31,9 @@ namespace Zs.App.Home.Bot
         private readonly IRepository<Data.Models.Vk.User, int> _vkUsersRepo;
         private readonly IRepository<ActivityLogItem, int> _vkActivityLogRepo;
         private readonly IItemsWithRawDataRepository<Message, int> _messagesRepo;
-        private readonly IZsLogger _logger;
+        private readonly ILogger<UserWatcher> _logger;
         //private readonly IConnectionAnalyser _connectionAnalyser;
+        [Obsolete]
         private readonly bool _detailedLogging;
         private readonly float _version;
         private readonly string _accessToken;
@@ -49,7 +51,7 @@ namespace Zs.App.Home.Bot
             IRepository<Data.Models.Vk.User, int> vkUsersRepo,
             IRepository<ActivityLogItem, int> vkActivityLogRepo,
             IItemsWithRawDataRepository<Message, int> messagesRepo,
-            IZsLogger logger = null)
+            ILogger<UserWatcher> logger = null)
         {
             try
             {
@@ -62,18 +64,17 @@ namespace Zs.App.Home.Bot
                 _messagesRepo = messagesRepo;
                 _logger = logger;
 
-                _activityLogIntervalSec = _configuration.GetSection("Vk:ActivityLogIntervalSec").Get<int>();
-                _version = float.Parse(_configuration["Vk:Version"], CultureInfo.InvariantCulture);
-                _accessToken = _configuration["Vk:AccessToken"];
-                _userIds = _configuration.GetSection("Vk:UserIds").Get<int[]>();
-                bool.TryParse(_configuration["DetailedLogging"]?.ToString(), out _detailedLogging);
+                _activityLogIntervalSec = _configuration.GetSection("Home:Vk:ActivityLogIntervalSec").Get<int>();
+                _version = float.Parse(_configuration["Home:Vk:Version"], CultureInfo.InvariantCulture);
+                _accessToken = _configuration["Home:Vk:AccessToken"];
+                _userIds = _configuration.GetSection("Home:Vk:UserIds").Get<int[]>();
 
                 CreateJobs();
             }
             catch (Exception ex)
             {
                 var tiex = new TypeInitializationException(typeof(UserWatcher).FullName, ex);
-               _logger?.LogErrorAsync(tiex, nameof(UserWatcher)).Wait();
+               _logger?.LogError(tiex, $"{nameof(UserWatcher)} initialization error");
             }
         }
 
@@ -83,19 +84,20 @@ namespace Zs.App.Home.Bot
             {
                 _scheduler.Start(3000, 1000);
                 await _messenger.AddMessageToOutboxAsync($"Bot started", "ADMIN");
-                await _logger?.LogInfoAsync($"{nameof(UserWatcher)} started", nameof(UserWatcher));
+                _logger?.LogInformation($"{nameof(UserWatcher)} started");
             }
             catch (Exception ex)
             {
-                await _logger?.LogErrorAsync(ex, nameof(UserWatcher));
+                _logger?.LogError(ex, $"{nameof(UserWatcher)} starting error");
                 throw;
             }
         }
 
-        public async Task StopAsync(CancellationToken cancellationToken)
+        public Task StopAsync(CancellationToken cancellationToken)
         {
             _scheduler.Stop();
-            await _logger?.LogInfoAsync($"{nameof(UserWatcher)} stopped", nameof(UserWatcher));
+            _logger?.LogInformation($"{nameof(UserWatcher)} stopped");
+            return Task.CompletedTask;
         }
 
         private void CreateJobs()
@@ -108,7 +110,7 @@ namespace Zs.App.Home.Bot
             var notActiveUsers12hInformer = new SqlJob(
                 TimeSpan.FromHours(1),
                 QueryResultType.String,
-                $"select vk.sf_cmd_get_not_active_users('{string.Join(',', _configuration.GetSection("Vk:TrackedUserIds").Get<int[]>())}', {_configuration.GetSection("Vk:AlarmAfterInactiveHours").Get<int>()})",
+                $"select vk.sf_cmd_get_not_active_users('{string.Join(',', _configuration.GetSection("Home:Vk:TrackedUserIds").Get<int[]>())}', {_configuration.GetSection("Vk:AlarmAfterInactiveHours").Get<int>()})",
                 _configuration.GetConnectionString("Default"),
                 startDate: DateTime.Now + TimeSpan.FromSeconds(5),
                 description: "notActiveUsers12hInformer"
@@ -162,7 +164,7 @@ namespace Zs.App.Home.Bot
             }
             catch (Exception ex)
             {
-                await _logger?.LogErrorAsync(ex, nameof(UserWatcher));
+                _logger?.LogError(ex, "Job's ExecutionCompleted handler error", result);
             }
         }
 
@@ -182,7 +184,7 @@ namespace Zs.App.Home.Bot
 
             if (!result.IsSuccess)
             {
-                await _logger?.LogWarningAsync(result.Messages.LastOrDefault()?.Text, nameof(UserWatcher));
+                _logger?.LogWarning(result.Messages.LastOrDefault()?.Text);
             }
         }
     }

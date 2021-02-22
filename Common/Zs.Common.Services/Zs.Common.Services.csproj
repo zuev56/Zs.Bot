@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
     <PackageId>Zs.Common.Services</PackageId>
-    <Version>5.0.2</Version>
+    <Version>5.0.3</Version>
     <Authors>zuev56 (Sergei Zuev)</Authors>
     <Company>zuev56 (Sergei Zuev)</Company>
     <Description>

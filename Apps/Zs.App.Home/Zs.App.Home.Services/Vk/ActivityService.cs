@@ -36,9 +36,9 @@ namespace Zs.App.Home.Services.Vk
             _vkActivityLogRepo = vkActivityLogRepo ?? throw new ArgumentNullException(nameof(vkActivityLogRepo));
             _vkUsersRepo = vkUsersRepo ?? throw new ArgumentNullException(nameof(vkUsersRepo));
 
-            _version = float.Parse(_configuration["Vk:Version"], CultureInfo.InvariantCulture);
-            _accessToken = _configuration["Vk:AccessToken"];
-            _userIds = _configuration.GetSection("Vk:UserIds").Get<int[]>();
+            _version = float.Parse(_configuration["Home:Vk:Version"], CultureInfo.InvariantCulture);
+            _accessToken = _configuration["Home:Vk:AccessToken"];
+            _userIds = _configuration.GetSection("Home:Vk:UserIds").Get<int[]>();
         }
 
         public async Task<IServiceResult<ActivityLogPage>> GetLastActivity(ushort page, DateTime? fromDate = null, DateTime? toDate = null)

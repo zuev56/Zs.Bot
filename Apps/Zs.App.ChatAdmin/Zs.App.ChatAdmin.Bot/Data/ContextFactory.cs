@@ -38,6 +38,7 @@ namespace Zs.App.ChatAdmin.Data
             
             var solutionDir = Common.Extensions.Path.TryGetSolutionPath();
             var configuration = new ConfigurationBuilder()
+                // TODO: exclude hardcoded config file name
                 .AddJsonFile(Path.Combine(solutionDir, "PrivateConfiguration.json"), optional: true)
                 .Build();
             var connectionString = configuration.GetConnectionString("Default");

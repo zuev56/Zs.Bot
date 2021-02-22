@@ -1,28 +1,23 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Zs.Common.Abstractions;
 using Zs.Common.Services.Abstractions;
 
 namespace Zs.Common.Services.Scheduler
 {
     public class Scheduler : IScheduler
     {
-        private readonly IZsLogger _logger;
+        private readonly ILogger<Scheduler> _logger;
         private Timer _timer;
+        [Obsolete]
         private readonly bool _detailedLogging;
 
         public List<IJob> Jobs { get; } = new List<IJob>();
 
-        // TODO: take bool detailedLogging, not IConfiguration
-        public Scheduler(IConfiguration configuration = null, IZsLogger logger = null)
+        public Scheduler(ILogger<Scheduler> logger = null)
         {
-            if (bool.TryParse(configuration?["DetailedLogging"], out bool detailedLogging))
-            {
-                _detailedLogging = detailedLogging;
-            }
             _logger = logger;
         }
 
@@ -33,11 +28,11 @@ namespace Zs.Common.Services.Scheduler
                 _timer = new Timer(new TimerCallback(DoWork));
                 _timer.Change(dueTimeMs, periodMs);
 
-                _logger?.LogInfoAsync($"{nameof(Scheduler)} started", nameof(Scheduler));
+                _logger?.LogInformation($"{nameof(Scheduler)} started");
             }
             catch (Exception ex)
             {
-                _logger?.LogErrorAsync(ex, nameof(Scheduler));
+                _logger?.LogError(ex, $"{nameof(Scheduler)} starting error");
             }
         }
 
@@ -46,11 +41,11 @@ namespace Zs.Common.Services.Scheduler
             try
             {
                 _timer.Dispose();
-                _logger?.LogInfoAsync($"{nameof(Scheduler)} stopped", nameof(Scheduler));
+                _logger?.LogInformation($"{nameof(Scheduler)} stopped");
             }
             catch (Exception ex)
             {
-                _logger?.LogErrorAsync(ex, nameof(Scheduler));
+                _logger?.LogError(ex, $"{nameof(Scheduler)} stopping error");
             }
         }
 
@@ -69,9 +64,9 @@ namespace Zs.Common.Services.Scheduler
                                 if (task.Exception is AggregateException aex)
                                 {
                                     if (aex.InnerExceptions.Count == 1)
-                                        _logger.LogErrorAsync(aex.InnerExceptions[0], nameof(Scheduler));
+                                        _logger.LogError(aex.InnerExceptions[0], "Job executing error", job);
                                     else
-                                        _logger.LogErrorAsync(task.Exception, nameof(Scheduler));
+                                        _logger.LogError(task.Exception, "Job executing error", job);
                                 }
                             }, TaskContinuationOptions.OnlyOnFaulted);
                     }
@@ -79,7 +74,7 @@ namespace Zs.Common.Services.Scheduler
             }
             catch (Exception ex)
             {
-                _logger?.LogErrorAsync(ex, nameof(Scheduler));
+                _logger?.LogError(ex, $"nameof(Scheduler) DoWork error");
             }
         }
     }

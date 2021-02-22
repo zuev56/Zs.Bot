@@ -19,30 +19,30 @@ DECLARE
     _result text = null;
 BEGIN
     _vkUserIds = string_to_array(_vkUserIdsStr, ',');
-    RAISE NOTICE '1. _vkUserIds: %', _vkUserIds;
+    --RAISE NOTICE '1. _vkUserIds: %', _vkUserIds;
 
     SELECT array_agg(user_id) INTO _dbUserIds
     FROM vk.users
     WHERE cast(raw_data ->> 'id' AS integer) = ANY(_vkUserIds);
-    RAISE NOTICE '2. _dbUserIds: %', _dbUserIds;
+    --RAISE NOTICE '2. _dbUserIds: %', _dbUserIds;
    
     SELECT INTO _activeDbUserIds array_agg(DISTINCT user_id)
     FROM vk.activity_log
     WHERE insert_date > now() - (_offlineHours || ' hours')::interval
       AND user_id = ANY(_dbUserIds)
       AND is_online = true;
-    RAISE NOTICE '3. _activeDbUserIds: %', _activeDbUserIds;
+    --RAISE NOTICE '3. _activeDbUserIds: %', _activeDbUserIds;
 
     SELECT array(SELECT unnest(_dbUserIds) EXCEPT SELECT unnest(_activeDbUserIds)) into _notActiveDbUserIds;
-    RAISE NOTICE '4. _notActiveUserIds: %', _notActiveDbUserIds;
+    --RAISE NOTICE '4. _notActiveUserIds: %', _notActiveDbUserIds;
 
     -- Формирование сообщения "<UserName> is not active for <_exactOfflineHours> hours"
     IF (cardinality(_notActiveDbUserIds) > 0)
     THEN
         SELECT string_agg((u.first_name || ' ' || u.last_name || ' is not active for ' ||
-            EXTRACT(epoch FROM (now() - (SELECT insert_date FROM vk.activity_log WHERE user_id = u.user_id ORDER BY insert_date DESC LIMIT 1)))::int / 3600
+            EXTRACT(epoch FROM (now() - (SELECT insert_date FROM vk.activity_log l WHERE l.user_id = u.user_id ORDER BY insert_date DESC LIMIT 1)))::int / 3600
             || ' hours'), chr(10)) INTO _result
-        FROM vk.users u
+        FROM vk.users as u
         WHERE u.user_id = ANY(_notActiveDbUserIds);
     END IF;
 
