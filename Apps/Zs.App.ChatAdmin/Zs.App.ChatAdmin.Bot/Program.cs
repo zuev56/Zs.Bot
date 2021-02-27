@@ -144,7 +144,7 @@ namespace Zs.App.ChatAdmin
                             );
 
                         services.AddScoped<IRepository<Ban, int>, CommonRepository<ChatAdminContext, Ban, int>>();
-                        services.AddScoped<IRepository<Bot.Data.Models.Log, int>, CommonRepository<BotContext, Bot.Data.Models.Log, int>>();
+                        //services.AddScoped<IRepository<Bot.Data.Models.Log, int>, CommonRepository<BotContext, Bot.Data.Models.Log, int>>();
                         services.AddScoped<IRepository<Command, string>, CommonRepository<BotContext, Command, string>>();
                         services.AddScoped<IRepository<UserRole, string>, CommonRepository<BotContext, UserRole, string>>();
                         services.AddScoped<IItemsWithRawDataRepository<Chat, int>, ItemsWithRawDataRepository<BotContext, Chat, int>>();

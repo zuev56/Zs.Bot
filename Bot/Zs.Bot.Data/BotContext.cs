@@ -12,12 +12,11 @@ namespace Zs.Bot.Data
         public DbSet<ChatType> ChatTypes { get; set; }
         public DbSet<Chat> Chats { get; set; }
         public DbSet<Command> Commands { get; set; }
-        public DbSet<Log> Logs { get; set; }
         public DbSet<MessageType> MessageTypes { get; set; }
         public DbSet<Message> Messages { get; set; }
         public DbSet<MessengerInfo> Messengers { get; set; }
         public DbSet<UserRole> UserRoles { get; set; }
-        /*internal*/ public DbSet<User> Users { get; set; }
+        public DbSet<User> Users { get; set; }
 
         public BotContext()
         {
@@ -58,8 +57,6 @@ namespace Zs.Bot.Data
 
             modelBuilder.Entity<Message>().Property(b => b.UpdateDate).HasDefaultValueSql("now()");
             modelBuilder.Entity<Message>().Property(b => b.InsertDate).HasDefaultValueSql("now()");
-
-            modelBuilder.Entity<Log>().Property(b => b.InsertDate).HasDefaultValueSql("now()");
 
             modelBuilder.Entity<Command>().Property(b => b.UpdateDate).HasDefaultValueSql("now()");
             modelBuilder.Entity<Command>().Property(b => b.InsertDate).HasDefaultValueSql("now()");

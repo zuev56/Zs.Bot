@@ -128,7 +128,7 @@ namespace Zs.App.Home.Bot
                         services.AddScoped<IRepository<Data.Models.Vk.User, int>, CommonRepository<HomeContext, Data.Models.Vk.User, int>>();
                         services.AddScoped<IRepository<Command, string>, CommonRepository<BotContext, Command, string>>();
                         services.AddScoped<IRepository<UserRole, string>, CommonRepository<BotContext, UserRole, string>>();
-                        services.AddScoped<IRepository<Zs.Bot.Data.Models.Log, int>, CommonRepository<BotContext, Zs.Bot.Data.Models.Log, int>>();
+                        //services.AddScoped<IRepository<Zs.Bot.Data.Models.Log, int>, CommonRepository<BotContext, Zs.Bot.Data.Models.Log, int>>();
                         services.AddScoped<IItemsWithRawDataRepository<Chat, int>, ItemsWithRawDataRepository<BotContext, Chat, int>>();
                         services.AddScoped<IItemsWithRawDataRepository<Zs.Bot.Data.Models.User, int>, ItemsWithRawDataRepository<BotContext, Zs.Bot.Data.Models.User, int>>();
                         services.AddScoped<IItemsWithRawDataRepository<Message, int>, ItemsWithRawDataRepository<BotContext, Message, int>>();
