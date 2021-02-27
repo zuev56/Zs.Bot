@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -26,15 +27,18 @@ namespace Zs.App.Home.Services.Vk
         private readonly float _version;
         private readonly string _accessToken;
         private readonly int[] _userIds;
+        private readonly ILogger<ActivityService> _logger;
 
         public ActivityService(
             IConfiguration configuration,
             IRepository<ActivityLogItem, int> vkActivityLogRepo,
-            IRepository<User, int> vkUsersRepo)
+            IRepository<User, int> vkUsersRepo,
+            ILogger<ActivityService> logger)
         {
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _vkActivityLogRepo = vkActivityLogRepo ?? throw new ArgumentNullException(nameof(vkActivityLogRepo));
             _vkUsersRepo = vkUsersRepo ?? throw new ArgumentNullException(nameof(vkUsersRepo));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             _version = float.Parse(_configuration["Home:Vk:Version"], CultureInfo.InvariantCulture);
             _accessToken = _configuration["Home:Vk:AccessToken"];
@@ -81,7 +85,7 @@ namespace Zs.App.Home.Services.Vk
             }
             catch (Exception ex)
             {
-                // TODO: Log
+                _logger.LogError(ex, "GetLastActivity error");
                 return ServiceResult<ActivityLogPage>.Error();
             }
         }
@@ -149,7 +153,7 @@ namespace Zs.App.Home.Services.Vk
             }
             catch (Exception ex)
             {
-                // TODO: Log
+                _logger.LogError(ex, "GetUserStatistics error");
                 return ServiceResult<List<PeriodUserActivity>>.Error();
             }
         }
@@ -219,7 +223,7 @@ namespace Zs.App.Home.Services.Vk
             }
             catch (Exception ex)
             {
-                // TODO: Log
+                //_logger.LogError(ex, "GetUserStatistics error");
                 return ServiceResult<PeriodUserActivity>.Error();
             }
         }
@@ -256,7 +260,7 @@ namespace Zs.App.Home.Services.Vk
             }
             catch (Exception ex)
             {
-                // Log
+                _logger.LogError(ex, "User adding failed");
                 return ServiceResult.Error("User adding failed");
             }
         }
@@ -291,7 +295,7 @@ namespace Zs.App.Home.Services.Vk
             }
             catch (Exception ex)
             {
-                // TODO: Log
+                _logger.LogError(ex, "GetUserActivity error");
                 return ServiceResult<PeriodUserActivity>.Error();
             }
         }
@@ -308,7 +312,7 @@ namespace Zs.App.Home.Services.Vk
             }
             catch (Exception ex)
             {
-                // TODO: Log
+                _logger.LogError(ex, "GetVkUsers error");
                 return ServiceResult<List<User>>.Error();
             }
         }
@@ -338,7 +342,7 @@ namespace Zs.App.Home.Services.Vk
             }
             catch (Exception ex)
             {
-                // TODO: Log
+                _logger.LogError(ex, "GetVkUsersWithActivity error");
                 return ServiceResult<Dictionary<User, int>>.Error();
             }
         }
@@ -378,7 +382,7 @@ namespace Zs.App.Home.Services.Vk
             }
             catch (Exception ex)
             {
-                // TODO: Log
+                _logger.LogError(ex, "GetDetailedUserActivity error");
                 return ServiceResult<DetailedUserActivity>.Error();
             }
         }
@@ -536,7 +540,7 @@ namespace Zs.App.Home.Services.Vk
             }
             catch (Exception ex)
             {
-                //await _logger?.LogErrorAsync(ex, nameof(UserWatcher));
+                _logger.LogError(ex, "SaveVkUsersActivityAsync error");
                 return ServiceResult.Error("Users activity logging error");
             }
         }

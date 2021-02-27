@@ -25,11 +25,11 @@ namespace Zs.Bot.Data.Factories
         // For migrations
         public BotContext CreateDbContext(string[] args)
         {
+            // TODO: exclude hardcoded config file name
             Trace.WriteLineIf(args != null && args.Length > 0, string.Join(',', args));
             
             var solutionDir = Common.Extensions.Path.TryGetSolutionPath();
             var configuration = new ConfigurationBuilder()
-                // TODO: exclude hardcoded config file name
                 .AddJsonFile(Path.Combine(solutionDir, "PrivateConfiguration.json"), optional: true)
                 .Build();
             var connectionString = configuration.GetConnectionString("Default");

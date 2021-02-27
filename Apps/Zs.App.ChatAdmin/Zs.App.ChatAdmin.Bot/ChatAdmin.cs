@@ -143,38 +143,39 @@ namespace Zs.App.ChatAdmin
                 description: "resetLimits"
             );
 
-            var sendDayErrorsAndWarnings = new SqlJob(
-                TimeSpan.FromHours(1),
-                QueryResultType.String,
-                 @" select string_agg('**' || log_type || '**  ' || to_char(insert_date, 'HH24:MI:SS') || E'\n' || log_initiator || ':  ' || log_message, E'\n\n' order by insert_date desc)"
-                + "\n from bot.logs"
-                + "\nwhere log_type in ('Warning', 'Error')"
-                + "\n  and insert_date > now() - interval '1 hour'",
-                _configuration.GetConnectionString("Default"),
-                startDate: Job.NextHour(),
-                description: "sendDayErrorsAndWarnings"
-            );
-
-            var sendNightErrorsAndWarnings = new SqlJob(
-                TimeSpan.FromDays(1),
-                QueryResultType.String,
-                 @" select string_agg('**' || log_type || '**  ' || to_char(insert_date, 'HH24:MI:SS') || E'\n' || log_initiator || ':  ' || log_message, E'\n\n' order by insert_date desc)"
-                + "\n from bot.logs"
-                + "\nwhere log_type in ('Warning', 'Error')"
-                + "\n  and insert_date > now() - interval '12 hours'",
-                _configuration.GetConnectionString("Default"),
-                startDate: DateTime.Today + TimeSpan.FromHours(24+10),
-                description: "sendNightErrorsAndWarnings"
-            );
+        // Больше нет bot.logs
+        //    var sendDayErrorsAndWarnings = new SqlJob(
+        //        TimeSpan.FromHours(1),
+        //        QueryResultType.String,
+        //         @" select string_agg('**' || log_type || '**  ' || to_char(insert_date, 'HH24:MI:SS') || E'\n' || log_initiator || ':  ' || log_message, E'\n\n' order by insert_date desc)"
+        //        + "\n from bot.logs"
+        //        + "\nwhere log_type in ('Warning', 'Error')"
+        //        + "\n  and insert_date > now() - interval '1 hour'",
+        //        _configuration.GetConnectionString("Default"),
+        //        startDate: Job.NextHour(),
+        //        description: "sendDayErrorsAndWarnings"
+        //    );
+        //
+        //    var sendNightErrorsAndWarnings = new SqlJob(
+        //        TimeSpan.FromDays(1),
+        //        QueryResultType.String,
+        //         @" select string_agg('**' || log_type || '**  ' || to_char(insert_date, 'HH24:MI:SS') || E'\n' || log_initiator || ':  ' || log_message, E'\n\n' order by insert_date desc)"
+        //        + "\n from bot.logs"
+        //        + "\nwhere log_type in ('Warning', 'Error')"
+        //        + "\n  and insert_date > now() - interval '12 hours'",
+        //        _configuration.GetConnectionString("Default"),
+        //        startDate: DateTime.Today + TimeSpan.FromHours(24+10),
+        //        description: "sendNightErrorsAndWarnings"
+        //    );
 
             sendYesterdaysStatistics.ExecutionCompleted += Job_ExecutionCompleted;
-            sendDayErrorsAndWarnings.ExecutionCompleted += Job_ExecutionCompleted;
-            sendNightErrorsAndWarnings.ExecutionCompleted += Job_ExecutionCompleted;
+        //    sendDayErrorsAndWarnings.ExecutionCompleted += Job_ExecutionCompleted;
+        //    sendNightErrorsAndWarnings.ExecutionCompleted += Job_ExecutionCompleted;
 
             _scheduler.Jobs.Add(sendYesterdaysStatistics);
             _scheduler.Jobs.Add(resetLimits);
-            _scheduler.Jobs.Add(sendDayErrorsAndWarnings);
-            _scheduler.Jobs.Add(sendNightErrorsAndWarnings);
+        //    _scheduler.Jobs.Add(sendDayErrorsAndWarnings);
+        //    _scheduler.Jobs.Add(sendNightErrorsAndWarnings);
         }
     }
 }

@@ -18,13 +18,15 @@ namespace Zs.App.ChatAdmin.Data
         {
         }
 
-        public ContextFactory(DbContextOptions<ChatAdminContext> chatAdminOptions)
+        public ContextFactory(DbContextOptions<ChatAdminContext> options)
         {
-            _options = chatAdminOptions ?? throw new ArgumentNullException(nameof(chatAdminOptions));
+            _options = options ?? throw new ArgumentNullException(nameof(options));
         }
 
+        // For repositories
         public ChatAdminContext GetContext() => new ChatAdminContext(_options);
 
+        // For migrations
         public ChatAdminContext CreateDbContext(string[] args)
         {
             // TODO: exclude hardcoded config file name

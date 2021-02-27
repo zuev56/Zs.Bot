@@ -115,39 +115,39 @@ namespace Zs.App.Home.Bot
                 startDate: DateTime.Now + TimeSpan.FromSeconds(5),
                 description: "notActiveUsers12hInformer"
                 );
-
-            var dayErrorsAndWarningsInformer = new SqlJob(
-                TimeSpan.FromHours(1),
-                QueryResultType.String,
-                 @"select string_agg('**' || log_type || '**  ' || to_char(insert_date, 'HH24:MI:SS') || E'\n' || log_initiator || ':  ' || log_message, E'\n\n' order by insert_date desc)
-                             from bot.logs
-                            where log_type in ('Warning', 'Error')
-                              and insert_date > now() - interval '1 hour'",
-                _configuration.GetConnectionString("Default"),
-                startDate: Job.NextHour(),
-                description: "dayErrorsAndWarningsInformer"
-                );
-
-            var nightErrorsAndWarningsInformer = new SqlJob(
-                TimeSpan.FromDays(1),
-                QueryResultType.String,
-                 @" select string_agg('**' || log_type || '**  ' || to_char(insert_date, 'HH24:MI:SS') || E'\n' || log_initiator || ':  ' || log_message, E'\n\n' order by insert_date desc)
-                              from bot.logs
-                             where log_type in ('Warning', 'Error')
-                               and insert_date > now() - interval '12 hours'",
-                _configuration.GetConnectionString("Default"),
-                startDate: DateTime.Today + TimeSpan.FromHours(24+10),
-                description: "nightErrorsAndWarningsInformer"
-                );
+        // Больше нет bot.logs
+        //    var dayErrorsAndWarningsInformer = new SqlJob(
+        //        TimeSpan.FromHours(1),
+        //        QueryResultType.String,
+        //         @"select string_agg('**' || log_type || '**  ' || to_char(insert_date, 'HH24:MI:SS') || E'\n' || log_initiator || ':  ' || log_message, E'\n\n' order by insert_date desc)
+        //                     from bot.logs
+        //                    where log_type in ('Warning', 'Error')
+        //                      and insert_date > now() - interval '1 hour'",
+        //        _configuration.GetConnectionString("Default"),
+        //        startDate: Job.NextHour(),
+        //        description: "dayErrorsAndWarningsInformer"
+        //        );
+        //
+        //    var nightErrorsAndWarningsInformer = new SqlJob(
+        //        TimeSpan.FromDays(1),
+        //        QueryResultType.String,
+        //         @" select string_agg('**' || log_type || '**  ' || to_char(insert_date, 'HH24:MI:SS') || E'\n' || log_initiator || ':  ' || log_message, E'\n\n' order by insert_date desc)
+        //                      from bot.logs
+        //                     where log_type in ('Warning', 'Error')
+        //                       and insert_date > now() - interval '12 hours'",
+        //        _configuration.GetConnectionString("Default"),
+        //        startDate: DateTime.Today + TimeSpan.FromHours(24+10),
+        //        description: "nightErrorsAndWarningsInformer"
+        //        );
 
             notActiveUsers12hInformer.ExecutionCompleted += Job_ExecutionCompleted;
-            dayErrorsAndWarningsInformer.ExecutionCompleted += Job_ExecutionCompleted;
-            nightErrorsAndWarningsInformer.ExecutionCompleted += Job_ExecutionCompleted;
+        //    dayErrorsAndWarningsInformer.ExecutionCompleted += Job_ExecutionCompleted;
+        //    nightErrorsAndWarningsInformer.ExecutionCompleted += Job_ExecutionCompleted;
 
             _scheduler.Jobs.Add(_userActivityLogger);
             _scheduler.Jobs.Add(notActiveUsers12hInformer);
-            _scheduler.Jobs.Add(dayErrorsAndWarningsInformer);
-            _scheduler.Jobs.Add(nightErrorsAndWarningsInformer);
+        //    _scheduler.Jobs.Add(dayErrorsAndWarningsInformer);
+        //    _scheduler.Jobs.Add(nightErrorsAndWarningsInformer);
         }
 
         private async void Job_ExecutionCompleted(IJob job, IJobExecutionResult result)

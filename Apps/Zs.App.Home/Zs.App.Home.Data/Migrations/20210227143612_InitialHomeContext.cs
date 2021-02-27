@@ -4,7 +4,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace Zs.App.Home.Data.Migrations
 {
-    public partial class InitialCreate : Migration
+    public partial class InitialHomeContext : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -13,25 +13,6 @@ namespace Zs.App.Home.Data.Migrations
 
             migrationBuilder.EnsureSchema(
                 name: "bot");
-
-            migrationBuilder.CreateTable(
-                name: "activity_log",
-                schema: "vk",
-                columns: table => new
-                {
-                    activity_log_id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.SerialColumn),
-                    user_id = table.Column<int>(type: "integer", nullable: false),
-                    is_online = table.Column<bool>(type: "boolean", nullable: true),
-                    insert_date = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()"),
-                    online_app = table.Column<int>(type: "integer", nullable: true),
-                    is_online_mobile = table.Column<bool>(type: "boolean", nullable: false),
-                    last_seen = table.Column<int>(type: "integer", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_activity_log", x => x.activity_log_id);
-                });
 
             migrationBuilder.CreateTable(
                 name: "chat_types",
@@ -64,24 +45,6 @@ namespace Zs.App.Home.Data.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_commands", x => x.command_name);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "logs",
-                schema: "bot",
-                columns: table => new
-                {
-                    log_id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.SerialColumn),
-                    log_type = table.Column<string>(type: "character varying(7)", maxLength: 7, nullable: false),
-                    log_initiator = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
-                    log_message = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    log_data = table.Column<string>(type: "json", nullable: true),
-                    insert_date = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()")
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_logs", x => x.log_id);
                 });
 
             migrationBuilder.CreateTable(
@@ -139,7 +102,7 @@ namespace Zs.App.Home.Data.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.SerialColumn),
                     first_name = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
                     last_name = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
-                    raw_data = table.Column<string>(type: "json", nullable: false),
+                    raw_data = table.Column<string>(type: "json", nullable: true),
                     update_date = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()"),
                     insert_date = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()")
                 },
@@ -202,6 +165,32 @@ namespace Zs.App.Home.Data.Migrations
                         principalSchema: "bot",
                         principalTable: "user_roles",
                         principalColumn: "user_role_code",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "activity_log",
+                schema: "vk",
+                columns: table => new
+                {
+                    activity_log_id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.SerialColumn),
+                    user_id = table.Column<int>(type: "integer", nullable: false),
+                    is_online = table.Column<bool>(type: "boolean", nullable: true),
+                    insert_date = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()"),
+                    online_app = table.Column<int>(type: "integer", nullable: true),
+                    is_online_mobile = table.Column<bool>(type: "boolean", nullable: false),
+                    last_seen = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_activity_log", x => x.activity_log_id);
+                    table.ForeignKey(
+                        name: "FK_activity_log_users_user_id",
+                        column: x => x.user_id,
+                        principalSchema: "vk",
+                        principalTable: "users",
+                        principalColumn: "user_id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -274,10 +263,10 @@ namespace Zs.App.Home.Data.Migrations
                 columns: new[] { "chat_type_code", "insert_date", "chat_type_name" },
                 values: new object[,]
                 {
-                    { "CHANNEL", new DateTime(2020, 12, 12, 16, 57, 9, 496, DateTimeKind.Local).AddTicks(9606), "Channel" },
-                    { "GROUP", new DateTime(2020, 12, 12, 16, 57, 9, 497, DateTimeKind.Local).AddTicks(148), "Group" },
-                    { "PRIVATE", new DateTime(2020, 12, 12, 16, 57, 9, 497, DateTimeKind.Local).AddTicks(152), "Private" },
-                    { "UNDEFINED", new DateTime(2020, 12, 12, 16, 57, 9, 497, DateTimeKind.Local).AddTicks(155), "Undefined" }
+                    { "CHANNEL", new DateTime(2021, 2, 27, 17, 36, 12, 78, DateTimeKind.Local).AddTicks(708), "Channel" },
+                    { "GROUP", new DateTime(2021, 2, 27, 17, 36, 12, 78, DateTimeKind.Local).AddTicks(1314), "Group" },
+                    { "PRIVATE", new DateTime(2021, 2, 27, 17, 36, 12, 78, DateTimeKind.Local).AddTicks(1324), "Private" },
+                    { "UNDEFINED", new DateTime(2021, 2, 27, 17, 36, 12, 78, DateTimeKind.Local).AddTicks(1325), "Undefined" }
                 });
 
             migrationBuilder.InsertData(
@@ -286,10 +275,10 @@ namespace Zs.App.Home.Data.Migrations
                 columns: new[] { "command_name", "command_default_args", "command_desc", "command_group", "insert_date", "command_script" },
                 values: new object[,]
                 {
-                    { "/test", null, "Тестовый запрос к боту. Возвращает ''Test''", "moderatorCmdGroup", new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(7015), "SELECT 'Test'" },
-                    { "/nulltest", null, "Тестовый запрос к боту. Возвращает NULL", "moderatorCmdGroup", new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(7495), "SELECT null" },
-                    { "/help", "<UserRoleId>", "Получение справки по доступным функциям", "userCmdGroup", new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(7940), "SELECT bot.sf_cmd_get_help({0})" },
-                    { "/sqlquery", "select 'Pass your query as parameter in double quotes'", "SQL-запрос", "adminCmdGroup", new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(7949), "select (with userQuery as ({0}) select json_agg(q) from userQuery q)" }
+                    { "/test", null, "Тестовый запрос к боту. Возвращает ''Test''", "moderatorCmdGroup", new DateTime(2021, 2, 27, 17, 36, 12, 80, DateTimeKind.Local).AddTicks(225), "SELECT 'Test'" },
+                    { "/nulltest", null, "Тестовый запрос к боту. Возвращает NULL", "moderatorCmdGroup", new DateTime(2021, 2, 27, 17, 36, 12, 80, DateTimeKind.Local).AddTicks(800), "SELECT null" },
+                    { "/help", "<UserRoleId>", "Получение справки по доступным функциям", "userCmdGroup", new DateTime(2021, 2, 27, 17, 36, 12, 80, DateTimeKind.Local).AddTicks(1330), "SELECT bot.sf_cmd_get_help({0})" },
+                    { "/sqlquery", "select 'Pass your query as parameter in double quotes'", "SQL-запрос", "adminCmdGroup", new DateTime(2021, 2, 27, 17, 36, 12, 80, DateTimeKind.Local).AddTicks(1346), "select (with userQuery as ({0}) select json_agg(q) from userQuery q)" }
                 });
 
             migrationBuilder.InsertData(
@@ -298,18 +287,18 @@ namespace Zs.App.Home.Data.Migrations
                 columns: new[] { "message_type_code", "insert_date", "message_type_name" },
                 values: new object[,]
                 {
-                    { "OTH", new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(4554), "Other" },
-                    { "SRV", new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(4553), "Service message" },
-                    { "CNT", new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(4552), "Contact" },
-                    { "LOC", new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(4551), "Location" },
-                    { "STK", new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(4549), "Sticker" },
-                    { "DOC", new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(4548), "Document" },
-                    { "VID", new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(4545), "Video" },
-                    { "AUD", new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(4543), "Audio" },
-                    { "PHT", new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(4542), "Photo" },
-                    { "TXT", new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(4537), "Text" },
-                    { "UKN", new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(4044), "Unknown" },
-                    { "VOI", new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(4547), "Voice" }
+                    { "OTH", new DateTime(2021, 2, 27, 17, 36, 12, 79, DateTimeKind.Local).AddTicks(6979), "Other" },
+                    { "SRV", new DateTime(2021, 2, 27, 17, 36, 12, 79, DateTimeKind.Local).AddTicks(6977), "Service message" },
+                    { "CNT", new DateTime(2021, 2, 27, 17, 36, 12, 79, DateTimeKind.Local).AddTicks(6976), "Contact" },
+                    { "LOC", new DateTime(2021, 2, 27, 17, 36, 12, 79, DateTimeKind.Local).AddTicks(6975), "Location" },
+                    { "STK", new DateTime(2021, 2, 27, 17, 36, 12, 79, DateTimeKind.Local).AddTicks(6974), "Sticker" },
+                    { "DOC", new DateTime(2021, 2, 27, 17, 36, 12, 79, DateTimeKind.Local).AddTicks(6973), "Document" },
+                    { "VID", new DateTime(2021, 2, 27, 17, 36, 12, 79, DateTimeKind.Local).AddTicks(6970), "Video" },
+                    { "AUD", new DateTime(2021, 2, 27, 17, 36, 12, 79, DateTimeKind.Local).AddTicks(6969), "Audio" },
+                    { "PHT", new DateTime(2021, 2, 27, 17, 36, 12, 79, DateTimeKind.Local).AddTicks(6968), "Photo" },
+                    { "TXT", new DateTime(2021, 2, 27, 17, 36, 12, 79, DateTimeKind.Local).AddTicks(6960), "Text" },
+                    { "UKN", new DateTime(2021, 2, 27, 17, 36, 12, 79, DateTimeKind.Local).AddTicks(6396), "Unknown" },
+                    { "VOI", new DateTime(2021, 2, 27, 17, 36, 12, 79, DateTimeKind.Local).AddTicks(6971), "Voice" }
                 });
 
             migrationBuilder.InsertData(
@@ -318,11 +307,11 @@ namespace Zs.App.Home.Data.Migrations
                 columns: new[] { "messenger_code", "insert_date", "messenger_name" },
                 values: new object[,]
                 {
-                    { "TG", new DateTime(2020, 12, 12, 16, 57, 9, 494, DateTimeKind.Local).AddTicks(5629), "Telegram" },
-                    { "VK", new DateTime(2020, 12, 12, 16, 57, 9, 495, DateTimeKind.Local).AddTicks(6015), "Вконтакте" },
-                    { "SK", new DateTime(2020, 12, 12, 16, 57, 9, 495, DateTimeKind.Local).AddTicks(6040), "Skype" },
-                    { "FB", new DateTime(2020, 12, 12, 16, 57, 9, 495, DateTimeKind.Local).AddTicks(6043), "Facebook" },
-                    { "DC", new DateTime(2020, 12, 12, 16, 57, 9, 495, DateTimeKind.Local).AddTicks(6044), "Discord" }
+                    { "TG", new DateTime(2021, 2, 27, 17, 36, 12, 75, DateTimeKind.Local).AddTicks(5890), "Telegram" },
+                    { "VK", new DateTime(2021, 2, 27, 17, 36, 12, 76, DateTimeKind.Local).AddTicks(6580), "Вконтакте" },
+                    { "SK", new DateTime(2021, 2, 27, 17, 36, 12, 76, DateTimeKind.Local).AddTicks(6601), "Skype" },
+                    { "FB", new DateTime(2021, 2, 27, 17, 36, 12, 76, DateTimeKind.Local).AddTicks(6603), "Facebook" },
+                    { "DC", new DateTime(2021, 2, 27, 17, 36, 12, 76, DateTimeKind.Local).AddTicks(6605), "Discord" }
                 });
 
             migrationBuilder.InsertData(
@@ -331,10 +320,10 @@ namespace Zs.App.Home.Data.Migrations
                 columns: new[] { "user_role_code", "insert_date", "user_role_name", "user_role_permissions" },
                 values: new object[,]
                 {
-                    { "MODERATOR", new DateTime(2020, 12, 12, 16, 57, 9, 497, DateTimeKind.Local).AddTicks(7557), "Moderator", "[ \"moderatorCmdGroup\", \"userCmdGroup\" ]" },
-                    { "OWNER", new DateTime(2020, 12, 12, 16, 57, 9, 497, DateTimeKind.Local).AddTicks(7059), "Owner", "[ \"All\" ]" },
-                    { "ADMIN", new DateTime(2020, 12, 12, 16, 57, 9, 497, DateTimeKind.Local).AddTicks(7553), "Administrator", "[ \"adminCmdGroup\", \"moderatorCmdGroup\", \"userCmdGroup\" ]" },
-                    { "USER", new DateTime(2020, 12, 12, 16, 57, 9, 497, DateTimeKind.Local).AddTicks(7561), "User", "[ \"userCmdGroup\" ]" }
+                    { "MODERATOR", new DateTime(2021, 2, 27, 17, 36, 12, 78, DateTimeKind.Local).AddTicks(9104), "Moderator", "[ \"moderatorCmdGroup\", \"userCmdGroup\" ]" },
+                    { "OWNER", new DateTime(2021, 2, 27, 17, 36, 12, 78, DateTimeKind.Local).AddTicks(8508), "Owner", "[ \"All\" ]" },
+                    { "ADMIN", new DateTime(2021, 2, 27, 17, 36, 12, 78, DateTimeKind.Local).AddTicks(9095), "Administrator", "[ \"adminCmdGroup\", \"moderatorCmdGroup\", \"userCmdGroup\" ]" },
+                    { "USER", new DateTime(2021, 2, 27, 17, 36, 12, 78, DateTimeKind.Local).AddTicks(9106), "User", "[ \"userCmdGroup\" ]" }
                 });
 
             migrationBuilder.InsertData(
@@ -343,8 +332,8 @@ namespace Zs.App.Home.Data.Migrations
                 columns: new[] { "chat_id", "chat_type_code", "chat_description", "insert_date", "chat_name", "raw_data", "raw_data_hash", "raw_data_history" },
                 values: new object[,]
                 {
-                    { -1, "PRIVATE", "UnitTestChat", new DateTime(2020, 12, 12, 16, 57, 9, 497, DateTimeKind.Local).AddTicks(4076), "UnitTestChat", "{ \"test\": \"test\" }", "-1063294487", null },
-                    { 1, "PRIVATE", null, new DateTime(2020, 12, 12, 16, 57, 9, 497, DateTimeKind.Local).AddTicks(4646), "zuev56", "{ \"Id\": 210281448 }", "-1063294487", null }
+                    { -1, "PRIVATE", "UnitTestChat", new DateTime(2021, 2, 27, 17, 36, 12, 78, DateTimeKind.Local).AddTicks(5329), "UnitTestChat", "{ \"test\": \"test\" }", "-1063294487", null },
+                    { 1, "PRIVATE", null, new DateTime(2021, 2, 27, 17, 36, 12, 78, DateTimeKind.Local).AddTicks(6051), "zuev56", "{ \"Id\": 210281448 }", "-1063294487", null }
                 });
 
             migrationBuilder.InsertData(
@@ -353,10 +342,16 @@ namespace Zs.App.Home.Data.Migrations
                 columns: new[] { "user_id", "user_full_name", "insert_date", "user_is_bot", "user_name", "raw_data", "raw_data_hash", "raw_data_history", "user_role_code" },
                 values: new object[,]
                 {
-                    { 1, "Сергей Зуев", new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(1860), false, "zuev56", "{ \"Id\": 210281448 }", "-1063294487", null, "ADMIN" },
-                    { -10, "for exported message reading", new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(1374), false, "Unknown", "{ \"test\": \"test\" }", "-1063294487", null, "USER" },
-                    { -1, "UnitTest", new DateTime(2020, 12, 12, 16, 57, 9, 498, DateTimeKind.Local).AddTicks(1854), false, "UnitTestUser", "{ \"test\": \"test\" }", "-1063294487", null, "USER" }
+                    { 1, "Сергей Зуев", new DateTime(2021, 2, 27, 17, 36, 12, 79, DateTimeKind.Local).AddTicks(4604), false, "zuev56", "{ \"Id\": 210281448 }", "-1063294487", null, "ADMIN" },
+                    { -10, "for exported message reading", new DateTime(2021, 2, 27, 17, 36, 12, 79, DateTimeKind.Local).AddTicks(4020), false, "Unknown", "{ \"test\": \"test\" }", "-1063294487", null, "USER" },
+                    { -1, "UnitTest", new DateTime(2021, 2, 27, 17, 36, 12, 79, DateTimeKind.Local).AddTicks(4594), false, "UnitTestUser", "{ \"test\": \"test\" }", "-1063294487", null, "USER" }
                 });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_activity_log_user_id",
+                schema: "vk",
+                table: "activity_log",
+                column: "user_id");
 
             migrationBuilder.CreateIndex(
                 name: "IX_chats_chat_type_code",
@@ -400,8 +395,8 @@ namespace Zs.App.Home.Data.Migrations
                 table: "users",
                 column: "user_role_code");
 
-            migrationBuilder.Sql(Zs.Bot.Data.BotContext.GetOtherSqlScripts());
-            migrationBuilder.Sql(Data.HomeContext.GetOtherSqlScripts());
+            migrationBuilder.Sql(Zs.Bot.Data.BotContext.GetOtherSqlScripts("HomeNew"));
+            migrationBuilder.Sql(Data.HomeContext.GetOtherSqlScripts("HomeNew"));
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
@@ -412,10 +407,6 @@ namespace Zs.App.Home.Data.Migrations
 
             migrationBuilder.DropTable(
                 name: "commands",
-                schema: "bot");
-
-            migrationBuilder.DropTable(
-                name: "logs",
                 schema: "bot");
 
             migrationBuilder.DropTable(
