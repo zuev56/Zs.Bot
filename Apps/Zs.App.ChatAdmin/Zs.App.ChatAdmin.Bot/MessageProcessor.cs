@@ -7,6 +7,8 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Zs.App.ChatAdmin.Abstractions;
+using Zs.App.ChatAdmin.Model;
+using Zs.Bot.Data.Abstractions;
 using Zs.Bot.Data.Models;
 using Zs.Bot.Services.Messaging;
 using Zs.Common.Abstractions;
@@ -14,14 +16,6 @@ using Zs.Common.Helpers;
 
 namespace Zs.App.ChatAdmin
 {
-    internal interface IMessageProcessor
-    {
-        event Action<string> LimitsDefined;
-        Task ProcessGroupMessage(Message message);
-        void ResetLimits();
-        Task SetInternetRepairDate(DateTime? date);
-    }
-
     internal sealed class MessageProcessor : IMessageProcessor
     {
         private int _defaultChatId;              // Идентификатор чата, с которым работает бот
@@ -29,25 +23,27 @@ namespace Zs.App.ChatAdmin
         private int _limitHiHi = -1;             // Верхняя аварийная уставка
         private int _limitAfterBan = 5;          // Количество сообщений, доступное пользователю после бана до конца дня
         private int _accountingStartsAfter = -1; // Общее количество сообщений в чате, после которого включается ограничитель
-        private bool _doNotBanAdmins = true;     // Банить или не банить админов
         private bool _limitsAreDefined;          // Нужен для понимания, были ли уже переопределены лимиты после восстановления интернета
         private DateTime? _accountingStartDate;  // Время начала учёта сообщений и включения ограничений
         private DateTime? _internetRepairDate;   // Время восстановления соединения с интернетом
         private readonly IMessenger _messenger;
         private readonly ILogger _logger;
         private readonly IConfiguration _configuration;
-        [Obsolete]
-        private readonly bool _detailedLogging = false;
+        private readonly IItemsWithRawDataRepository<Chat, int> _chatsRepo;
+        private readonly IItemsWithRawDataRepository<User, int> _usersRepo;
+        private readonly IItemsWithRawDataRepository<Message, int> _messagesRepo;
+        private readonly IRepository<Ban, int> _bansRepo;
         private readonly int _waitAfterConnectionRepairedSec = 60;
-        private readonly IContextFactory _contextFactory;
 
         public event Action<string> LimitsDefined;
-
 
         internal MessageProcessor(
             IConfiguration configuration,
             IMessenger messenger,
-            IContextFactory contextFactory,
+            IItemsWithRawDataRepository<Chat, int> chatsRepo,
+            IItemsWithRawDataRepository<User, int> usersRepo,
+            IItemsWithRawDataRepository<Message, int> messagesRepo,
+            IRepository<Ban, int> bansRepo,
             ILogger<MessageProcessor> logger)
         {
 
@@ -55,7 +51,10 @@ namespace Zs.App.ChatAdmin
             {
                 _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
                 _messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
-                _contextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
+                _chatsRepo = chatsRepo ?? throw new ArgumentNullException(nameof(chatsRepo));
+                _usersRepo = usersRepo ?? throw new ArgumentNullException(nameof(usersRepo));
+                _messagesRepo = messagesRepo ?? throw new ArgumentNullException(nameof(messagesRepo));
+                _bansRepo = bansRepo ?? throw new ArgumentNullException(nameof(bansRepo));
                 _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
                 _defaultChatId = _configuration["ChatAdmin:DefaultChatId"] != null 
@@ -72,6 +71,7 @@ namespace Zs.App.ChatAdmin
 
         public async Task ProcessGroupMessage(Message message)
         {
+            // TODO: Refactoring
             try
             {
                 if (message is null)
@@ -107,34 +107,29 @@ namespace Zs.App.ChatAdmin
                                      $"_start_account_after => {_accountingStartsAfter}\n" +
                             ")";
 
+                var jsonResult = DbHelper.GetQueryResult(_configuration.GetConnectionString("Default"), query);
 
-                using var ctx = _contextFactory.GetBotContext();
-
-                var jsonResult = DbHelper.GetQueryResult(
-                                     ctx.Database.GetDbConnection().ConnectionString,
-                                     query);
-
-                if (_detailedLogging)
+                var logData = new Dictionary<string, object>
                 {
-                    var logData = new Dictionary<string, object>
-                    {
-                        { "JsonResult", jsonResult },
-                        { "MessageId", message.Id }
-                    };
-                    _logger.LogInformation("Incoming message sql-processing result", logData);
-                }
+                    { "JsonResult", jsonResult },
+                    { "MessageId", message.Id }
+                };
+                _logger.LogTrace("Incoming message sql-processing result", logData);
 
                 var dictResult = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(jsonResult);
 
                 if (dictResult.ContainsKey("Action"))
                 {
-                    var chat = ctx.Chats.First(c => c.Id == message.ChatId);
+                    //using var ctx = _contextFactory.GetBotContext();
+                    //var chat = ctx.Chats.First(c => c.Id == message.ChatId);
+                    var chat = await _chatsRepo.FindByKeyAsync(message.ChatId);
 
                     if (dictResult.ContainsKey("MessageText"))
                     {
                         if (dictResult["MessageText"].Contains("<UserName>", StringComparison.InvariantCultureIgnoreCase))
                         {
-                            var dbUser = ctx.Users.FirstOrDefault(u => u.Id == message.UserId);
+                            //var dbUser = ctx.Users.FirstOrDefault(u => u.Id == message.UserId);
+                            var dbUser = await _usersRepo.FindByKeyAsync(message.UserId);
                             var userName = dbUser?.Name != null
                                 ? $"@{dbUser.Name}"
                                 : dbUser?.FullName ?? "UserName";
@@ -235,17 +230,14 @@ namespace Zs.App.ChatAdmin
                 _accountingStartsAfter = checked((int)long.Parse(_configuration["ChatAdmin:AccountingStartsAfter"]));
                 _accountingStartDate = null;
 
-                if (_detailedLogging)
+                var logData = new Dictionary<string, int>()
                 {
-                    var logData = new Dictionary<string, int>()
-                    {
-                        { "MessageLimitHi", _limitHi },
-                        { "MessageLimitHiHi", _limitHiHi },
-                        { "MessageLimitAfterBan", _limitAfterBan },
-                        { "AccountingStartsAfter", _accountingStartsAfter }
-                    };
-                    _logger.LogInformation("Limits set from configuration file", logData);
-                }
+                    { "MessageLimitHi", _limitHi },
+                    { "MessageLimitHiHi", _limitHiHi },
+                    { "MessageLimitAfterBan", _limitAfterBan },
+                    { "AccountingStartsAfter", _accountingStartsAfter }
+                };
+                _logger.LogTrace("Limits set from configuration file", logData);
 
                 Volatile.Read(ref LimitsDefined)?.Invoke(GetLimitInfo());
             }
@@ -271,15 +263,16 @@ namespace Zs.App.ChatAdmin
                 _accountingStartDate = null;
 
                 // Remove today Bans where BanFinishDate is null (warnings before ban)
-                using var ctx = _contextFactory.GetChatAdminContext();
-                var warnings = await ctx.Bans
-                    .Where(b => b.InsertDate > DateTime.Today
-                             && b.FinishDate == null).ToListAsync();
-                if (warnings.Count > 0)
-                {
-                    ctx.Bans.RemoveRange(warnings);
-                    await ctx.SaveChangesAsync();
-                }
+                //using var ctx = _contextFactory.GetChatAdminContext();
+                //var warnings = await ctx.Bans.Where(b => b.InsertDate > DateTime.Today && b.FinishDate == null).ToListAsync();
+                var warnings = await _bansRepo.FindAllAsync(b => b.InsertDate > DateTime.Today && b.FinishDate == null);
+
+                //if (warnings.Count > 0)
+                //{
+                //     ctx.Bans.RemoveRange(warnings);
+                //     await ctx.SaveChangesAsync();
+                //}
+                await _bansRepo.DeleteRangeAsync(warnings);
 
                 _logger.LogWarning("The internet connection has been lost. Today's ban-warnings removed");
             }
@@ -300,6 +293,7 @@ namespace Zs.App.ChatAdmin
         /// <summary> Defines the limits depending on current situation </summary>
         private async Task DefineActualLimits()
         {
+            // TODO: Refactoring
             int maxAcountedMessagesFromUser = -1;
             int dailyMsgCount = -1;
             try
@@ -319,7 +313,7 @@ namespace Zs.App.ChatAdmin
 
                 _logger.LogInformation("Limits definition started", logDataBefore);
 
-                using (var ctx = _contextFactory.GetBotContext())
+                //using (var ctx = _contextFactory.GetBotContext())
                 {
                     // Telegram message date is GMT. But now everything depends on the InsertDate.
 
@@ -328,18 +322,25 @@ namespace Zs.App.ChatAdmin
                         ? "select * from bot.messages where user_id = -666" // something unreal to get nothing
                         : $"{selectDailyMessages} and cast(raw_data ->> 'Date' as timestamptz) > '{_accountingStartDate}'";
 
-                    var userMessageCounts = ctx.Messages
-                        .FromSqlRaw(selectAccountedDailyMessages)
+                    //var userMessageCounts = ctx.Messages
+                    //    .FromSqlRaw(selectAccountedDailyMessages)
+                    //    .GroupBy(m => m.UserId)
+                    //    .Select(m => new { UserId = m.Key, Count = m.Count() });
+                    var userMessageCounts = (await _messagesRepo.FindAllBySqlAsync(selectAccountedDailyMessages))
                         .GroupBy(m => m.UserId)
                         .Select(m => new { UserId = m.Key, Count = m.Count() });
+
 
                     maxAcountedMessagesFromUser = userMessageCounts.Count() > 0
                         ? userMessageCounts.Max(i => i.Count)
                         : 0;
 
-                    dailyMsgCount = ctx.Messages
-                        .FromSqlRaw(selectDailyMessages)
+                    //dailyMsgCount = ctx.Messages
+                    //    .FromSqlRaw(selectDailyMessages)
+                    //    .Where(m => !m.IsDeleted).Count();
+                    dailyMsgCount = (await _messagesRepo.FindAllBySqlAsync(selectDailyMessages))
                         .Where(m => !m.IsDeleted).Count();
+
 
                     _accountingStartsAfter = dailyMsgCount > _accountingStartsAfter
                         ? dailyMsgCount + 2

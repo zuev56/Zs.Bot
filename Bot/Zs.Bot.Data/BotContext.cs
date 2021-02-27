@@ -130,13 +130,13 @@ namespace Zs.Bot.Data
             });
         }
 
-        public static string GetOtherSqlScripts()
+        public static string GetOtherSqlScripts(string dbName = null)
         {
             var resources = new[]
             {
+                "Priveleges.sql",
                 "StoredFunctions.sql",
-                "SequencesUpdate.sql",
-                "Priveleges.sql"
+                "SequencesUpdate.sql"
             };
 
             var sb = new StringBuilder();
@@ -145,6 +145,9 @@ namespace Zs.Bot.Data
                 var sqlScript = Assembly.GetExecutingAssembly().ReadResource(resourceName);
                 sb.Append(sqlScript + Environment.NewLine);
             }
+
+            if (!string.IsNullOrWhiteSpace(dbName))
+                sb.Replace("DefaultDbName", dbName);
 
             return sb.ToString();
         }

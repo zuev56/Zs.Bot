@@ -160,7 +160,7 @@ namespace Zs.Bot.Services.Commands
             {
                 switch (p.ToUpperInvariant())
                 {
-                    case "<USERROLECODE>":
+                    case "<USERROLEID>":
                         var user = await _usersRepo.FindAsync(u => u.Id == botCommand.FromUserId);
                         concreteParams.Add(p, $"'{user?.UserRoleId}'");
                         break;

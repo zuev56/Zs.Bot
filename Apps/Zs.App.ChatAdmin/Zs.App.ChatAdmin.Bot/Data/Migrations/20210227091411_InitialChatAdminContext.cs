@@ -4,7 +4,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace Zs.App.ChatAdmin.Data.Migrations
 {
-    public partial class InitialCreate : Migration
+    public partial class InitialChatAdminContext : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -328,10 +328,10 @@ namespace Zs.App.ChatAdmin.Data.Migrations
                 columns: new[] { "chat_type_code", "insert_date", "chat_type_name" },
                 values: new object[,]
                 {
-                    { "CHANNEL", new DateTime(2020, 12, 11, 21, 9, 0, 514, DateTimeKind.Local).AddTicks(8697), "Channel" },
-                    { "GROUP", new DateTime(2020, 12, 11, 21, 9, 0, 514, DateTimeKind.Local).AddTicks(9591), "Group" },
-                    { "PRIVATE", new DateTime(2020, 12, 11, 21, 9, 0, 514, DateTimeKind.Local).AddTicks(9602), "Private" },
-                    { "UNDEFINED", new DateTime(2020, 12, 11, 21, 9, 0, 514, DateTimeKind.Local).AddTicks(9605), "Undefined" }
+                    { "CHANNEL", new DateTime(2021, 2, 27, 12, 14, 10, 703, DateTimeKind.Local).AddTicks(6634), "Channel" },
+                    { "GROUP", new DateTime(2021, 2, 27, 12, 14, 10, 703, DateTimeKind.Local).AddTicks(7243), "Group" },
+                    { "PRIVATE", new DateTime(2021, 2, 27, 12, 14, 10, 703, DateTimeKind.Local).AddTicks(7253), "Private" },
+                    { "UNDEFINED", new DateTime(2021, 2, 27, 12, 14, 10, 703, DateTimeKind.Local).AddTicks(7254), "Undefined" }
                 });
 
             migrationBuilder.InsertData(
@@ -340,11 +340,11 @@ namespace Zs.App.ChatAdmin.Data.Migrations
                 columns: new[] { "command_name", "command_default_args", "command_desc", "command_group", "insert_date", "command_script" },
                 values: new object[,]
                 {
-                    { "/test", null, "Тестовый запрос к боту. Возвращает ''Test''", "moderatorCmdGroup", new DateTime(2020, 12, 11, 21, 9, 0, 517, DateTimeKind.Local).AddTicks(8443), "SELECT 'Test'" },
-                    { "/nulltest", null, "Тестовый запрос к боту. Возвращает NULL", "moderatorCmdGroup", new DateTime(2020, 12, 11, 21, 9, 0, 518, DateTimeKind.Local).AddTicks(86), "SELECT null" },
-                    { "/help", "<UserRoleId>", "Получение справки по доступным функциям", "userCmdGroup", new DateTime(2020, 12, 11, 21, 9, 0, 518, DateTimeKind.Local).AddTicks(923), "SELECT bot.sf_cmd_get_help({0})" },
-                    { "/sqlquery", "select 'Pass your query as parameter in double quotes'", "SQL-запрос", "adminCmdGroup", new DateTime(2020, 12, 11, 21, 9, 0, 518, DateTimeKind.Local).AddTicks(940), "select (with userQuery as ({0}) select json_agg(q) from userQuery q)" },
-                    { "/getuserstatistics", "15; now()::Date; now()", "Получение статистики по активности участников всех чатов за определённый период", "adminCmdGroup", new DateTime(2020, 12, 11, 21, 9, 0, 521, DateTimeKind.Local).AddTicks(1348), "SELECT zl.sf_cmd_get_full_statistics({0}, {1}, {2})" }
+                    { "/test", null, "Тестовый запрос к боту. Возвращает ''Test''", "moderatorCmdGroup", new DateTime(2021, 2, 27, 12, 14, 10, 705, DateTimeKind.Local).AddTicks(6741), "SELECT 'Test'" },
+                    { "/nulltest", null, "Тестовый запрос к боту. Возвращает NULL", "moderatorCmdGroup", new DateTime(2021, 2, 27, 12, 14, 10, 705, DateTimeKind.Local).AddTicks(7625), "SELECT null" },
+                    { "/help", "<UserRoleId>", "Получение справки по доступным функциям", "userCmdGroup", new DateTime(2021, 2, 27, 12, 14, 10, 705, DateTimeKind.Local).AddTicks(8247), "SELECT bot.sf_cmd_get_help({0})" },
+                    { "/sqlquery", "select 'Pass your query as parameter in double quotes'", "SQL-запрос", "adminCmdGroup", new DateTime(2021, 2, 27, 12, 14, 10, 705, DateTimeKind.Local).AddTicks(8264), "select (with userQuery as ({0}) select json_agg(q) from userQuery q)" },
+                    { "/getuserstatistics", "15; now()::Date; now()", "Получение статистики по активности участников всех чатов за определённый период", "adminCmdGroup", new DateTime(2021, 2, 27, 12, 14, 10, 707, DateTimeKind.Local).AddTicks(3267), "SELECT zl.sf_cmd_get_full_statistics({0}, {1}, {2})" }
                 });
 
             migrationBuilder.InsertData(
@@ -353,18 +353,18 @@ namespace Zs.App.ChatAdmin.Data.Migrations
                 columns: new[] { "message_type_code", "insert_date", "message_type_name" },
                 values: new object[,]
                 {
-                    { "OTH", new DateTime(2020, 12, 11, 21, 9, 0, 517, DateTimeKind.Local).AddTicks(4319), "Other" },
-                    { "SRV", new DateTime(2020, 12, 11, 21, 9, 0, 517, DateTimeKind.Local).AddTicks(4316), "Service message" },
-                    { "CNT", new DateTime(2020, 12, 11, 21, 9, 0, 517, DateTimeKind.Local).AddTicks(4314), "Contact" },
-                    { "LOC", new DateTime(2020, 12, 11, 21, 9, 0, 517, DateTimeKind.Local).AddTicks(4312), "Location" },
-                    { "STK", new DateTime(2020, 12, 11, 21, 9, 0, 517, DateTimeKind.Local).AddTicks(4310), "Sticker" },
-                    { "DOC", new DateTime(2020, 12, 11, 21, 9, 0, 517, DateTimeKind.Local).AddTicks(4308), "Document" },
-                    { "VOI", new DateTime(2020, 12, 11, 21, 9, 0, 517, DateTimeKind.Local).AddTicks(4306), "Voice" },
-                    { "VID", new DateTime(2020, 12, 11, 21, 9, 0, 517, DateTimeKind.Local).AddTicks(4304), "Video" },
-                    { "AUD", new DateTime(2020, 12, 11, 21, 9, 0, 517, DateTimeKind.Local).AddTicks(4302), "Audio" },
-                    { "PHT", new DateTime(2020, 12, 11, 21, 9, 0, 517, DateTimeKind.Local).AddTicks(4300), "Photo" },
-                    { "TXT", new DateTime(2020, 12, 11, 21, 9, 0, 517, DateTimeKind.Local).AddTicks(4293), "Text" },
-                    { "UKN", new DateTime(2020, 12, 11, 21, 9, 0, 517, DateTimeKind.Local).AddTicks(3426), "Unknown" }
+                    { "OTH", new DateTime(2021, 2, 27, 12, 14, 10, 705, DateTimeKind.Local).AddTicks(3798), "Other" },
+                    { "SRV", new DateTime(2021, 2, 27, 12, 14, 10, 705, DateTimeKind.Local).AddTicks(3797), "Service message" },
+                    { "CNT", new DateTime(2021, 2, 27, 12, 14, 10, 705, DateTimeKind.Local).AddTicks(3796), "Contact" },
+                    { "LOC", new DateTime(2021, 2, 27, 12, 14, 10, 705, DateTimeKind.Local).AddTicks(3795), "Location" },
+                    { "STK", new DateTime(2021, 2, 27, 12, 14, 10, 705, DateTimeKind.Local).AddTicks(3793), "Sticker" },
+                    { "DOC", new DateTime(2021, 2, 27, 12, 14, 10, 705, DateTimeKind.Local).AddTicks(3792), "Document" },
+                    { "VOI", new DateTime(2021, 2, 27, 12, 14, 10, 705, DateTimeKind.Local).AddTicks(3791), "Voice" },
+                    { "VID", new DateTime(2021, 2, 27, 12, 14, 10, 705, DateTimeKind.Local).AddTicks(3790), "Video" },
+                    { "AUD", new DateTime(2021, 2, 27, 12, 14, 10, 705, DateTimeKind.Local).AddTicks(3788), "Audio" },
+                    { "PHT", new DateTime(2021, 2, 27, 12, 14, 10, 705, DateTimeKind.Local).AddTicks(3787), "Photo" },
+                    { "TXT", new DateTime(2021, 2, 27, 12, 14, 10, 705, DateTimeKind.Local).AddTicks(3778), "Text" },
+                    { "UKN", new DateTime(2021, 2, 27, 12, 14, 10, 705, DateTimeKind.Local).AddTicks(3201), "Unknown" }
                 });
 
             migrationBuilder.InsertData(
@@ -373,11 +373,11 @@ namespace Zs.App.ChatAdmin.Data.Migrations
                 columns: new[] { "messenger_code", "insert_date", "messenger_name" },
                 values: new object[,]
                 {
-                    { "TG", new DateTime(2020, 12, 11, 21, 9, 0, 510, DateTimeKind.Local).AddTicks(7635), "Telegram" },
-                    { "VK", new DateTime(2020, 12, 11, 21, 9, 0, 512, DateTimeKind.Local).AddTicks(3757), "Вконтакте" },
-                    { "SK", new DateTime(2020, 12, 11, 21, 9, 0, 512, DateTimeKind.Local).AddTicks(3787), "Skype" },
-                    { "FB", new DateTime(2020, 12, 11, 21, 9, 0, 512, DateTimeKind.Local).AddTicks(3790), "Facebook" },
-                    { "DC", new DateTime(2020, 12, 11, 21, 9, 0, 512, DateTimeKind.Local).AddTicks(3792), "Discord" }
+                    { "TG", new DateTime(2021, 2, 27, 12, 14, 10, 701, DateTimeKind.Local).AddTicks(1913), "Telegram" },
+                    { "VK", new DateTime(2021, 2, 27, 12, 14, 10, 702, DateTimeKind.Local).AddTicks(2980), "Вконтакте" },
+                    { "SK", new DateTime(2021, 2, 27, 12, 14, 10, 702, DateTimeKind.Local).AddTicks(3004), "Skype" },
+                    { "FB", new DateTime(2021, 2, 27, 12, 14, 10, 702, DateTimeKind.Local).AddTicks(3006), "Facebook" },
+                    { "DC", new DateTime(2021, 2, 27, 12, 14, 10, 702, DateTimeKind.Local).AddTicks(3007), "Discord" }
                 });
 
             migrationBuilder.InsertData(
@@ -386,10 +386,10 @@ namespace Zs.App.ChatAdmin.Data.Migrations
                 columns: new[] { "user_role_code", "insert_date", "user_role_name", "user_role_permissions" },
                 values: new object[,]
                 {
-                    { "OWNER", new DateTime(2020, 12, 11, 21, 9, 0, 516, DateTimeKind.Local).AddTicks(1613), "Owner", "[ \"All\" ]" },
-                    { "ADMIN", new DateTime(2020, 12, 11, 21, 9, 0, 516, DateTimeKind.Local).AddTicks(2415), "Administrator", "[ \"adminCmdGroup\", \"moderatorCmdGroup\", \"userCmdGroup\" ]" },
-                    { "MODERATOR", new DateTime(2020, 12, 11, 21, 9, 0, 516, DateTimeKind.Local).AddTicks(2423), "Moderator", "[ \"moderatorCmdGroup\", \"userCmdGroup\" ]" },
-                    { "USER", new DateTime(2020, 12, 11, 21, 9, 0, 516, DateTimeKind.Local).AddTicks(2427), "User", "[ \"userCmdGroup\" ]" }
+                    { "OWNER", new DateTime(2021, 2, 27, 12, 14, 10, 704, DateTimeKind.Local).AddTicks(4639), "Owner", "[ \"All\" ]" },
+                    { "ADMIN", new DateTime(2021, 2, 27, 12, 14, 10, 704, DateTimeKind.Local).AddTicks(5217), "Administrator", "[ \"adminCmdGroup\", \"moderatorCmdGroup\", \"userCmdGroup\" ]" },
+                    { "MODERATOR", new DateTime(2021, 2, 27, 12, 14, 10, 704, DateTimeKind.Local).AddTicks(5226), "Moderator", "[ \"moderatorCmdGroup\", \"userCmdGroup\" ]" },
+                    { "USER", new DateTime(2021, 2, 27, 12, 14, 10, 704, DateTimeKind.Local).AddTicks(5228), "User", "[ \"userCmdGroup\" ]" }
                 });
 
             migrationBuilder.InsertData(
@@ -398,8 +398,8 @@ namespace Zs.App.ChatAdmin.Data.Migrations
                 columns: new[] { "chat_id", "chat_type_code", "chat_description", "insert_date", "chat_name", "raw_data", "raw_data_hash", "raw_data_history" },
                 values: new object[,]
                 {
-                    { -1, "PRIVATE", "UnitTestChat", new DateTime(2020, 12, 11, 21, 9, 0, 515, DateTimeKind.Local).AddTicks(6119), "UnitTestChat", "{ \"test\": \"test\" }", "-1063294487", null },
-                    { 1, "PRIVATE", null, new DateTime(2020, 12, 11, 21, 9, 0, 515, DateTimeKind.Local).AddTicks(6932), "zuev56", "{ \"Id\": 210281448 }", "-1063294487", null }
+                    { -1, "PRIVATE", "UnitTestChat", new DateTime(2021, 2, 27, 12, 14, 10, 704, DateTimeKind.Local).AddTicks(1662), "UnitTestChat", "{ \"test\": \"test\" }", "-1063294487", null },
+                    { 1, "PRIVATE", null, new DateTime(2021, 2, 27, 12, 14, 10, 704, DateTimeKind.Local).AddTicks(2241), "zuev56", "{ \"Id\": 210281448 }", "-1063294487", null }
                 });
 
             migrationBuilder.InsertData(
@@ -408,9 +408,9 @@ namespace Zs.App.ChatAdmin.Data.Migrations
                 columns: new[] { "user_id", "user_full_name", "insert_date", "user_is_bot", "user_name", "raw_data", "raw_data_hash", "raw_data_history", "user_role_code" },
                 values: new object[,]
                 {
-                    { 1, "Сергей Зуев", new DateTime(2020, 12, 11, 21, 9, 0, 516, DateTimeKind.Local).AddTicks(9896), false, "zuev56", "{ \"Id\": 210281448 }", "-1063294487", null, "ADMIN" },
-                    { -10, "for exported message reading", new DateTime(2020, 12, 11, 21, 9, 0, 516, DateTimeKind.Local).AddTicks(9030), false, "Unknown", "{ \"test\": \"test\" }", "-1063294487", null, "USER" },
-                    { -1, "UnitTest", new DateTime(2020, 12, 11, 21, 9, 0, 516, DateTimeKind.Local).AddTicks(9884), false, "UnitTestUser", "{ \"test\": \"test\" }", "-1063294487", null, "USER" }
+                    { 1, "Сергей Зуев", new DateTime(2021, 2, 27, 12, 14, 10, 705, DateTimeKind.Local).AddTicks(1050), false, "zuev56", "{ \"Id\": 210281448 }", "-1063294487", null, "ADMIN" },
+                    { -10, "for exported message reading", new DateTime(2021, 2, 27, 12, 14, 10, 705, DateTimeKind.Local).AddTicks(445), false, "Unknown", "{ \"test\": \"test\" }", "-1063294487", null, "USER" },
+                    { -1, "UnitTest", new DateTime(2021, 2, 27, 12, 14, 10, 705, DateTimeKind.Local).AddTicks(1037), false, "UnitTestUser", "{ \"test\": \"test\" }", "-1063294487", null, "USER" }
                 });
 
             migrationBuilder.CreateIndex(
@@ -473,8 +473,8 @@ namespace Zs.App.ChatAdmin.Data.Migrations
                 table: "users",
                 column: "user_role_code");
 
-            migrationBuilder.Sql(Zs.Bot.Data.BotContext.GetOtherSqlScripts());
-            migrationBuilder.Sql(ChatAdminContext.GetOtherSqlScripts());
+            migrationBuilder.Sql(Zs.Bot.Data.BotContext.GetOtherSqlScripts("ChatAdmin"));
+            migrationBuilder.Sql(ChatAdminContext.GetOtherSqlScripts("ChatAdmin"));
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)

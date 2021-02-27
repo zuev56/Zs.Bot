@@ -20,10 +20,7 @@ namespace Zs.Bot.Data.Factories
             _options = options;
         }
 
-        public BotContext GetContext()
-        {
-            return new BotContext(_options);
-        }
+        public BotContext GetContext() => new BotContext(_options);
 
         // For migrations
         public BotContext CreateDbContext(string[] args)
@@ -32,6 +29,7 @@ namespace Zs.Bot.Data.Factories
             
             var solutionDir = Common.Extensions.Path.TryGetSolutionPath();
             var configuration = new ConfigurationBuilder()
+                // TODO: exclude hardcoded config file name
                 .AddJsonFile(Path.Combine(solutionDir, "PrivateConfiguration.json"), optional: true)
                 .Build();
             var connectionString = configuration.GetConnectionString("Default");

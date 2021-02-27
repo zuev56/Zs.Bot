@@ -31,16 +31,12 @@ namespace Zs.App.ChatAdmin
         private readonly IScheduler _scheduler;
         private readonly IMessageProcessor _messageProcessor;
         private readonly IConnectionAnalyser _connectionAnalyser;
-        private readonly IContextFactory _contextFactory;
-        [Obsolete]
-        private readonly bool _detailedLogging = false;
 
 
         public ChatAdmin(
             IConfiguration configuration,
             IConnectionAnalyser connectionAnalyser,
             IMessenger messenger,
-            IContextFactory contextFactory,
             IMessageProcessor messageProcessor,
             IScheduler scheduler,
             ILogger<ChatAdmin> logger)
@@ -48,7 +44,6 @@ namespace Zs.App.ChatAdmin
             try
             {
                 _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-                _contextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
                 _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
                 _messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
@@ -118,9 +113,9 @@ namespace Zs.App.ChatAdmin
 
         private async void Job_ExecutionCompleted(IJob job, IJobExecutionResult result)
         {
-            if (_detailedLogging || result?.TextValue != null)
+            if (result?.TextValue != null)
             {
-                _logger.LogInformation(
+                _logger.LogTrace(
                     $"Job execution completed{(job?.Description != null ? $" [{job.Description}]" : "")}",
                     result?.TextValue ?? "<null>");
             }

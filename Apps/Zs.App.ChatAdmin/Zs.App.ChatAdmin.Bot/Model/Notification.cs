@@ -1,14 +1,16 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Zs.App.ChatAdmin.Abstractions;
+using Zs.Bot.Data.Abstractions;
 
 namespace Zs.App.ChatAdmin.Model
 {
     /// <summary> Напоминание о событиях </summary>
     [Table("notifications", Schema = "zl")]
-    public partial class Notification : INotification
+    public partial class Notification : IDbEntity<Notification, int>
     {
         [Key]
         [Required(ErrorMessage = "Property 'NotificationId' is required")]
@@ -49,5 +51,10 @@ namespace Zs.App.ChatAdmin.Model
         [Required(ErrorMessage = "Property 'InsertDate' is required")]
         [Column("insert_date", TypeName = "timestamp with time zone")]
         public DateTime InsertDate { get; set; }
+
+        [JsonIgnore]
+        public Func<Notification> GetItemToSave => () => this;
+        [JsonIgnore]
+        public Func<Notification, Notification> GetItemToUpdate => (existingItem) => this;
     }
 }

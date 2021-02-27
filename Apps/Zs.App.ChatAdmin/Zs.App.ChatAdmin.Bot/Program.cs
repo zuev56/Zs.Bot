@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Zs.App.ChatAdmin.Abstractions;
 using Zs.App.ChatAdmin.Data;
+using Zs.App.ChatAdmin.Model;
 using Zs.Bot.Data;
 using Zs.Bot.Data.Abstractions;
 using Zs.Bot.Data.Factories;
@@ -94,7 +95,8 @@ namespace Zs.App.ChatAdmin
                         services.AddDbContext<BotContext>(options =>
                             options.UseNpgsql(hostContext.Configuration.GetConnectionString("Default")));
 
-                        services.AddSingleton<IContextFactory, ChatAdminContextFactory>();
+                        // For repositories
+                        services.AddSingleton<IContextFactory<ChatAdminContext>, ChatAdminContextFactory>();
                         services.AddSingleton<IContextFactory<BotContext>, BotContextFactory>();
 
                         services.AddScoped<IConnectionAnalyser, ConnectionAnalyser>(sp =>
@@ -125,7 +127,10 @@ namespace Zs.App.ChatAdmin
                             new MessageProcessor(
                                 sp.GetService<IConfiguration>(),
                                 sp.GetService<IMessenger>(),
-                                sp.GetService<IContextFactory>(),
+                                sp.GetService<IItemsWithRawDataRepository<Chat, int>>(),
+                                sp.GetService<IItemsWithRawDataRepository<User, int>>(),
+                                sp.GetService<IItemsWithRawDataRepository<Message, int>>(),
+                                sp.GetService<IRepository<Ban, int>>(),
                                 sp.GetService<ILogger<MessageProcessor>>())
                             );
                         services.AddScoped<IScheduler, Scheduler>();
@@ -138,6 +143,7 @@ namespace Zs.App.ChatAdmin
                                 sp.GetService<ILogger<CommandManager>>())
                             );
 
+                        services.AddScoped<IRepository<Ban, int>, CommonRepository<ChatAdminContext, Ban, int>>();
                         services.AddScoped<IRepository<Bot.Data.Models.Log, int>, CommonRepository<BotContext, Bot.Data.Models.Log, int>>();
                         services.AddScoped<IRepository<Command, string>, CommonRepository<BotContext, Command, string>>();
                         services.AddScoped<IRepository<UserRole, string>, CommonRepository<BotContext, UserRole, string>>();

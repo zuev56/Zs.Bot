@@ -9,7 +9,7 @@ using Zs.Common.Extensions;
 
 namespace Zs.App.ChatAdmin.Data
 {
-    public partial class ChatAdminContext : DbContext
+    public class ChatAdminContext : DbContext
     {
         public DbSet<Accounting> Accountings { get; set; }
         public DbSet<AuxiliaryWord> AuxiliaryWords { get; set; }
@@ -25,9 +25,9 @@ namespace Zs.App.ChatAdmin.Data
         {
         }
 
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-        }
+        //protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        //{
+        //}
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -39,8 +39,8 @@ namespace Zs.App.ChatAdmin.Data
             SetDefaultValues(modelBuilder);
             SeedData(modelBuilder);
         }
-        
-        private void SetDefaultValues(ModelBuilder modelBuilder)
+
+        protected void SetDefaultValues(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Accounting>().Property(b => b.UpdateDate).HasDefaultValueSql("now()");
             modelBuilder.Entity<Accounting>().Property(b => b.StartDate).HasDefaultValueSql("now()");
@@ -54,7 +54,7 @@ namespace Zs.App.ChatAdmin.Data
             modelBuilder.Entity<Notification>().Property(b => b.InsertDate).HasDefaultValueSql("now()");
         }
 
-        private void SeedData(ModelBuilder modelBuilder)
+        protected void SeedData(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Command>().HasData(new[]
             {
@@ -62,10 +62,11 @@ namespace Zs.App.ChatAdmin.Data
             });
         }
 
-        public static string GetOtherSqlScripts()
+        public static string GetOtherSqlScripts(string dbName = null)
         {
             var resources = new[]
             {
+                "Priveleges.sql",
                 "StoredFunctions.sql"
             };
 
@@ -75,6 +76,9 @@ namespace Zs.App.ChatAdmin.Data
                 var sqlScript = Assembly.GetExecutingAssembly().ReadResource(resourceName);
                 sb.Append(sqlScript + Environment.NewLine);
             }
+
+            if (!string.IsNullOrWhiteSpace(dbName))
+                sb.Replace("DefaultDbName", dbName);
 
             return sb.ToString();
         }
