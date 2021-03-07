@@ -58,7 +58,7 @@ namespace Zs.Bot.Services.Commands
 
         private void EnqueueCommand(BotCommand command)
         {
-            _logger?.LogInformation("Command received", command, nameof(CommandManager));
+            _logger?.LogInformation($"Command received: {command}", command, nameof(CommandManager));
             _commandBuffer.Enqueue(command);
         }
 

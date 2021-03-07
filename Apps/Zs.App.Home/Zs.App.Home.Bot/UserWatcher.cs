@@ -33,8 +33,6 @@ namespace Zs.App.Home.Bot
         private readonly IItemsWithRawDataRepository<Message, int> _messagesRepo;
         private readonly ILogger<UserWatcher> _logger;
         //private readonly IConnectionAnalyser _connectionAnalyser;
-        [Obsolete]
-        private readonly bool _detailedLogging;
         private readonly float _version;
         private readonly string _accessToken;
         private readonly int[] _userIds;
@@ -104,8 +102,9 @@ namespace Zs.App.Home.Bot
         {
             _userActivityLogger = new ProgramJob(
                 TimeSpan.FromSeconds(_activityLogIntervalSec),
-                async () => await SaveVkUsersActivityAsync(),
-                description: "logUserStatus");
+                () => SaveVkUsersActivityAsync().Wait(),
+                description: "logUserStatus", 
+                logger: _logger);
 
             var notActiveUsers12hInformer = new SqlJob(
                 TimeSpan.FromHours(1),
@@ -145,21 +144,23 @@ namespace Zs.App.Home.Bot
         //    nightErrorsAndWarningsInformer.ExecutionCompleted += Job_ExecutionCompleted;
 
             _scheduler.Jobs.Add(_userActivityLogger);
-            _scheduler.Jobs.Add(notActiveUsers12hInformer);
+        //    _scheduler.Jobs.Add(notActiveUsers12hInformer);
         //    _scheduler.Jobs.Add(dayErrorsAndWarningsInformer);
         //    _scheduler.Jobs.Add(nightErrorsAndWarningsInformer);
         }
 
-        private async void Job_ExecutionCompleted(IJob job, IJobExecutionResult result)
+        private async void Job_ExecutionCompleted(IJob job, IServiceResult<string> result)
         {
             try
             {
-                if (result != null && DateTime.Now.Hour > 8 && DateTime.Now.Hour < 22)
+                if (result.IsSuccess && result.Result != null
+                    && DateTime.Now.Hour > _configuration.GetSection("Notifier:Time:FromHour").Get<int>() 
+                    && DateTime.Now.Hour < _configuration.GetSection("Notifier:Time:ToHour").Get<int>())
                 {
-                    var todaysMessages = await _messagesRepo.FindAllAsync(m => m.InsertDate > DateTime.Today && m.Text.Contains("is not active for"));
+                    var todaysAlerts = await _messagesRepo.FindAllAsync(m => m.InsertDate > DateTime.Today && m.Text.Contains("is not active for"));
 
-                    if (!todaysMessages.Any(m => m.Text.WithoutDigits() == result.TextValue.WithoutDigits()))
-                        await _messenger.AddMessageToOutboxAsync(result?.TextValue, "ADMIN");
+                    if (!todaysAlerts.Any(m => m.Text.WithoutDigits() == result.Result.WithoutDigits()))
+                        await _messenger.AddMessageToOutboxAsync(result.Result, "ADMIN");
                 }                   
             }
             catch (Exception ex)
@@ -183,9 +184,7 @@ namespace Zs.App.Home.Bot
                 _userActivityLogger.IdleStepsCount = 0;
 
             if (!result.IsSuccess)
-            {
                 _logger?.LogWarning(result.Messages.LastOrDefault()?.Text);
-            }
         }
     }
 }

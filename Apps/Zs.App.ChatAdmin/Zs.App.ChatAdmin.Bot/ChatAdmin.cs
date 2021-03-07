@@ -14,15 +14,6 @@ using Zs.Common.Services.Scheduler;
 
 namespace Zs.App.ChatAdmin
 {
-    // + Подробное логгирование
-    // + Проверить устойчивасть к перебоям со связью
-    // + Исправить двойную отправку сообщений от джобов в релизной версии
-    // - После бана удалять старое предупреждение от бота, чтобы не захламлять чат
-    // + Проверить пересылку больших сообщений от Бота
-    // + Проверить, будут ли удаляться сообщения забаненного пользователя после восстановления соединения с интернетом
-    // + Сделать джоб, который утром присылает все ошибки за предыдущую ночь
-    // + Если к моменту восстановления интернета бан уже закончился, пользователь может отправить больше сообщений, чем MessageLimitAfterBan, то есть он может заново пройти через все лимиты
-
     internal class ChatAdmin : IHostedService
     {
         private readonly IConfiguration _configuration;
@@ -32,6 +23,8 @@ namespace Zs.App.ChatAdmin
         private readonly IMessageProcessor _messageProcessor;
         private readonly IConnectionAnalyser _connectionAnalyser;
 
+
+        // TODO: После бана удалять старое предупреждение от бота, чтобы не захламлять чат
 
         public ChatAdmin(
             IConfiguration configuration,
@@ -111,17 +104,14 @@ namespace Zs.App.ChatAdmin
             await _messageProcessor.ProcessGroupMessage(e.Message);
         }
 
-        private async void Job_ExecutionCompleted(IJob job, IJobExecutionResult result)
+        private async void Job_ExecutionCompleted(IJob job, IServiceResult<string> result)
         {
-            if (result?.TextValue != null)
+            if (result.IsSuccess && result.Result != null
+                    && DateTime.Now.Hour > _configuration.GetSection("Notifier:Time:FromHour").Get<int>()
+                    && DateTime.Now.Hour < _configuration.GetSection("Notifier:Time:ToHour").Get<int>())
             {
-                _logger.LogTrace(
-                    $"Job execution completed{(job?.Description != null ? $" [{job.Description}]" : "")}",
-                    result?.TextValue ?? "<null>");
+                await _messenger.AddMessageToOutboxAsync(result.Result, "ADMIN");
             }
-
-            if (result != null && DateTime.Now.Hour > 9 && DateTime.Now.Hour < 23)
-                await _messenger.AddMessageToOutboxAsync(result?.TextValue, "ADMIN");
         }
 
         /// <summary> Creating a <see cref="Job"/> list for a <see cref="Scheduler"/> instance </summary>

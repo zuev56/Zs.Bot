@@ -30,7 +30,7 @@ namespace Zs.App.Home.Web.Areas.App.Controllers
 
         [HttpGet]
         [Route("AjaxAddNewVkUser")]
-        public async Task<IActionResult> AjaxAddNewVkUser(int id)
+        public Task<IActionResult> AjaxAddNewVkUser(int id)
         {
             throw new NotImplementedException();
             //var result = await _service.AddNewVkUser(id);

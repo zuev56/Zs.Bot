@@ -18,7 +18,7 @@ namespace Zs.App.Home.Web.Areas.ApiVk.Controllers
         }
 
         [HttpGet("test", Name = "Test1")]
-        public async Task<IActionResult> Test(ushort page = 1)
+        public IActionResult Test(ushort page = 1)
         {
             try
             {

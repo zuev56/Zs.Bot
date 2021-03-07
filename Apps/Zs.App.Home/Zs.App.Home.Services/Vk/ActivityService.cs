@@ -158,76 +158,6 @@ namespace Zs.App.Home.Services.Vk
             }
         }
 
-        public static IServiceResult<PeriodUserActivity> GetUserStatistics(
-            int dbUserId, string userName, IEnumerable<ActivityLogItem> log)
-        {
-            try
-            {
-                if (log == null)
-                    throw new ArgumentNullException(nameof(log));
-
-                var userLog = log.Where(l => l.UserId == dbUserId)
-                    .OrderBy(l => l.LastSeen)
-                    .SkipWhile(l => l.IsOnline != true).ToList();
-
-                int browserActivitySec = 0;
-                int mobileActivitySec = 0;
-                if (userLog.Any())
-                {
-                    // Проверка:
-                    //  - Первый элемент списка должен быть IsOnline == true
-                    //  - Каждый последующий элемент обрабатывается опираясь на предыдущий
-                    // Обработка ситуаций:
-                    //  - Предыдущий IsOnline + Mobile  -> Текущий IsOnline + !Mobile
-                    //  - Предыдущий IsOnline + Mobile  -> Текущий !IsOnline
-                    //  - Предыдущий IsOnline + !Mobile -> Текущий IsOnline + Mobile
-                    //  - Предыдущий IsOnline + !Mobile -> Текущий !IsOnline
-                    //  - Предыдущий !IsOnline          -> Текущий IsOnline + Mobile
-                    //  - Предыдущий !IsOnline          -> Текущий IsOnline + !Mobile
-
-                    for (int i = 1; i < userLog.Count; i++)
-                    {
-                        var prev = userLog[i - 1];
-                        var cur = userLog[i];
-
-                        if (prev.IsOnline == true && prev.IsOnlineMobile == true
-                            && (cur.IsOnline == true && cur.IsOnlineMobile == false || cur.IsOnline == false))
-                        {
-                            mobileActivitySec += cur.LastSeen - prev.LastSeen;
-                        }
-                        else if (prev.IsOnline == true && prev.IsOnlineMobile == false
-                            && (cur.IsOnline == true && cur.IsOnlineMobile == true || cur.IsOnline == false))
-                        {
-                            browserActivitySec += cur.LastSeen - prev.LastSeen;
-                        }
-                    }
-                }
-
-                var mobileEntrance = log.Count(l => l.IsOnline == true && l.IsOnlineMobile);
-                var browserEntrance = log.Count(l => l.IsOnline == true && !l.IsOnlineMobile);
-
-                var periodUserActivity = new PeriodUserActivity()
-                {
-                    UserId = dbUserId,
-                    UserName = userName,
-#warning 8790237
-                    BrowserActivityTime = TimeSpan.FromSeconds(browserActivitySec),
-                    MobileActivityTime = TimeSpan.FromSeconds(mobileActivitySec),
-                    //ActivityTime = TimeSpan.FromSeconds(activitySec - appEntrance*60 - siteEntrance*60*5),
-                    EntranceCounter = log.Count(l => l.IsOnline == true),
-                    FromDate = userLog.FirstOrDefault()?.LastSeen.FromUnixEpoch() ?? default,
-                    ToDate = userLog.LastOrDefault()?.LastSeen.FromUnixEpoch() ?? default
-                };
-
-                return ServiceResult<PeriodUserActivity>.Success(periodUserActivity);
-            }
-            catch (Exception ex)
-            {
-                //_logger.LogError(ex, "GetUserStatistics error");
-                return ServiceResult<PeriodUserActivity>.Error();
-            }
-        }
-
         public async Task<IServiceResult> AddNewVkUser(int vkIserId)
         {
             try
@@ -299,6 +229,46 @@ namespace Zs.App.Home.Services.Vk
                 return ServiceResult<PeriodUserActivity>.Error();
             }
         }
+        
+        public async Task<IServiceResult<DetailedUserActivity>> GetDetailedUserActivity(int userId)
+        {
+            try
+            {
+                if (userId == default)
+                    throw new ArgumentOutOfRangeException(nameof(userId));
+
+                var user = await _vkUsersRepo.FindByKeyAsync(userId);
+                var log = await GetOrderedLog(new[] { userId }, new DateTime(2020, 10, 01), DateTime.Now);
+
+                if (!log.Any())
+                    return ServiceResult<DetailedUserActivity>.Warning(new DetailedUserActivity(), "No data");
+
+                var activityDetails = new DetailedUserActivity
+                {
+                    UserName = $"{user.FirstName} {user.LastName}",
+                    AnalyzedDaysCount = (int)(log.Max(l => l.InsertDate.Date) - log.Min(l => l.InsertDate.Date)).TotalDays,
+                    ActivityDaysCount = log.Select(l => l.InsertDate.Date).Distinct().Count(),
+                    BrowserEntrance = log.Count(l => l.IsOnline == true && !l.IsOnlineMobile),
+                    MobileEntrance = log.Count(l => l.IsOnline == true && l.IsOnlineMobile),
+                    ActivityCalendar = GetActivityForEveryDay(log),
+                    //MaxDailyActivityTime = log.
+                    Url = $"https://vk.com/id{JsonDocument.Parse(user.RawData).RootElement.GetProperty("id")}",
+                    BrowserActivityTime = TimeSpan.FromSeconds(GetBrowserActivitySec(log.OrderBy(l => l.Id).SkipWhile(l => l.IsOnline != true).ToList())),
+                    MobileActivityTime = TimeSpan.FromSeconds(GetMobileActivitySec(log.OrderBy(l => l.Id).SkipWhile(l => l.IsOnline != true).ToList())),
+                };
+
+                // TODO: Получаем активность по каждому дню с начала учёта
+
+                // TODO: Получаем средние значения
+
+                return ServiceResult<DetailedUserActivity>.Success(activityDetails);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "GetDetailedUserActivity error");
+                return ServiceResult<DetailedUserActivity>.Error();
+            }
+        }
 
         public async Task<IServiceResult<List<User>>> GetVkUsers(string filterText)
         {
@@ -347,46 +317,123 @@ namespace Zs.App.Home.Services.Vk
             }
         }
 
-        public async Task<IServiceResult<DetailedUserActivity>> GetDetailedUserActivity(int userId)
+        public async Task<IServiceResult> SaveVkUsersActivityAsync()
         {
+            ServiceResult result = ServiceResult.Success();
             try
             {
-                if (userId == default)
-                    throw new ArgumentOutOfRangeException(nameof(userId));
-
-                var user = await _vkUsersRepo.FindByKeyAsync(userId);
-                var log = await GetOrderedLog(new[] { userId }, new DateTime(2020, 10, 01), DateTime.Now);
-
-                if (!log.Any())
-                    return ServiceResult<DetailedUserActivity>.Warning(new DetailedUserActivity(), "No data");
-
-                var activityDetails = new DetailedUserActivity
+                string url = null;
+                if (await _vkUsersRepo.FindAsync() != null)
                 {
-                    UserName = $"{user.FirstName} {user.LastName}",
-                    AnalyzedDaysCount = (int)(log.Max(l => l.InsertDate.Date) - log.Min(l => l.InsertDate.Date)).TotalDays,
-                    ActivityDaysCount = log.Select(l => l.InsertDate.Date).Distinct().Count(),
-                    BrowserEntrance = log.Count(l => l.IsOnline == true && !l.IsOnlineMobile),
-                    MobileEntrance = log.Count(l => l.IsOnline == true && l.IsOnlineMobile),
-                    ActivityCalendar = GetActivityForEveryDay(log),
-                    //MaxDailyActivityTime = log.
-                    Url = $"https://vk.com/id{JsonDocument.Parse(user.RawData).RootElement.GetProperty("id")}",
-                    BrowserActivityTime = TimeSpan.FromSeconds(GetBrowserActivitySec(log.OrderBy(l => l.Id).SkipWhile(l => l.IsOnline != true).ToList())),
-                    MobileActivityTime = TimeSpan.FromSeconds(GetMobileActivitySec(log.OrderBy(l => l.Id).SkipWhile(l => l.IsOnline != true).ToList())),
-                };
+                    url = $"https://api.vk.com/method/users.get?user_ids={string.Join(',', _userIds)}"
+                        + $"&fields=online,online_mobile,online_app,last_seen&access_token={_accessToken}&v={_version.ToString(CultureInfo.InvariantCulture)}";
+                }
+                else
+                {
+                    url = $"https://api.vk.com/method/users.get?user_ids={string.Join(',', _userIds)}"
+                        + $"&fields=photo_id,verified,sex,bdate,city,country,home_town,photo_max_orig,online,domain,has_mobile,"
+                        + $"contacts,site,education,universities,schools,status,last_seen,followers_count,occupation,nickname,"
+                        + $"relatives,relation,personal,connections,exports,activities,interests,music,movies,tv,books,games,"
+                        + $"about,quotes,can_post,can_see_all_posts,can_see_audio,can_write_private_message,can_send_friend_request,"
+                        + $"is_favorite,is_hidden_from_feed,timezone,screen_name,maiden_name,is_friend,friend_status,career,military,"
+                        + $"blacklisted,blacklisted_by_me,can_be_invited_group&access_token={_accessToken}&v={_version.ToString(CultureInfo.InvariantCulture)}";
 
-                // TODO: Получаем активность по каждому дню с начала учёта
+                    result.MessageToAdd = InfoMessage.Success("Filling VkUsers repository");
+                }
 
-                // TODO: Получаем средние значения
+                var response = await ApiHelper.GetAsync<ApiResponse>(url, throwOnError: true);
 
-                return ServiceResult<DetailedUserActivity>.Success(activityDetails);
+                if (response is null)
+                {
+                    await SetUndefinedActivityToAllVkUsers();
+
+                    result.MessageToAdd = InfoMessage.Warning("Response is null. Setting undefined activity to all VkUsers");
+                    return result;
+                }
+
+                foreach (var apiUser in response.Users)
+                {
+                    var dbUser = await GetVkUserFromDatabase(apiUser);
+                    await LogVkUserActivityAsync(apiUser, dbUser);
+                }
+
+                return result;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "GetDetailedUserActivity error");
-                return ServiceResult<DetailedUserActivity>.Error();
+                _logger.LogError(ex, "SaveVkUsersActivityAsync error");
+                return ServiceResult.Error("Users activity logging error");
             }
         }
 
+
+        private IServiceResult<PeriodUserActivity> GetUserStatistics(int dbUserId, string userName, IEnumerable<ActivityLogItem> log)
+        {
+            try
+            {
+                if (log == null)
+                    throw new ArgumentNullException(nameof(log));
+
+                var userLog = log.Where(l => l.UserId == dbUserId)
+                    .OrderBy(l => l.LastSeen)
+                    .SkipWhile(l => l.IsOnline != true).ToList();
+
+                int browserActivitySec = 0;
+                int mobileActivitySec = 0;
+                if (userLog.Any())
+                {
+                    // Проверка:
+                    //  - Первый элемент списка должен быть IsOnline == true
+                    //  - Каждый последующий элемент обрабатывается опираясь на предыдущий
+                    // Обработка ситуаций:
+                    //  - Предыдущий IsOnline + Mobile  -> Текущий IsOnline + !Mobile
+                    //  - Предыдущий IsOnline + Mobile  -> Текущий !IsOnline
+                    //  - Предыдущий IsOnline + !Mobile -> Текущий IsOnline + Mobile
+                    //  - Предыдущий IsOnline + !Mobile -> Текущий !IsOnline
+                    //  - Предыдущий !IsOnline          -> Текущий IsOnline + Mobile
+                    //  - Предыдущий !IsOnline          -> Текущий IsOnline + !Mobile
+
+                    for (int i = 1; i < userLog.Count; i++)
+                    {
+                        var prev = userLog[i - 1];
+                        var cur = userLog[i];
+
+                        if (prev.IsOnline == true && prev.IsOnlineMobile == true
+                            && (cur.IsOnline == true && cur.IsOnlineMobile == false || cur.IsOnline == false))
+                        {
+                            mobileActivitySec += cur.LastSeen - prev.LastSeen;
+                        }
+                        else if (prev.IsOnline == true && prev.IsOnlineMobile == false
+                            && (cur.IsOnline == true && cur.IsOnlineMobile == true || cur.IsOnline == false))
+                        {
+                            browserActivitySec += cur.LastSeen - prev.LastSeen;
+                        }
+                    }
+                }
+
+                var mobileEntrance = log.Count(l => l.IsOnline == true && l.IsOnlineMobile);
+                var browserEntrance = log.Count(l => l.IsOnline == true && !l.IsOnlineMobile);
+
+                var periodUserActivity = new PeriodUserActivity()
+                {
+                    UserId = dbUserId,
+                    UserName = userName,
+                    BrowserActivityTime = TimeSpan.FromSeconds(browserActivitySec),
+                    MobileActivityTime = TimeSpan.FromSeconds(mobileActivitySec),
+                    EntranceCounter = log.Count(l => l.IsOnline == true),
+                    FromDate = userLog.FirstOrDefault()?.LastSeen.FromUnixEpoch() ?? default,
+                    ToDate = userLog.LastOrDefault()?.LastSeen.FromUnixEpoch() ?? default
+                };
+
+                return ServiceResult<PeriodUserActivity>.Success(periodUserActivity);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "GetUserStatistics error");
+                return ServiceResult<PeriodUserActivity>.Error();
+            }
+        }
+        
         private Dictionary<DateTime, TimeSpan> GetActivityForEveryDay(List<ActivityLogItem> log)
         {
             // Вычисление активности за каждый день должно начинаться с начала суток, если предыдущие сутки закончились онлайн
@@ -494,55 +541,6 @@ namespace Zs.App.Home.Services.Vk
                 }
             }
             return result;
-        }
-
-        public async Task<IServiceResult> SaveVkUsersActivityAsync()
-        {
-            ServiceResult result = ServiceResult.Success();
-            try
-            {
-                string url = null;
-                if (await _vkUsersRepo.FindAsync() != null)
-                {
-                    url = $"https://api.vk.com/method/users.get?user_ids={string.Join(',', _userIds)}"
-                        + $"&fields=online,online_mobile,online_app,last_seen&access_token={_accessToken}&v={_version.ToString(CultureInfo.InvariantCulture)}";
-                }
-                else
-                {
-                    url = $"https://api.vk.com/method/users.get?user_ids={string.Join(',', _userIds)}"
-                        + $"&fields=photo_id,verified,sex,bdate,city,country,home_town,photo_max_orig,online,domain,has_mobile,"
-                        + $"contacts,site,education,universities,schools,status,last_seen,followers_count,occupation,nickname,"
-                        + $"relatives,relation,personal,connections,exports,activities,interests,music,movies,tv,books,games,"
-                        + $"about,quotes,can_post,can_see_all_posts,can_see_audio,can_write_private_message,can_send_friend_request,"
-                        + $"is_favorite,is_hidden_from_feed,timezone,screen_name,maiden_name,is_friend,friend_status,career,military,"
-                        + $"blacklisted,blacklisted_by_me,can_be_invited_group&access_token={_accessToken}&v={_version.ToString(CultureInfo.InvariantCulture)}";
-
-                    result.MessageToAdd = InfoMessage.Success("Filling VkUsers repository");
-                }
-
-                var response = await ApiHelper.GetAsync<ApiResponse>(url, throwOnError: true);
-
-                if (response is null)
-                {
-                    await SetUndefinedActivityToAllVkUsers();
-
-                    result.MessageToAdd = InfoMessage.Warning("Response is null. Setting undefined activity to all VkUsers");
-                    return result;
-                }
-
-                foreach (var apiUser in response.Users)
-                {
-                    var dbUser = await GetVkUserFromDatabase(apiUser);
-                    await LogVkUserActivityAsync(apiUser, dbUser);
-                }
-
-                return result;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "SaveVkUsersActivityAsync error");
-                return ServiceResult.Error("Users activity logging error");
-            }
         }
 
         private async Task SetUndefinedActivityToAllVkUsers()

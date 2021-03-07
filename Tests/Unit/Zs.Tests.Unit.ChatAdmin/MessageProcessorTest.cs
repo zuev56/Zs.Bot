@@ -22,6 +22,8 @@ namespace Zs.Tests.Unit.ChatAdmin
             var mockConfig = new Mock<IConfiguration>();
             var mockMessenger = new Mock<IMessenger>();
              
+            // Продолжить работу по этому описанию https://m.habr.com/ru/post/531106/
+
             //Запустить ChatAdmin и проверить удаление банов(предупреждений) при отключении интернета
 
             //MessageProcessor(

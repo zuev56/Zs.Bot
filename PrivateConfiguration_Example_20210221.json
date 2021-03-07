@@ -5,6 +5,38 @@
     "Default": "Host=localhost;Port=5432;Database=Home;Username=app;Password=app;Persist Security Info=True;"
   },
 
+  "Serilog": {
+    "Using": [ "Serilog.Sinks.Console", "Serilog.Sinks.Seq" ],
+    "MinimumLevel": {
+      "Default": "Information",
+      "Override": {
+        "Zs": "Information",
+        "Microsoft.EntityFrameworkCore": "Error"
+      }
+    },
+    "WriteTo": [
+      { "Name": "Console" },
+      {
+        "Name": "Seq",
+        "Args": { "serverUrl": "http://localhost:5341" }
+      }
+    ],
+    "Enrich": [
+      "FromLogContext",
+      "WithMachineName"
+    ],
+    "Properties": {
+      "ApplicationName": "Zs.App"
+    }
+  },
+
+  "Notifier": {
+    "Time": {
+      "FromHour": "8",
+      "ToHour": "22"
+    }
+  },
+
   "Proxy": {
     "UseProxy": false,
     "Socket": "address:port",

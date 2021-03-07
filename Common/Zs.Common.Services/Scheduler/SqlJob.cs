@@ -1,7 +1,10 @@
 ﻿using System;
+using Microsoft.Extensions.Logging;
 using Npgsql;
+using Zs.Common.Abstractions;
 using Zs.Common.Enums;
 using Zs.Common.Extensions;
+using Zs.Common.Models;
 using Zs.Common.Services.Abstractions;
 
 namespace Zs.Common.Services.Scheduler
@@ -11,10 +14,6 @@ namespace Zs.Common.Services.Scheduler
     /// </summary>
     public sealed class SqlJob : Job
     {
-        // Надо определять тип возвращаемого значения при создании  джоба
-        // Это может быть пустой тип
-        // Дженерик не подходит, т.к. список джобов должен в конечном счёте иметь один тип
-        // Вероятно, стоит вернуть JobExecutionResult
         private readonly string _connectionString;
         private readonly string _sqlQuery;
         private QueryResultType _resultType;
@@ -25,8 +24,9 @@ namespace Zs.Common.Services.Scheduler
             string sqlQuery,
             string connectionString,
             DateTime? startDate = null,
-            string description = null)
-            : base(period, startDate)
+            string description = null,
+            ILogger logger = null)
+            : base(period, startDate, logger)
         {
             Period = period != default ? period : throw new ArgumentException($"{nameof(period)} can't have default value");
 
@@ -36,7 +36,7 @@ namespace Zs.Common.Services.Scheduler
             Description = description;
         }
 
-        protected override IJobExecutionResult GetExecutionResult()
+        protected override IServiceResult<string> GetExecutionResult()
         {
             try
             {
@@ -53,27 +53,27 @@ namespace Zs.Common.Services.Scheduler
                         case QueryResultType.Double:
                             reader.Read();
                             LastResult = !reader.IsDBNull(0)
-                                ? new JobExecutionResult<double>(reader.GetDouble(0))
+                                ? ServiceResult<string>.Success(reader.GetDouble(0).ToString())
                                 : null;
                             break;
                         case QueryResultType.Json:
-                            LastResult = new JobExecutionResult<string>(reader.ReadToJson());
+                            LastResult = ServiceResult<string>.Success(reader.ReadToJson());
                             break;
                         case QueryResultType.String:
                             reader.Read();
                             LastResult = !reader.IsDBNull(0)
-                                ? new JobExecutionResult<string>(reader.GetString(0))
+                                ? ServiceResult<string>.Success(reader.GetString(0))
                                 : null;
                             break;
                         default:
-                            LastResult = null;
+                            LastResult = ServiceResult<string>.Success(null);
                             break;
                     }
                 }
 
                 return LastResult;
             }
-            catch (Exception ex)
+            catch
             {
                 throw;
             }
