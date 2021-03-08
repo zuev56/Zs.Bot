@@ -64,7 +64,7 @@ namespace Zs.App.Home.Bot
 
                 _activityLogIntervalSec = _configuration.GetSection("Home:Vk:ActivityLogIntervalSec").Get<int>();
                 _version = float.Parse(_configuration["Home:Vk:Version"], CultureInfo.InvariantCulture);
-                _accessToken = _configuration["Home:Vk:AccessToken"];
+                _accessToken = _configuration.GetSecretValue("Home:Vk:AccessToken");
                 _userIds = _configuration.GetSection("Home:Vk:UserIds").Get<int[]>();
 
                 CreateJobs();
@@ -110,7 +110,7 @@ namespace Zs.App.Home.Bot
                 TimeSpan.FromHours(1),
                 QueryResultType.String,
                 $"select vk.sf_cmd_get_not_active_users('{string.Join(',', _configuration.GetSection("Home:Vk:TrackedUserIds").Get<int[]>())}', {_configuration.GetSection("Vk:AlarmAfterInactiveHours").Get<int>()})",
-                _configuration.GetConnectionString("Default"),
+                _configuration.GetSecretValue("ConnectionStrings:Default"),
                 startDate: DateTime.Now + TimeSpan.FromSeconds(5),
                 description: "notActiveUsers12hInformer"
                 );
@@ -122,7 +122,7 @@ namespace Zs.App.Home.Bot
         //                     from bot.logs
         //                    where log_type in ('Warning', 'Error')
         //                      and insert_date > now() - interval '1 hour'",
-        //        _configuration.GetConnectionString("Default"),
+        //        _configuration.GetSecretValue("ConnectionStrings:Default"),
         //        startDate: Job.NextHour(),
         //        description: "dayErrorsAndWarningsInformer"
         //        );
@@ -134,7 +134,7 @@ namespace Zs.App.Home.Bot
         //                      from bot.logs
         //                     where log_type in ('Warning', 'Error')
         //                       and insert_date > now() - interval '12 hours'",
-        //        _configuration.GetConnectionString("Default"),
+        //        _configuration.GetSecretValue("ConnectionStrings:Default"),
         //        startDate: DateTime.Today + TimeSpan.FromHours(24+10),
         //        description: "nightErrorsAndWarningsInformer"
         //        );
@@ -172,6 +172,7 @@ namespace Zs.App.Home.Bot
         /// <summary> Activity data collection </summary>
         private async Task SaveVkUsersActivityAsync()
         {
+            //throw new Exception("Test Error");
             if (_isFirstStep)
             {
                 _isFirstStep = false;

@@ -1,14 +1,14 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System;
+using System.IO;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Serilog;
-using System;
-using System.IO;
-using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 using Zs.App.Home.Data;
 using Zs.App.Home.Data.Models.Vk;
 using Zs.App.Home.Services.Vk;
@@ -37,24 +37,21 @@ namespace Zs.App.Home.Bot
         {
             try
             {
-                if (args?.Length == 0)
+                var mainConfigPath = System.IO.Path.Combine(Directory.GetCurrentDirectory(), "appsettings.json");
+                if (!File.Exists(mainConfigPath))
+                    throw new Exception("Configuration file appsettings.json is not found in the application directory");
+
+                var configurationBuilder = new ConfigurationBuilder().AddJsonFile(mainConfigPath, optional: false, reloadOnChange: true);
+
+                foreach (var arg in args)
                 {
-                    // TODO: read all json files in directory
-                    var localConfig = System.IO.Path.Combine(Directory.GetCurrentDirectory(), "configuration.json");
-                    args = new[] { localConfig };
+                    if (!File.Exists(arg))
+                        throw new FileNotFoundException($"Wrong configuration path:\n{arg}");
+
+                    configurationBuilder.AddJsonFile(arg, optional: true, reloadOnChange: true);
                 }
 
-                if (args?.Length != 1)
-                    throw new ArgumentException("Wrong number of arguments");
-
-                if (!File.Exists(args[0]))
-                    throw new FileNotFoundException($"Wrong configuration path:\n{args[0]}");
-
-                var configuration = new ConfigurationBuilder()
-                   .AddJsonFile(args[0], optional: false, reloadOnChange: true)
-                   .Build();
-
-                await ServiceLoader(configuration);
+                await ServiceLoader(configurationBuilder.Build());
             }
             catch (Exception ex)
             {
@@ -91,10 +88,10 @@ namespace Zs.App.Home.Bot
                     .ConfigureServices((hostContext, services) =>
                     {
                         services.AddDbContext<HomeContext>(options =>
-                            options.UseNpgsql(hostContext.Configuration.GetConnectionString("Default")));
+                            options.UseNpgsql(hostContext.Configuration.GetSecretValue("ConnectionStrings:Default")));
 
                         services.AddDbContext<BotContext>(options  =>
-                            options.UseNpgsql(hostContext.Configuration.GetConnectionString("Default")));
+                            options.UseNpgsql(hostContext.Configuration.GetSecretValue("ConnectionStrings:Default")));
 
                         services.AddSingleton<IContextFactory<BotContext>, BotContextFactory>();                        
                         services.AddSingleton<IContextFactory<HomeContext>, HomeContextFactory>();
@@ -106,7 +103,7 @@ namespace Zs.App.Home.Bot
                                 ca.InitializeProxy(
                                     hostContext.Configuration["Proxy:Socket"],
                                     hostContext.Configuration["Proxy:Login"],
-                                    hostContext.Configuration["Proxy:Password"]);
+                                    hostContext.Configuration.GetSecretValue("Proxy:Password"));
                             return ca;
                         });
 
@@ -114,7 +111,7 @@ namespace Zs.App.Home.Bot
 
                         services.AddScoped<IMessenger, TelegramMessenger>(sp =>
                             new TelegramMessenger(
-                                hostContext.Configuration["BotToken"],
+                                hostContext.Configuration.GetSecretValue("BotToken"),
                                 sp.GetService<IItemsWithRawDataRepository<Chat, int>>(),
                                 sp.GetService<IItemsWithRawDataRepository<Zs.Bot.Data.Models.User, int>>(),
                                 sp.GetService<IItemsWithRawDataRepository<Message, int>>(),
@@ -137,7 +134,7 @@ namespace Zs.App.Home.Bot
 
                         services.AddScoped<ICommandManager, CommandManager>(sp =>
                             new CommandManager(
-                                hostContext.Configuration.GetConnectionString("Default"),
+                                hostContext.Configuration.GetSecretValue("ConnectionStrings:Default"),
                                 sp.GetService<IRepository<Command, string>>(),
                                 sp.GetService<IRepository<UserRole, string>>(),
                                 sp.GetService<IItemsWithRawDataRepository<Zs.Bot.Data.Models.User, int>>(),

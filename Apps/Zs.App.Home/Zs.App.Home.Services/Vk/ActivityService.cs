@@ -41,7 +41,7 @@ namespace Zs.App.Home.Services.Vk
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             _version = float.Parse(_configuration["Home:Vk:Version"], CultureInfo.InvariantCulture);
-            _accessToken = _configuration["Home:Vk:AccessToken"];
+            _accessToken = _configuration.GetSecretValue("Home:Vk:AccessToken");
             _userIds = _configuration.GetSection("Home:Vk:UserIds").Get<int[]>();
         }
 

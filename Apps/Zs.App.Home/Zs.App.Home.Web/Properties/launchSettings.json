@@ -1,24 +1,8 @@
 {
-  "iisSettings": {
-    "windowsAuthentication": false,
-    "anonymousAuthentication": true,
-    "iisExpress": {
-      "applicationUrl": "http://localhost:6550",
-      "sslPort": 44308
-    }
-  },
   "profiles": {
-    "IIS Express": {
-      "commandName": "IISExpress",
-      "launchBrowser": true,
-      "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development",
-        "ASPNETCORE_HOSTINGSTARTUPASSEMBLIES": "Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation"
-      }
-    },
     "Zs.App.Home.Web": {
       "commandName": "Project",
-      "commandLineArgs": "S:\\Repos\\Zs.Bot\\PrivateConfiguration.json",
+      "commandLineArgs": "S:\\Repos\\Zs.Bot\\secrets.json",
       "launchBrowser": true,
       "launchUrl": "admin/serverinfo",
       "environmentVariables": {

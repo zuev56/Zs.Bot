@@ -11,6 +11,7 @@ using Zs.App.Home.Services.Vk;
 using Zs.Bot.Data.Abstractions;
 using Zs.Bot.Data.Repositories;
 using Zs.Common.Abstractions;
+using Zs.Common.Extensions;
 
 namespace Zs.App.Home.Web
 {
@@ -27,7 +28,7 @@ namespace Zs.App.Home.Web
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddDbContext<HomeContext>(options =>
-                options.UseNpgsql(_configuration.GetConnectionString("Default"))
+                options.UseNpgsql(_configuration.GetSecretValue("ConnectionStrings:Default"))
                        .EnableDetailedErrors(true)
                        .EnableSensitiveDataLogging(true));
             

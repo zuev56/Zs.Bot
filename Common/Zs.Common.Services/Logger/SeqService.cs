@@ -6,7 +6,9 @@ using System.Threading.Tasks;
 
 namespace Zs.Common.Services.Logger
 {
-    public static class SeqManager
+    /// <summary> Provides access to Seq's log </summary>
+    public static class SeqService
     {
+        // TODO: 
     }
 }

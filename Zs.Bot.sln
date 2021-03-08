@@ -27,8 +27,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
 		.filenesting.json = .filenesting.json
-		PrivateConfiguration.json = PrivateConfiguration.json
-		PrivateConfiguration_Example_20210221.json = PrivateConfiguration_Example_20210221.json
+		secrets.json = secrets.json
+		secrets_exapmle.json = secrets_exapmle.json
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Api", "Api", "{9C4F1BF3-3AEA-4FD5-85AC-13ACE38A5357}"
@@ -57,7 +57,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Integration", "Integration"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Unit", "Unit", "{F2B70D5B-1C76-41CF-84B6-5B6259815099}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zs.Tests.Unit.ChatAdmin", "Tests\Unit\Zs.Tests.Unit.ChatAdmin\Zs.Tests.Unit.ChatAdmin.csproj", "{031A959B-CC61-4DA2-9379-383264315BDA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.Tests.Unit.ChatAdmin", "Tests\Unit\Zs.Tests.Unit.ChatAdmin\Zs.Tests.Unit.ChatAdmin.csproj", "{031A959B-CC61-4DA2-9379-383264315BDA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

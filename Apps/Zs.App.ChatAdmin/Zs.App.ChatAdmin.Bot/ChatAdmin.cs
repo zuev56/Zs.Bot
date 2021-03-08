@@ -8,6 +8,7 @@ using Zs.App.ChatAdmin.Abstractions;
 using Zs.Bot.Services.Messaging;
 using Zs.Common.Abstractions;
 using Zs.Common.Enums;
+using Zs.Common.Extensions;
 using Zs.Common.Services.Abstractions;
 using Zs.Common.Services.Connection;
 using Zs.Common.Services.Scheduler;
@@ -121,7 +122,7 @@ namespace Zs.App.ChatAdmin
                 TimeSpan.FromDays(1),
                 QueryResultType.String,
                 $"select zl.sf_cmd_get_full_statistics(10, now()::date - interval '1 day', now()::date - interval '1 millisecond')",
-                _configuration.GetConnectionString("Default"),
+                _configuration.GetSecretValue("ConnectionStrings:Default"),
                 startDate: DateTime.Now.Date + TimeSpan.FromHours(24+10),
                 description: "sendYesterdaysStatistics"
             );
@@ -141,7 +142,7 @@ namespace Zs.App.ChatAdmin
         //        + "\n from bot.logs"
         //        + "\nwhere log_type in ('Warning', 'Error')"
         //        + "\n  and insert_date > now() - interval '1 hour'",
-        //        _configuration.GetConnectionString("Default"),
+        //        _configuration.GetSecretValue("ConnectionStrings:Default"),
         //        startDate: Job.NextHour(),
         //        description: "sendDayErrorsAndWarnings"
         //    );
@@ -153,7 +154,7 @@ namespace Zs.App.ChatAdmin
         //        + "\n from bot.logs"
         //        + "\nwhere log_type in ('Warning', 'Error')"
         //        + "\n  and insert_date > now() - interval '12 hours'",
-        //        _configuration.GetConnectionString("Default"),
+        //        _configuration.GetSecretValue("ConnectionStrings:Default"),
         //        startDate: DateTime.Today + TimeSpan.FromHours(24+10),
         //        description: "sendNightErrorsAndWarnings"
         //    );

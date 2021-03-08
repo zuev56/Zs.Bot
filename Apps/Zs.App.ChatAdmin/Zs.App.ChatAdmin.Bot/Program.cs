@@ -21,6 +21,7 @@ using Zs.Bot.Services.Commands;
 using Zs.Bot.Services.DataSavers;
 using Zs.Bot.Services.Messaging;
 using Zs.Common.Abstractions;
+using Zs.Common.Extensions;
 using Zs.Common.Services.Abstractions;
 using Zs.Common.Services.Connection;
 using Zs.Common.Services.Scheduler;
@@ -36,24 +37,21 @@ namespace Zs.App.ChatAdmin
         {
             try
             {
-                if (args?.Length == 0)
+                var mainConfigPath = System.IO.Path.Combine(Directory.GetCurrentDirectory(), "appsettings.json");
+                if (!File.Exists(mainConfigPath))
+                    throw new Exception("Configuration file appsettings.json is not found in the application directory");
+
+                var configurationBuilder = new ConfigurationBuilder().AddJsonFile(mainConfigPath, optional: false, reloadOnChange: true);
+
+                foreach (var arg in args)
                 {
-                    // TODO: read all json files in directory
-                    var localConfig = Path.Combine(Directory.GetCurrentDirectory(), "configuration.json");
-                    args = new[] { localConfig };
+                    if (!File.Exists(arg))
+                        throw new FileNotFoundException($"Wrong configuration path:\n{arg}");
+
+                    configurationBuilder.AddJsonFile(arg, optional: true, reloadOnChange: true);
                 }
 
-                if (args?.Length != 1)
-                    throw new ArgumentException("Wrong number of arguments");
-
-                if (!File.Exists(args[0]))
-                    throw new FileNotFoundException($"Wrong configuration path:\n{args[0]}");
-
-                var configuration = new ConfigurationBuilder()
-                   .AddJsonFile(args[0], optional: false, reloadOnChange: true)
-                   .Build();
-
-                await ServiceLoader(configuration);
+                await ServiceLoader(configurationBuilder.Build());
             }
             catch (Exception ex)
             {
@@ -90,10 +88,10 @@ namespace Zs.App.ChatAdmin
                     .ConfigureServices((hostContext, services) =>
                     {
                         services.AddDbContext<ChatAdminContext>(options =>
-                            options.UseNpgsql(hostContext.Configuration.GetConnectionString("Default")));
+                            options.UseNpgsql(hostContext.Configuration.GetSecretValue("ConnectionStrings:Default")));
 
                         services.AddDbContext<BotContext>(options =>
-                            options.UseNpgsql(hostContext.Configuration.GetConnectionString("Default")));
+                            options.UseNpgsql(hostContext.Configuration.GetSecretValue("ConnectionStrings:Default")));
 
                         // For repositories
                         services.AddSingleton<IContextFactory<ChatAdminContext>, ChatAdminContextFactory>();
@@ -101,18 +99,18 @@ namespace Zs.App.ChatAdmin
 
                         services.AddScoped<IConnectionAnalyser, ConnectionAnalyser>(sp =>
                         {
-                            var ca = new ConnectionAnalyser(sp.GetService<ILogger<ConnectionAnalyser>>(),
-                                "https://vk.com/", "https://yandex.ru/", "https://www.google.ru/");
+                            var ca = new ConnectionAnalyser(sp.GetService<ILogger<ConnectionAnalyser>>(), 
+                                configuration.GetSection("ConnectionAnalyser:Urls").Get<string[]>());
                             if (hostContext.Configuration.GetSection("Proxy:UseProxy")?.Get<bool>() == true)
                                 ca.InitializeProxy(hostContext.Configuration["Proxy:Socket"],
-                                    hostContext.Configuration["Proxy:Login"],
-                                    hostContext.Configuration["Proxy:Password"]);
+                                    hostContext.Configuration.GetSecretValue("Proxy:Login"),
+                                    hostContext.Configuration.GetSecretValue("Proxy:Password"));
                             return ca;
                         });
 
                         services.AddScoped<IMessenger, TelegramMessenger>(sp => 
                             new TelegramMessenger(
-                                hostContext.Configuration["BotToken"],
+                                hostContext.Configuration.GetSecretValue("BotToken"),
                                 sp.GetService<IItemsWithRawDataRepository<Chat, int>>(),
                                 sp.GetService<IItemsWithRawDataRepository<User, int>>(),
                                 sp.GetService<IItemsWithRawDataRepository<Message, int>>(),
@@ -136,7 +134,7 @@ namespace Zs.App.ChatAdmin
                         services.AddScoped<IScheduler, Scheduler>();
                         services.AddScoped<ICommandManager, CommandManager>(sp =>
                             new CommandManager(
-                                hostContext.Configuration.GetConnectionString("Default"),
+                                hostContext.Configuration.GetSecretValue("ConnectionStrings:Default"),
                                 sp.GetService<IRepository<Command, string>>(),
                                 sp.GetService<IRepository<UserRole, string>>(),
                                 sp.GetService<IItemsWithRawDataRepository<User, int>>(),

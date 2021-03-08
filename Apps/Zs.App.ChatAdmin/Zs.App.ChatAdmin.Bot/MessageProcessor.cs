@@ -12,6 +12,7 @@ using Zs.Bot.Data.Abstractions;
 using Zs.Bot.Data.Models;
 using Zs.Bot.Services.Messaging;
 using Zs.Common.Abstractions;
+using Zs.Common.Extensions;
 using Zs.Common.Helpers;
 
 namespace Zs.App.ChatAdmin
@@ -107,7 +108,7 @@ namespace Zs.App.ChatAdmin
                                      $"_start_account_after => {_accountingStartsAfter}\n" +
                             ")";
 
-                var jsonResult = DbHelper.GetQueryResult(_configuration.GetConnectionString("Default"), query);
+                var jsonResult = DbHelper.GetQueryResult(_configuration.GetSecretValue("ConnectionStrings:Default"), query);
 
                 var logData = new Dictionary<string, object>
                 {
@@ -120,15 +121,12 @@ namespace Zs.App.ChatAdmin
 
                 if (dictResult.ContainsKey("Action"))
                 {
-                    //using var ctx = _contextFactory.GetBotContext();
-                    //var chat = ctx.Chats.First(c => c.Id == message.ChatId);
                     var chat = await _chatsRepo.FindByKeyAsync(message.ChatId);
 
                     if (dictResult.ContainsKey("MessageText"))
                     {
                         if (dictResult["MessageText"].Contains("<UserName>", StringComparison.InvariantCultureIgnoreCase))
                         {
-                            //var dbUser = ctx.Users.FirstOrDefault(u => u.Id == message.UserId);
                             var dbUser = await _usersRepo.FindByKeyAsync(message.UserId);
                             var userName = dbUser?.Name != null
                                 ? $"@{dbUser.Name}"
@@ -262,16 +260,8 @@ namespace Zs.App.ChatAdmin
                 _limitsAreDefined = false;
                 _accountingStartDate = null;
 
-                // Remove today Bans where BanFinishDate is null (warnings before ban)
-                //using var ctx = _contextFactory.GetChatAdminContext();
-                //var warnings = await ctx.Bans.Where(b => b.InsertDate > DateTime.Today && b.FinishDate == null).ToListAsync();
+                // Remove today's Bans where BanFinishDate is null (warnings before ban)
                 var warnings = await _bansRepo.FindAllAsync(b => b.InsertDate > DateTime.Today && b.FinishDate == null);
-
-                //if (warnings.Count > 0)
-                //{
-                //     ctx.Bans.RemoveRange(warnings);
-                //     await ctx.SaveChangesAsync();
-                //}
                 await _bansRepo.DeleteRangeAsync(warnings);
 
                 _logger.LogWarning("The internet connection has been lost. Today's ban-warnings removed");
@@ -313,58 +303,50 @@ namespace Zs.App.ChatAdmin
 
                 _logger.LogInformation("Limits definition started", logDataBefore);
 
-                //using (var ctx = _contextFactory.GetBotContext())
+                
+                // Telegram message date is GMT. But now everything depends on the InsertDate.
+
+                var selectDailyMessages = $"select * from bot.messages where chat_id = {_defaultChatId} and cast(raw_data ->> 'Date' as timestamptz) > now()::date";
+                var selectAccountedDailyMessages = _accountingStartDate is null
+                    ? "select * from bot.messages where user_id = -666" // something unreal to get nothing
+                    : $"{selectDailyMessages} and cast(raw_data ->> 'Date' as timestamptz) > '{_accountingStartDate}'";
+
+                var userMessageCounts = (await _messagesRepo.FindAllBySqlAsync(selectAccountedDailyMessages))
+                    .GroupBy(m => m.UserId)
+                    .Select(m => new { UserId = m.Key, Count = m.Count() });
+
+
+                maxAcountedMessagesFromUser = userMessageCounts.Count() > 0
+                    ? userMessageCounts.Max(i => i.Count)
+                    : 0;
+
+                dailyMsgCount = (await _messagesRepo.FindAllBySqlAsync(selectDailyMessages))
+                    .Where(m => !m.IsDeleted).Count();
+
+
+                _accountingStartsAfter = dailyMsgCount > _accountingStartsAfter
+                    ? dailyMsgCount + 2
+                    : _accountingStartsAfter;
+
+                if (_accountingStartsAfter > dailyMsgCount)
+                    _accountingStartDate = null;
+
+                // if the accounting hasn't started today, keep old limits
+                var configAccountingStartsAfter = checked((int)long.Parse(_configuration["ChatAdmin:AccountingStartsAfter"]));
+
+                if (_accountingStartDate == null
+                    && _accountingStartsAfter == configAccountingStartsAfter)
                 {
-                    // Telegram message date is GMT. But now everything depends on the InsertDate.
-
-                    var selectDailyMessages = $"select * from bot.messages where chat_id = {_defaultChatId} and cast(raw_data ->> 'Date' as timestamptz) > now()::date";
-                    var selectAccountedDailyMessages = _accountingStartDate is null
-                        ? "select * from bot.messages where user_id = -666" // something unreal to get nothing
-                        : $"{selectDailyMessages} and cast(raw_data ->> 'Date' as timestamptz) > '{_accountingStartDate}'";
-
-                    //var userMessageCounts = ctx.Messages
-                    //    .FromSqlRaw(selectAccountedDailyMessages)
-                    //    .GroupBy(m => m.UserId)
-                    //    .Select(m => new { UserId = m.Key, Count = m.Count() });
-                    var userMessageCounts = (await _messagesRepo.FindAllBySqlAsync(selectAccountedDailyMessages))
-                        .GroupBy(m => m.UserId)
-                        .Select(m => new { UserId = m.Key, Count = m.Count() });
-
-
-                    maxAcountedMessagesFromUser = userMessageCounts.Count() > 0
-                        ? userMessageCounts.Max(i => i.Count)
-                        : 0;
-
-                    //dailyMsgCount = ctx.Messages
-                    //    .FromSqlRaw(selectDailyMessages)
-                    //    .Where(m => !m.IsDeleted).Count();
-                    dailyMsgCount = (await _messagesRepo.FindAllBySqlAsync(selectDailyMessages))
-                        .Where(m => !m.IsDeleted).Count();
-
-
-                    _accountingStartsAfter = dailyMsgCount > _accountingStartsAfter
-                        ? dailyMsgCount + 2
-                        : _accountingStartsAfter;
-
-                    if (_accountingStartsAfter > dailyMsgCount)
-                        _accountingStartDate = null;
-
-                    // if the accounting hasn't started today, keep old limits
-                    var configAccountingStartsAfter = checked((int)long.Parse(_configuration["ChatAdmin:AccountingStartsAfter"]));
-
-                    if (_accountingStartDate == null
-                        && _accountingStartsAfter == configAccountingStartsAfter)
-                    {
-                        _limitsAreDefined = true;
-                        return;
-                    }
-
-                    if (_limitHi < maxAcountedMessagesFromUser || _limitHiHi < maxAcountedMessagesFromUser)
-                    {
-                        _limitHi = _limitHi > 0 ? maxAcountedMessagesFromUser + 2 : -1;
-                        _limitHiHi = _limitHi > 0 ? _limitHi + 5 : -1;
-                    }
+                    _limitsAreDefined = true;
+                    return;
                 }
+
+                if (_limitHi < maxAcountedMessagesFromUser || _limitHiHi < maxAcountedMessagesFromUser)
+                {
+                    _limitHi = _limitHi > 0 ? maxAcountedMessagesFromUser + 2 : -1;
+                    _limitHiHi = _limitHi > 0 ? _limitHi + 5 : -1;
+                }
+                
 
                 _limitsAreDefined = true;
             }
