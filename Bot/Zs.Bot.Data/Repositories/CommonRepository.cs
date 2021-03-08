@@ -34,13 +34,13 @@ namespace Zs.Bot.Data.Repositories
         public virtual async Task<TEntity> FindByKeyAsync(TKey id, CancellationToken cancellationToken = default)
         {
             using var context = ContextFactory.GetContext();
-            return await context.Set<TEntity>().FirstOrDefaultAsync(i => i.Id.Equals(id));
+            return await context.Set<TEntity>().AsNoTracking().FirstOrDefaultAsync(i => i.Id.Equals(id));
         }
 
         public virtual async Task<TEntity> FindBySqlAsync(string query, CancellationToken cancellationToken = default)
         {
             using var context = ContextFactory.GetContext();
-            return await context.Set<TEntity>().FromSqlRaw(query).FirstOrDefaultAsync();
+            return await context.Set<TEntity>().FromSqlRaw(query).AsNoTracking().FirstOrDefaultAsync();
         }
 
         public virtual async Task<TEntity> FindAsync(
@@ -56,8 +56,8 @@ namespace Zs.Bot.Data.Repositories
                 query = orderBy(query);
 
             return predicate is null
-                ? await query.FirstOrDefaultAsync()
-                : await query.FirstOrDefaultAsync(predicate);
+                ? await query.AsNoTracking().FirstOrDefaultAsync()
+                : await query.AsNoTracking().FirstOrDefaultAsync(predicate);
         }
 
         public virtual async Task<List<TEntity>> FindAllAsync(
@@ -83,7 +83,13 @@ namespace Zs.Bot.Data.Repositories
             if (take != null)
                 query = query.Take((int)take);
 
-            return await query.ToListAsync(cancellationToken);
+            return await query.AsNoTracking().ToListAsync(cancellationToken);
+        }
+
+        public async Task<List<TEntity>> FindAllBySqlAsync(string query, CancellationToken cancellationToken = default)
+        {
+            using var context = ContextFactory.GetContext();
+            return await context.Set<TEntity>().FromSqlRaw(query).AsNoTracking().ToListAsync();
         }
 
         public virtual async Task<bool> SaveAsync(TEntity item, CancellationToken cancellationToken = default)
@@ -144,5 +150,26 @@ namespace Zs.Bot.Data.Repositories
                 return false;
             }
         }
+
+        public virtual async Task<bool> DeleteRangeAsync(IEnumerable<TEntity> items, CancellationToken cancellationToken = default)
+        {
+            if (items is null)
+                throw new ArgumentNullException(nameof(items));
+
+            using var context = ContextFactory.GetContext();
+
+            var ids = items.Select(i => i.Id).ToList();
+            var existingItems = await context.Set<TEntity>().Where(i => ids.Contains(i.Id)).ToListAsync(cancellationToken);
+            if (existingItems?.Any() == true && existingItems.Count == items.Count())
+            {
+                context.Set<TEntity>().RemoveRange(existingItems);
+                return await context.SaveChangesAsync(cancellationToken) == existingItems.Count;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
     }
 }

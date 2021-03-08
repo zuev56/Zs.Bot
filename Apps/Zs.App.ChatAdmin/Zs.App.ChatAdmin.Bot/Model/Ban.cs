@@ -1,14 +1,16 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 using Zs.App.ChatAdmin.Abstractions;
+using Zs.Bot.Data.Abstractions;
 using Zs.Bot.Data.Models;
 
 namespace Zs.App.ChatAdmin.Model
 {
     /// <summary> Информация о банах </summary>
     [Table("bans", Schema = "zl")]
-    public partial class Ban : IBan
+    public partial class Ban : IDbEntity<Ban, int>
     {
         [Key]
         [Required(ErrorMessage = "Property 'BanId' is required")]
@@ -36,6 +38,10 @@ namespace Zs.App.ChatAdmin.Model
         [Required(ErrorMessage = "Property 'InsertDate' is required")]
         [Column("insert_date", TypeName = "timestamp with time zone")]
         public DateTime InsertDate { get; set; }
+        [JsonIgnore]
+        public Func<Ban> GetItemToSave => () => this;
+        [JsonIgnore]
+        public Func<Ban, Ban> GetItemToUpdate => (existingItem) => this;
 
         public User User { get; set; }
         public Chat Chat { get; set; }

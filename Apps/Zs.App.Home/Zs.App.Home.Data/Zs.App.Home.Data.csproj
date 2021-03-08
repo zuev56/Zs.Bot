@@ -6,11 +6,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="SQL\Priveleges.sql" />
     <None Remove="SQL\StoredFunctions.sql" />
     <None Remove="SQL\Views.sql" />
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="SQL\Priveleges.sql" />
     <EmbeddedResource Include="SQL\StoredFunctions.sql" />
     <EmbeddedResource Include="SQL\Views.sql" />
   </ItemGroup>

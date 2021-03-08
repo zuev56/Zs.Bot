@@ -20,14 +20,12 @@ namespace Zs.Bot.Data.Factories
             _options = options;
         }
 
-        public BotContext GetContext()
-        {
-            return new BotContext(_options);
-        }
+        public BotContext GetContext() => new BotContext(_options);
 
         // For migrations
         public BotContext CreateDbContext(string[] args)
         {
+            // TODO: exclude hardcoded config file name
             Trace.WriteLineIf(args != null && args.Length > 0, string.Join(',', args));
             
             var solutionDir = Common.Extensions.Path.TryGetSolutionPath();

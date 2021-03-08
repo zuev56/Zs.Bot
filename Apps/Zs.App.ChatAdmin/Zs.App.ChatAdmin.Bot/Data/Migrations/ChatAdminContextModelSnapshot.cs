@@ -17,7 +17,7 @@ namespace Zs.App.ChatAdmin.Data.Migrations
             modelBuilder
                 .UseSerialColumns()
                 .HasAnnotation("Relational:MaxIdentifierLength", 63)
-                .HasAnnotation("ProductVersion", "5.0.1");
+                .HasAnnotation("ProductVersion", "5.0.2");
 
             modelBuilder.Entity("Zs.App.ChatAdmin.Model.Accounting", b =>
                 {
@@ -231,7 +231,7 @@ namespace Zs.App.ChatAdmin.Data.Migrations
                             Id = -1,
                             ChatTypeId = "PRIVATE",
                             Description = "UnitTestChat",
-                            InsertDate = new DateTime(2021, 1, 7, 21, 44, 22, 770, DateTimeKind.Local).AddTicks(305),
+                            InsertDate = new DateTime(2021, 2, 27, 13, 31, 30, 326, DateTimeKind.Local).AddTicks(4829),
                             Name = "UnitTestChat",
                             RawData = "{ \"test\": \"test\" }",
                             RawDataHash = "-1063294487",
@@ -241,7 +241,7 @@ namespace Zs.App.ChatAdmin.Data.Migrations
                         {
                             Id = 1,
                             ChatTypeId = "PRIVATE",
-                            InsertDate = new DateTime(2021, 1, 7, 21, 44, 22, 770, DateTimeKind.Local).AddTicks(838),
+                            InsertDate = new DateTime(2021, 2, 27, 13, 31, 30, 326, DateTimeKind.Local).AddTicks(5453),
                             Name = "zuev56",
                             RawData = "{ \"Id\": 210281448 }",
                             RawDataHash = "-1063294487",
@@ -282,28 +282,28 @@ namespace Zs.App.ChatAdmin.Data.Migrations
                         new
                         {
                             Id = "CHANNEL",
-                            InsertDate = new DateTime(2021, 1, 7, 21, 44, 22, 769, DateTimeKind.Local).AddTicks(6574),
+                            InsertDate = new DateTime(2021, 2, 27, 13, 31, 30, 325, DateTimeKind.Local).AddTicks(9327),
                             Name = "Channel",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Id = "GROUP",
-                            InsertDate = new DateTime(2021, 1, 7, 21, 44, 22, 769, DateTimeKind.Local).AddTicks(7085),
+                            InsertDate = new DateTime(2021, 2, 27, 13, 31, 30, 326, DateTimeKind.Local).AddTicks(484),
                             Name = "Group",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Id = "PRIVATE",
-                            InsertDate = new DateTime(2021, 1, 7, 21, 44, 22, 769, DateTimeKind.Local).AddTicks(7092),
+                            InsertDate = new DateTime(2021, 2, 27, 13, 31, 30, 326, DateTimeKind.Local).AddTicks(496),
                             Name = "Private",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Id = "UNDEFINED",
-                            InsertDate = new DateTime(2021, 1, 7, 21, 44, 22, 769, DateTimeKind.Local).AddTicks(7094),
+                            InsertDate = new DateTime(2021, 2, 27, 13, 31, 30, 326, DateTimeKind.Local).AddTicks(497),
                             Name = "Undefined",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         });
@@ -360,7 +360,7 @@ namespace Zs.App.ChatAdmin.Data.Migrations
                             Id = "/test",
                             Description = "Тестовый запрос к боту. Возвращает ''Test''",
                             Group = "moderatorCmdGroup",
-                            InsertDate = new DateTime(2021, 1, 7, 21, 44, 22, 771, DateTimeKind.Local).AddTicks(3086),
+                            InsertDate = new DateTime(2021, 2, 27, 13, 31, 30, 328, DateTimeKind.Local).AddTicks(1109),
                             Script = "SELECT 'Test'",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
@@ -369,7 +369,7 @@ namespace Zs.App.ChatAdmin.Data.Migrations
                             Id = "/nulltest",
                             Description = "Тестовый запрос к боту. Возвращает NULL",
                             Group = "moderatorCmdGroup",
-                            InsertDate = new DateTime(2021, 1, 7, 21, 44, 22, 771, DateTimeKind.Local).AddTicks(3656),
+                            InsertDate = new DateTime(2021, 2, 27, 13, 31, 30, 328, DateTimeKind.Local).AddTicks(1865),
                             Script = "SELECT null",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
@@ -379,7 +379,7 @@ namespace Zs.App.ChatAdmin.Data.Migrations
                             DefaultArgs = "<UserRoleId>",
                             Description = "Получение справки по доступным функциям",
                             Group = "userCmdGroup",
-                            InsertDate = new DateTime(2021, 1, 7, 21, 44, 22, 771, DateTimeKind.Local).AddTicks(4139),
+                            InsertDate = new DateTime(2021, 2, 27, 13, 31, 30, 328, DateTimeKind.Local).AddTicks(2744),
                             Script = "SELECT bot.sf_cmd_get_help({0})",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
@@ -389,7 +389,7 @@ namespace Zs.App.ChatAdmin.Data.Migrations
                             DefaultArgs = "select 'Pass your query as parameter in double quotes'",
                             Description = "SQL-запрос",
                             Group = "adminCmdGroup",
-                            InsertDate = new DateTime(2021, 1, 7, 21, 44, 22, 771, DateTimeKind.Local).AddTicks(4149),
+                            InsertDate = new DateTime(2021, 2, 27, 13, 31, 30, 328, DateTimeKind.Local).AddTicks(2764),
                             Script = "select (with userQuery as ({0}) select json_agg(q) from userQuery q)",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
@@ -399,50 +399,10 @@ namespace Zs.App.ChatAdmin.Data.Migrations
                             DefaultArgs = "15; now()::Date; now()",
                             Description = "Получение статистики по активности участников всех чатов за определённый период",
                             Group = "adminCmdGroup",
-                            InsertDate = new DateTime(2021, 1, 7, 21, 44, 22, 772, DateTimeKind.Local).AddTicks(9337),
+                            InsertDate = new DateTime(2021, 2, 27, 13, 31, 30, 329, DateTimeKind.Local).AddTicks(9623),
                             Script = "SELECT zl.sf_cmd_get_full_statistics({0}, {1}, {2})",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         });
-                });
-
-            modelBuilder.Entity("Zs.Bot.Data.Models.Log", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("log_id")
-                        .UseSerialColumn();
-
-                    b.Property<string>("Data")
-                        .HasColumnType("json")
-                        .HasColumnName("log_data");
-
-                    b.Property<string>("Initiator")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("log_initiator");
-
-                    b.Property<DateTime>("InsertDate")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("insert_date")
-                        .HasDefaultValueSql("now()");
-
-                    b.Property<string>("Message")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("log_message");
-
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasMaxLength(7)
-                        .HasColumnType("character varying(7)")
-                        .HasColumnName("log_type");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("logs", "bot");
                 });
 
             modelBuilder.Entity("Zs.Bot.Data.Models.Message", b =>
@@ -573,84 +533,84 @@ namespace Zs.App.ChatAdmin.Data.Migrations
                         new
                         {
                             Id = "UKN",
-                            InsertDate = new DateTime(2021, 1, 7, 21, 44, 22, 770, DateTimeKind.Local).AddTicks(9581),
+                            InsertDate = new DateTime(2021, 2, 27, 13, 31, 30, 327, DateTimeKind.Local).AddTicks(7265),
                             Name = "Unknown",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Id = "TXT",
-                            InsertDate = new DateTime(2021, 1, 7, 21, 44, 22, 771, DateTimeKind.Local).AddTicks(36),
+                            InsertDate = new DateTime(2021, 2, 27, 13, 31, 30, 327, DateTimeKind.Local).AddTicks(7906),
                             Name = "Text",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Id = "PHT",
-                            InsertDate = new DateTime(2021, 1, 7, 21, 44, 22, 771, DateTimeKind.Local).AddTicks(41),
+                            InsertDate = new DateTime(2021, 2, 27, 13, 31, 30, 327, DateTimeKind.Local).AddTicks(8020),
                             Name = "Photo",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Id = "AUD",
-                            InsertDate = new DateTime(2021, 1, 7, 21, 44, 22, 771, DateTimeKind.Local).AddTicks(43),
+                            InsertDate = new DateTime(2021, 2, 27, 13, 31, 30, 327, DateTimeKind.Local).AddTicks(8023),
                             Name = "Audio",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Id = "VID",
-                            InsertDate = new DateTime(2021, 1, 7, 21, 44, 22, 771, DateTimeKind.Local).AddTicks(44),
+                            InsertDate = new DateTime(2021, 2, 27, 13, 31, 30, 327, DateTimeKind.Local).AddTicks(8024),
                             Name = "Video",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Id = "VOI",
-                            InsertDate = new DateTime(2021, 1, 7, 21, 44, 22, 771, DateTimeKind.Local).AddTicks(45),
+                            InsertDate = new DateTime(2021, 2, 27, 13, 31, 30, 327, DateTimeKind.Local).AddTicks(8025),
                             Name = "Voice",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Id = "DOC",
-                            InsertDate = new DateTime(2021, 1, 7, 21, 44, 22, 771, DateTimeKind.Local).AddTicks(46),
+                            InsertDate = new DateTime(2021, 2, 27, 13, 31, 30, 327, DateTimeKind.Local).AddTicks(8026),
                             Name = "Document",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Id = "STK",
-                            InsertDate = new DateTime(2021, 1, 7, 21, 44, 22, 771, DateTimeKind.Local).AddTicks(47),
+                            InsertDate = new DateTime(2021, 2, 27, 13, 31, 30, 327, DateTimeKind.Local).AddTicks(8027),
                             Name = "Sticker",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Id = "LOC",
-                            InsertDate = new DateTime(2021, 1, 7, 21, 44, 22, 771, DateTimeKind.Local).AddTicks(49),
+                            InsertDate = new DateTime(2021, 2, 27, 13, 31, 30, 327, DateTimeKind.Local).AddTicks(8029),
                             Name = "Location",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Id = "CNT",
-                            InsertDate = new DateTime(2021, 1, 7, 21, 44, 22, 771, DateTimeKind.Local).AddTicks(50),
+                            InsertDate = new DateTime(2021, 2, 27, 13, 31, 30, 327, DateTimeKind.Local).AddTicks(8030),
                             Name = "Contact",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Id = "SRV",
-                            InsertDate = new DateTime(2021, 1, 7, 21, 44, 22, 771, DateTimeKind.Local).AddTicks(51),
+                            InsertDate = new DateTime(2021, 2, 27, 13, 31, 30, 327, DateTimeKind.Local).AddTicks(8031),
                             Name = "Service message",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Id = "OTH",
-                            InsertDate = new DateTime(2021, 1, 7, 21, 44, 22, 771, DateTimeKind.Local).AddTicks(52),
+                            InsertDate = new DateTime(2021, 2, 27, 13, 31, 30, 327, DateTimeKind.Local).AddTicks(8032),
                             Name = "Other",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         });
@@ -689,35 +649,35 @@ namespace Zs.App.ChatAdmin.Data.Migrations
                         new
                         {
                             Id = "TG",
-                            InsertDate = new DateTime(2021, 1, 7, 21, 44, 22, 767, DateTimeKind.Local).AddTicks(2862),
+                            InsertDate = new DateTime(2021, 2, 27, 13, 31, 30, 322, DateTimeKind.Local).AddTicks(6325),
                             Name = "Telegram",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Id = "VK",
-                            InsertDate = new DateTime(2021, 1, 7, 21, 44, 22, 768, DateTimeKind.Local).AddTicks(3486),
+                            InsertDate = new DateTime(2021, 2, 27, 13, 31, 30, 323, DateTimeKind.Local).AddTicks(7954),
                             Name = "Вконтакте",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Id = "SK",
-                            InsertDate = new DateTime(2021, 1, 7, 21, 44, 22, 768, DateTimeKind.Local).AddTicks(3502),
+                            InsertDate = new DateTime(2021, 2, 27, 13, 31, 30, 323, DateTimeKind.Local).AddTicks(7978),
                             Name = "Skype",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Id = "FB",
-                            InsertDate = new DateTime(2021, 1, 7, 21, 44, 22, 768, DateTimeKind.Local).AddTicks(3504),
+                            InsertDate = new DateTime(2021, 2, 27, 13, 31, 30, 323, DateTimeKind.Local).AddTicks(7980),
                             Name = "Facebook",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Id = "DC",
-                            InsertDate = new DateTime(2021, 1, 7, 21, 44, 22, 768, DateTimeKind.Local).AddTicks(3505),
+                            InsertDate = new DateTime(2021, 2, 27, 13, 31, 30, 323, DateTimeKind.Local).AddTicks(7981),
                             Name = "Discord",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         });
@@ -789,7 +749,7 @@ namespace Zs.App.ChatAdmin.Data.Migrations
                         {
                             Id = -10,
                             FullName = "for exported message reading",
-                            InsertDate = new DateTime(2021, 1, 7, 21, 44, 22, 770, DateTimeKind.Local).AddTicks(7665),
+                            InsertDate = new DateTime(2021, 2, 27, 13, 31, 30, 327, DateTimeKind.Local).AddTicks(4149),
                             IsBot = false,
                             Name = "Unknown",
                             RawData = "{ \"test\": \"test\" }",
@@ -801,7 +761,7 @@ namespace Zs.App.ChatAdmin.Data.Migrations
                         {
                             Id = -1,
                             FullName = "UnitTest",
-                            InsertDate = new DateTime(2021, 1, 7, 21, 44, 22, 770, DateTimeKind.Local).AddTicks(8131),
+                            InsertDate = new DateTime(2021, 2, 27, 13, 31, 30, 327, DateTimeKind.Local).AddTicks(5240),
                             IsBot = false,
                             Name = "UnitTestUser",
                             RawData = "{ \"test\": \"test\" }",
@@ -813,7 +773,7 @@ namespace Zs.App.ChatAdmin.Data.Migrations
                         {
                             Id = 1,
                             FullName = "Сергей Зуев",
-                            InsertDate = new DateTime(2021, 1, 7, 21, 44, 22, 770, DateTimeKind.Local).AddTicks(8136),
+                            InsertDate = new DateTime(2021, 2, 27, 13, 31, 30, 327, DateTimeKind.Local).AddTicks(5250),
                             IsBot = false,
                             Name = "zuev56",
                             RawData = "{ \"Id\": 210281448 }",
@@ -861,7 +821,7 @@ namespace Zs.App.ChatAdmin.Data.Migrations
                         new
                         {
                             Id = "OWNER",
-                            InsertDate = new DateTime(2021, 1, 7, 21, 44, 22, 770, DateTimeKind.Local).AddTicks(3561),
+                            InsertDate = new DateTime(2021, 2, 27, 13, 31, 30, 326, DateTimeKind.Local).AddTicks(8654),
                             Name = "Owner",
                             Permissions = "[ \"All\" ]",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
@@ -869,7 +829,7 @@ namespace Zs.App.ChatAdmin.Data.Migrations
                         new
                         {
                             Id = "ADMIN",
-                            InsertDate = new DateTime(2021, 1, 7, 21, 44, 22, 770, DateTimeKind.Local).AddTicks(4042),
+                            InsertDate = new DateTime(2021, 2, 27, 13, 31, 30, 326, DateTimeKind.Local).AddTicks(9271),
                             Name = "Administrator",
                             Permissions = "[ \"adminCmdGroup\", \"moderatorCmdGroup\", \"userCmdGroup\" ]",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
@@ -877,7 +837,7 @@ namespace Zs.App.ChatAdmin.Data.Migrations
                         new
                         {
                             Id = "MODERATOR",
-                            InsertDate = new DateTime(2021, 1, 7, 21, 44, 22, 770, DateTimeKind.Local).AddTicks(4047),
+                            InsertDate = new DateTime(2021, 2, 27, 13, 31, 30, 326, DateTimeKind.Local).AddTicks(9280),
                             Name = "Moderator",
                             Permissions = "[ \"moderatorCmdGroup\", \"userCmdGroup\" ]",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
@@ -885,7 +845,7 @@ namespace Zs.App.ChatAdmin.Data.Migrations
                         new
                         {
                             Id = "USER",
-                            InsertDate = new DateTime(2021, 1, 7, 21, 44, 22, 770, DateTimeKind.Local).AddTicks(4049),
+                            InsertDate = new DateTime(2021, 2, 27, 13, 31, 30, 326, DateTimeKind.Local).AddTicks(9282),
                             Name = "User",
                             Permissions = "[ \"userCmdGroup\" ]",
                             UpdateDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)

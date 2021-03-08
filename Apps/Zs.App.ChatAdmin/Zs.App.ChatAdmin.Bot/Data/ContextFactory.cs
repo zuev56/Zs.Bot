@@ -4,41 +4,36 @@ using System.IO;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
-using Zs.App.ChatAdmin.Abstractions;
+//using Zs.App.ChatAdmin.Abstractions;
 using Zs.Bot.Data;
+using Zs.Common.Abstractions;
 
 namespace Zs.App.ChatAdmin.Data
 {
-    public class ContextFactory : IContextFactory, IDesignTimeDbContextFactory<ChatAdminContext>
+    public class ContextFactory : IContextFactory<ChatAdminContext>, IDesignTimeDbContextFactory<ChatAdminContext>
     {
-        private static DbContextOptions<BotContext> _botOptions;
-        private static DbContextOptions<ChatAdminContext> _chatAdminOptions;
-
-        public ChatAdminContext GetChatAdminContext()
-            => new ChatAdminContext(_chatAdminOptions);
-
-        public BotContext GetBotContext()
-            => new BotContext(_botOptions);
+        private static DbContextOptions<ChatAdminContext> _options;
 
         public ContextFactory()
         {
         }
 
-        public ContextFactory(
-            DbContextOptions<BotContext> botOptions,
-            DbContextOptions<ChatAdminContext> chatAdminOptions)
+        public ContextFactory(DbContextOptions<ChatAdminContext> options)
         {
-            _botOptions = botOptions ?? throw new ArgumentNullException(nameof(botOptions));
-            _chatAdminOptions = chatAdminOptions ?? throw new ArgumentNullException(nameof(chatAdminOptions));
+            _options = options ?? throw new ArgumentNullException(nameof(options));
         }
 
+        // For repositories
+        public ChatAdminContext GetContext() => new ChatAdminContext(_options);
+
+        // For migrations
         public ChatAdminContext CreateDbContext(string[] args)
         {
+            // TODO: exclude hardcoded config file name
             Trace.WriteLineIf(args != null && args.Length > 0, string.Join(',', args));
             
             var solutionDir = Common.Extensions.Path.TryGetSolutionPath();
             var configuration = new ConfigurationBuilder()
-                // TODO: exclude hardcoded config file name
                 .AddJsonFile(Path.Combine(solutionDir, "PrivateConfiguration.json"), optional: true)
                 .Build();
             var connectionString = configuration.GetConnectionString("Default");

@@ -4,6 +4,7 @@ using Microsoft.Extensions.Hosting;
 using Serilog;
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Zs.App.Home.Web
@@ -14,27 +15,17 @@ namespace Zs.App.Home.Web
         {
             try
             {
-                if (args?.Length == 0)
-                {
-                    var localConfig = Path.Combine(Directory.GetCurrentDirectory(), "configuration.json");
-                    args = new[] { localConfig };
-                }
+                var mainConfigPath = System.IO.Path.Combine(Directory.GetCurrentDirectory(), "appsettings.json");
+                if (!File.Exists(mainConfigPath))
+                    throw new Exception("Configuration file appsettings.json is not found in the application directory");
 
-                if (args?.Length != 1)
-                    throw new ArgumentException("Wrong number of arguments");
-
-                if (!File.Exists(args[0]))
-                    throw new FileNotFoundException($"Wrong configuration path:\n{args[0]}");
-                
-                var configuration = new ConfigurationBuilder()
-                    .AddJsonFile(args[0], optional: false, reloadOnChange: true)
-                    .Build();
+                var appsettings = new ConfigurationBuilder().AddJsonFile(mainConfigPath, optional: false, reloadOnChange: true).Build();
 
                 Log.Logger = new LoggerConfiguration()
-                    .ReadFrom.Configuration(configuration, "Serilog")
+                    .ReadFrom.Configuration(appsettings, "Serilog")
                     .CreateLogger();
 
-                await CreateHostBuilder(args).Build().RunAsync();
+                await CreateHostBuilder(args, appsettings).Build().RunAsync();
             }
             catch (Exception ex)
             {
@@ -55,19 +46,30 @@ namespace Zs.App.Home.Web
             catch { }
         }
 
-        public static IHostBuilder CreateHostBuilder(string[] args) =>
-            Host.CreateDefaultBuilder(args)
+        public static IHostBuilder CreateHostBuilder(string[] args, IConfigurationRoot appsettings)
+        {           
+            return Host.CreateDefaultBuilder(args)
                 .ConfigureLogging(logging => logging.AddSerilog())
                 .ConfigureAppConfiguration((hostingContext, config) =>
                 {
-                    config.AddJsonFile(args[0], optional: false, reloadOnChange: true);
+                    foreach (var arg in args)
+                    {
+                        if (!File.Exists(arg))
+                            throw new FileNotFoundException($"Wrong configuration path:\n{arg}");
+
+                        config.AddJsonFile(arg, optional: true, reloadOnChange: true);
+                    }
+
                 })
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
+                    string[] urls = appsettings.GetSection("UseUrls").Get<string[]>();
+                    if (urls?.Any() == true)
+                        webBuilder.UseUrls(appsettings.GetSection("UseUrls").Get<string[]>());
+
                     webBuilder.UseStartup<Startup>();
-                    //webBuilder.UseUrls(
-                    //    "http://localhost:5601",
-                    //    "http://192.168.1.11:5601");
                 });
+        }
+            
     }
 }

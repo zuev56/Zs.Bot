@@ -1,4 +1,7 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
+using Zs.Common.Abstractions;
+using Zs.Common.Models;
 using Zs.Common.Services.Abstractions;
 
 namespace Zs.Common.Services.Scheduler
@@ -16,8 +19,9 @@ namespace Zs.Common.Services.Scheduler
             Action method,
             object parameter = null,
             DateTime? startDate = null,
-            string description = null)
-            : base(period, startDate)
+            string description = null,
+            ILogger logger = null)
+            : base(period, startDate, logger)
         {
             Period = period != default ? period : throw new ArgumentException($"{nameof(period)} can't have default value");
 
@@ -26,13 +30,10 @@ namespace Zs.Common.Services.Scheduler
             Description = description;
         }
 
-        protected override IJobExecutionResult GetExecutionResult()
+        protected override IServiceResult<string> GetExecutionResult()
         {
-//#if DEBUG
-//            Trace.WriteLine($"ProgramJobBody: [{Counter}], ThreadId: {Thread.CurrentThread.ManagedThreadId}");
-//#endif
-             _method.Invoke();
-            return default;
+            _method.Invoke();
+            return ServiceResult<string>.Success(default);
         }
     }
 }

@@ -33,8 +33,6 @@ namespace Zs.App.Home.Bot
         private readonly IItemsWithRawDataRepository<Message, int> _messagesRepo;
         private readonly ILogger<UserWatcher> _logger;
         //private readonly IConnectionAnalyser _connectionAnalyser;
-        [Obsolete]
-        private readonly bool _detailedLogging;
         private readonly float _version;
         private readonly string _accessToken;
         private readonly int[] _userIds;
@@ -66,7 +64,7 @@ namespace Zs.App.Home.Bot
 
                 _activityLogIntervalSec = _configuration.GetSection("Home:Vk:ActivityLogIntervalSec").Get<int>();
                 _version = float.Parse(_configuration["Home:Vk:Version"], CultureInfo.InvariantCulture);
-                _accessToken = _configuration["Home:Vk:AccessToken"];
+                _accessToken = _configuration.GetSecretValue("Home:Vk:AccessToken");
                 _userIds = _configuration.GetSection("Home:Vk:UserIds").Get<int[]>();
 
                 CreateJobs();
@@ -104,62 +102,65 @@ namespace Zs.App.Home.Bot
         {
             _userActivityLogger = new ProgramJob(
                 TimeSpan.FromSeconds(_activityLogIntervalSec),
-                async () => await SaveVkUsersActivityAsync(),
-                description: "logUserStatus");
+                () => SaveVkUsersActivityAsync().Wait(),
+                description: "logUserStatus", 
+                logger: _logger);
 
             var notActiveUsers12hInformer = new SqlJob(
                 TimeSpan.FromHours(1),
                 QueryResultType.String,
                 $"select vk.sf_cmd_get_not_active_users('{string.Join(',', _configuration.GetSection("Home:Vk:TrackedUserIds").Get<int[]>())}', {_configuration.GetSection("Vk:AlarmAfterInactiveHours").Get<int>()})",
-                _configuration.GetConnectionString("Default"),
+                _configuration.GetSecretValue("ConnectionStrings:Default"),
                 startDate: DateTime.Now + TimeSpan.FromSeconds(5),
                 description: "notActiveUsers12hInformer"
                 );
-
-            var dayErrorsAndWarningsInformer = new SqlJob(
-                TimeSpan.FromHours(1),
-                QueryResultType.String,
-                 @"select string_agg('**' || log_type || '**  ' || to_char(insert_date, 'HH24:MI:SS') || E'\n' || log_initiator || ':  ' || log_message, E'\n\n' order by insert_date desc)
-                             from bot.logs
-                            where log_type in ('Warning', 'Error')
-                              and insert_date > now() - interval '1 hour'",
-                _configuration.GetConnectionString("Default"),
-                startDate: Job.NextHour(),
-                description: "dayErrorsAndWarningsInformer"
-                );
-
-            var nightErrorsAndWarningsInformer = new SqlJob(
-                TimeSpan.FromDays(1),
-                QueryResultType.String,
-                 @" select string_agg('**' || log_type || '**  ' || to_char(insert_date, 'HH24:MI:SS') || E'\n' || log_initiator || ':  ' || log_message, E'\n\n' order by insert_date desc)
-                              from bot.logs
-                             where log_type in ('Warning', 'Error')
-                               and insert_date > now() - interval '12 hours'",
-                _configuration.GetConnectionString("Default"),
-                startDate: DateTime.Today + TimeSpan.FromHours(24+10),
-                description: "nightErrorsAndWarningsInformer"
-                );
+        // Больше нет bot.logs
+        //    var dayErrorsAndWarningsInformer = new SqlJob(
+        //        TimeSpan.FromHours(1),
+        //        QueryResultType.String,
+        //         @"select string_agg('**' || log_type || '**  ' || to_char(insert_date, 'HH24:MI:SS') || E'\n' || log_initiator || ':  ' || log_message, E'\n\n' order by insert_date desc)
+        //                     from bot.logs
+        //                    where log_type in ('Warning', 'Error')
+        //                      and insert_date > now() - interval '1 hour'",
+        //        _configuration.GetSecretValue("ConnectionStrings:Default"),
+        //        startDate: Job.NextHour(),
+        //        description: "dayErrorsAndWarningsInformer"
+        //        );
+        //
+        //    var nightErrorsAndWarningsInformer = new SqlJob(
+        //        TimeSpan.FromDays(1),
+        //        QueryResultType.String,
+        //         @" select string_agg('**' || log_type || '**  ' || to_char(insert_date, 'HH24:MI:SS') || E'\n' || log_initiator || ':  ' || log_message, E'\n\n' order by insert_date desc)
+        //                      from bot.logs
+        //                     where log_type in ('Warning', 'Error')
+        //                       and insert_date > now() - interval '12 hours'",
+        //        _configuration.GetSecretValue("ConnectionStrings:Default"),
+        //        startDate: DateTime.Today + TimeSpan.FromHours(24+10),
+        //        description: "nightErrorsAndWarningsInformer"
+        //        );
 
             notActiveUsers12hInformer.ExecutionCompleted += Job_ExecutionCompleted;
-            dayErrorsAndWarningsInformer.ExecutionCompleted += Job_ExecutionCompleted;
-            nightErrorsAndWarningsInformer.ExecutionCompleted += Job_ExecutionCompleted;
+        //    dayErrorsAndWarningsInformer.ExecutionCompleted += Job_ExecutionCompleted;
+        //    nightErrorsAndWarningsInformer.ExecutionCompleted += Job_ExecutionCompleted;
 
             _scheduler.Jobs.Add(_userActivityLogger);
-            _scheduler.Jobs.Add(notActiveUsers12hInformer);
-            _scheduler.Jobs.Add(dayErrorsAndWarningsInformer);
-            _scheduler.Jobs.Add(nightErrorsAndWarningsInformer);
+        //    _scheduler.Jobs.Add(notActiveUsers12hInformer);
+        //    _scheduler.Jobs.Add(dayErrorsAndWarningsInformer);
+        //    _scheduler.Jobs.Add(nightErrorsAndWarningsInformer);
         }
 
-        private async void Job_ExecutionCompleted(IJob job, IJobExecutionResult result)
+        private async void Job_ExecutionCompleted(IJob job, IServiceResult<string> result)
         {
             try
             {
-                if (result != null && DateTime.Now.Hour > 8 && DateTime.Now.Hour < 22)
+                if (result.IsSuccess && result.Result != null
+                    && DateTime.Now.Hour > _configuration.GetSection("Notifier:Time:FromHour").Get<int>() 
+                    && DateTime.Now.Hour < _configuration.GetSection("Notifier:Time:ToHour").Get<int>())
                 {
-                    var todaysMessages = await _messagesRepo.FindAllAsync(m => m.InsertDate > DateTime.Today && m.Text.Contains("is not active for"));
+                    var todaysAlerts = await _messagesRepo.FindAllAsync(m => m.InsertDate > DateTime.Today && m.Text.Contains("is not active for"));
 
-                    if (!todaysMessages.Any(m => m.Text.WithoutDigits() == result.TextValue.WithoutDigits()))
-                        await _messenger.AddMessageToOutboxAsync(result?.TextValue, "ADMIN");
+                    if (!todaysAlerts.Any(m => m.Text.WithoutDigits() == result.Result.WithoutDigits()))
+                        await _messenger.AddMessageToOutboxAsync(result.Result, "ADMIN");
                 }                   
             }
             catch (Exception ex)
@@ -171,6 +172,7 @@ namespace Zs.App.Home.Bot
         /// <summary> Activity data collection </summary>
         private async Task SaveVkUsersActivityAsync()
         {
+            //throw new Exception("Test Error");
             if (_isFirstStep)
             {
                 _isFirstStep = false;
@@ -183,9 +185,7 @@ namespace Zs.App.Home.Bot
                 _userActivityLogger.IdleStepsCount = 0;
 
             if (!result.IsSuccess)
-            {
                 _logger?.LogWarning(result.Messages.LastOrDefault()?.Text);
-            }
         }
     }
 }

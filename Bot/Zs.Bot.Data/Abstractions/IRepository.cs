@@ -50,6 +50,8 @@ namespace Zs.Bot.Data.Abstractions
             uint? take = null,
             CancellationToken cancellationToken = default);
 
+        Task<List<TEntity>> FindAllBySqlAsync(string query, CancellationToken cancellationToken = default);
+
         /// <summary>
         /// Save new item or update existing item in database
         /// </summary>
@@ -65,5 +67,13 @@ namespace Zs.Bot.Data.Abstractions
         /// <param name="cancellationToken"></param>
         /// <returns>TRUE if deleted, otherwise FALSE</returns>
         Task<bool> DeleteAsync(TEntity item, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Delete existing items range from database
+        /// </summary>
+        /// <param name="items"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns>TRUE if the items deleted, otherwise FALSE</returns>
+        Task<bool> DeleteRangeAsync(IEnumerable<TEntity> items, CancellationToken cancellationToken = default);
     }
 }

@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using Zs.Common.Abstractions;
 using Zs.Common.Services.Abstractions;
 
 namespace Zs.Common.Services.Scheduler
@@ -10,11 +12,13 @@ namespace Zs.Common.Services.Scheduler
     /// </summary>
     public abstract class Job : IJob
     {
-        private readonly object _locker = new object();
         private int _idleStepsCount;
+        private const int STOPPED = 0, RUNNING = 1; 
+        private int _isRunning;
+        private readonly ILogger _logger;
 
+        public bool IsRunning => _isRunning == RUNNING;
         public long Counter { get; private set; }
-        public bool IsRunning { get; protected set; }        
         public int IdleStepsCount
         {
             get => _idleStepsCount;
@@ -23,27 +27,27 @@ namespace Zs.Common.Services.Scheduler
         public DateTime? NextRunDate { get; protected set; }
         public DateTime? LastRunDate { get; protected set; }
         public TimeSpan Period { get; protected set; }
-        public IJobExecutionResult LastResult { get; protected set; }
-        public string Description { get; set; }
+        public IServiceResult<string> LastResult { get; protected set; }
+        public string Description { get; init; }
 
-        public event Action<IJob, IJobExecutionResult> ExecutionCompleted;
 
-        /// <summary>
-        /// 
-        /// </summary>
+        public event Action<IJob, IServiceResult<string>> ExecutionCompleted;
+
+        /// <summary>  </summary>
         /// <param name="period">Time interval between executions</param>
         /// <param name="startDate">First execution date</param>
-        public Job(TimeSpan period, DateTime? startDate = null)
+        public Job(TimeSpan period, DateTime? startDate = null, ILogger logger = null)
         {
             Period = period;
             NextRunDate = startDate;
+            _logger = logger;
         }
 
-        protected abstract IJobExecutionResult GetExecutionResult();
-
+        protected abstract IServiceResult<string> GetExecutionResult();
+        
         public Task Execute()
         {
-            lock (_locker)
+            if (Interlocked.Exchange(ref _isRunning, RUNNING) == STOPPED)
             {
                 try
                 {
@@ -52,8 +56,6 @@ namespace Zs.Common.Services.Scheduler
                         Interlocked.Decrement(ref _idleStepsCount);
                         return Task.CompletedTask;
                     }
-
-                    IsRunning = true;
 
                     if (Period == default)
                     {
@@ -66,20 +68,18 @@ namespace Zs.Common.Services.Scheduler
 
                     Volatile.Read(ref ExecutionCompleted)?.Invoke(this, LastResult);
                 }
-                catch
-                {
-                    throw;
-                }
                 finally
                 {
                     LastRunDate = DateTime.Now;
                     NextRunDate = DateTime.Now + Period;
                     Counter++;
-                    IsRunning = false;
+                    Interlocked.Exchange(ref _isRunning, STOPPED);
                 }
             }
+
             return Task.CompletedTask;
         }
+
 
         public static DateTime NextHour()
         {
@@ -91,5 +91,6 @@ namespace Zs.Common.Services.Scheduler
                 nextHour += TimeSpan.FromHours(1);
             return nextHour;
         }
+
     }
 }

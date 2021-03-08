@@ -22,17 +22,6 @@ namespace Zs.App.Home.Data
         {
         }
 
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            // optionsBuilder.UseNpgsql(connectionString) выполняется в Startup.cs
-            //var solutionDir = Common.Extensions.Path.TryGetSolutionPath();
-            //var configuration = new ConfigurationBuilder()
-            //    .AddJsonFile(System.IO.Path.Combine(solutionDir, "PrivateConfiguration.json"), optional: false)
-            //    .Build();
-            //var connectionString = configuration.GetConnectionString("Default");
-            //
-            //optionsBuilder.UseNpgsql(connectionString);
-        }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -52,10 +41,11 @@ namespace Zs.App.Home.Data
             modelBuilder.Entity<User>().Property(b => b.InsertDate).HasDefaultValueSql("now()");
         }
 
-        public static string GetOtherSqlScripts()
+        public static string GetOtherSqlScripts(string dbName = null)
         {
             var resources = new[]
             {
+                "Priveleges.sql",
                 "StoredFunctions.sql",
                 "Views.sql"
             };
@@ -66,6 +56,9 @@ namespace Zs.App.Home.Data
                 var sqlScript = Assembly.GetExecutingAssembly().ReadResource(resourceName);
                 sb.Append(sqlScript + Environment.NewLine);
             }
+
+            if (!string.IsNullOrWhiteSpace(dbName))
+                sb.Replace("DefaultDbName", dbName);
 
             return sb.ToString();
         }

@@ -8,21 +8,13 @@ using Zs.App.ChatAdmin.Abstractions;
 using Zs.Bot.Services.Messaging;
 using Zs.Common.Abstractions;
 using Zs.Common.Enums;
+using Zs.Common.Extensions;
 using Zs.Common.Services.Abstractions;
 using Zs.Common.Services.Connection;
 using Zs.Common.Services.Scheduler;
 
 namespace Zs.App.ChatAdmin
 {
-    // + Подробное логгирование
-    // + Проверить устойчивасть к перебоям со связью
-    // + Исправить двойную отправку сообщений от джобов в релизной версии
-    // - После бана удалять старое предупреждение от бота, чтобы не захламлять чат
-    // + Проверить пересылку больших сообщений от Бота
-    // + Проверить, будут ли удаляться сообщения забаненного пользователя после восстановления соединения с интернетом
-    // + Сделать джоб, который утром присылает все ошибки за предыдущую ночь
-    // + Если к моменту восстановления интернета бан уже закончился, пользователь может отправить больше сообщений, чем MessageLimitAfterBan, то есть он может заново пройти через все лимиты
-
     internal class ChatAdmin : IHostedService
     {
         private readonly IConfiguration _configuration;
@@ -31,16 +23,14 @@ namespace Zs.App.ChatAdmin
         private readonly IScheduler _scheduler;
         private readonly IMessageProcessor _messageProcessor;
         private readonly IConnectionAnalyser _connectionAnalyser;
-        private readonly IContextFactory _contextFactory;
-        [Obsolete]
-        private readonly bool _detailedLogging = false;
 
+
+        // TODO: После бана удалять старое предупреждение от бота, чтобы не захламлять чат
 
         public ChatAdmin(
             IConfiguration configuration,
             IConnectionAnalyser connectionAnalyser,
             IMessenger messenger,
-            IContextFactory contextFactory,
             IMessageProcessor messageProcessor,
             IScheduler scheduler,
             ILogger<ChatAdmin> logger)
@@ -48,7 +38,6 @@ namespace Zs.App.ChatAdmin
             try
             {
                 _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-                _contextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
                 _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
                 _messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
@@ -116,17 +105,14 @@ namespace Zs.App.ChatAdmin
             await _messageProcessor.ProcessGroupMessage(e.Message);
         }
 
-        private async void Job_ExecutionCompleted(IJob job, IJobExecutionResult result)
+        private async void Job_ExecutionCompleted(IJob job, IServiceResult<string> result)
         {
-            if (_detailedLogging || result?.TextValue != null)
+            if (result.IsSuccess && result.Result != null
+                    && DateTime.Now.Hour > _configuration.GetSection("Notifier:Time:FromHour").Get<int>()
+                    && DateTime.Now.Hour < _configuration.GetSection("Notifier:Time:ToHour").Get<int>())
             {
-                _logger.LogInformation(
-                    $"Job execution completed{(job?.Description != null ? $" [{job.Description}]" : "")}",
-                    result?.TextValue ?? "<null>");
+                await _messenger.AddMessageToOutboxAsync(result.Result, "ADMIN");
             }
-
-            if (result != null && DateTime.Now.Hour > 9 && DateTime.Now.Hour < 23)
-                await _messenger.AddMessageToOutboxAsync(result?.TextValue, "ADMIN");
         }
 
         /// <summary> Creating a <see cref="Job"/> list for a <see cref="Scheduler"/> instance </summary>
@@ -136,7 +122,7 @@ namespace Zs.App.ChatAdmin
                 TimeSpan.FromDays(1),
                 QueryResultType.String,
                 $"select zl.sf_cmd_get_full_statistics(10, now()::date - interval '1 day', now()::date - interval '1 millisecond')",
-                _configuration.GetConnectionString("Default"),
+                _configuration.GetSecretValue("ConnectionStrings:Default"),
                 startDate: DateTime.Now.Date + TimeSpan.FromHours(24+10),
                 description: "sendYesterdaysStatistics"
             );
@@ -148,38 +134,39 @@ namespace Zs.App.ChatAdmin
                 description: "resetLimits"
             );
 
-            var sendDayErrorsAndWarnings = new SqlJob(
-                TimeSpan.FromHours(1),
-                QueryResultType.String,
-                 @" select string_agg('**' || log_type || '**  ' || to_char(insert_date, 'HH24:MI:SS') || E'\n' || log_initiator || ':  ' || log_message, E'\n\n' order by insert_date desc)"
-                + "\n from bot.logs"
-                + "\nwhere log_type in ('Warning', 'Error')"
-                + "\n  and insert_date > now() - interval '1 hour'",
-                _configuration.GetConnectionString("Default"),
-                startDate: Job.NextHour(),
-                description: "sendDayErrorsAndWarnings"
-            );
-
-            var sendNightErrorsAndWarnings = new SqlJob(
-                TimeSpan.FromDays(1),
-                QueryResultType.String,
-                 @" select string_agg('**' || log_type || '**  ' || to_char(insert_date, 'HH24:MI:SS') || E'\n' || log_initiator || ':  ' || log_message, E'\n\n' order by insert_date desc)"
-                + "\n from bot.logs"
-                + "\nwhere log_type in ('Warning', 'Error')"
-                + "\n  and insert_date > now() - interval '12 hours'",
-                _configuration.GetConnectionString("Default"),
-                startDate: DateTime.Today + TimeSpan.FromHours(24+10),
-                description: "sendNightErrorsAndWarnings"
-            );
+        // Больше нет bot.logs
+        //    var sendDayErrorsAndWarnings = new SqlJob(
+        //        TimeSpan.FromHours(1),
+        //        QueryResultType.String,
+        //         @" select string_agg('**' || log_type || '**  ' || to_char(insert_date, 'HH24:MI:SS') || E'\n' || log_initiator || ':  ' || log_message, E'\n\n' order by insert_date desc)"
+        //        + "\n from bot.logs"
+        //        + "\nwhere log_type in ('Warning', 'Error')"
+        //        + "\n  and insert_date > now() - interval '1 hour'",
+        //        _configuration.GetSecretValue("ConnectionStrings:Default"),
+        //        startDate: Job.NextHour(),
+        //        description: "sendDayErrorsAndWarnings"
+        //    );
+        //
+        //    var sendNightErrorsAndWarnings = new SqlJob(
+        //        TimeSpan.FromDays(1),
+        //        QueryResultType.String,
+        //         @" select string_agg('**' || log_type || '**  ' || to_char(insert_date, 'HH24:MI:SS') || E'\n' || log_initiator || ':  ' || log_message, E'\n\n' order by insert_date desc)"
+        //        + "\n from bot.logs"
+        //        + "\nwhere log_type in ('Warning', 'Error')"
+        //        + "\n  and insert_date > now() - interval '12 hours'",
+        //        _configuration.GetSecretValue("ConnectionStrings:Default"),
+        //        startDate: DateTime.Today + TimeSpan.FromHours(24+10),
+        //        description: "sendNightErrorsAndWarnings"
+        //    );
 
             sendYesterdaysStatistics.ExecutionCompleted += Job_ExecutionCompleted;
-            sendDayErrorsAndWarnings.ExecutionCompleted += Job_ExecutionCompleted;
-            sendNightErrorsAndWarnings.ExecutionCompleted += Job_ExecutionCompleted;
+        //    sendDayErrorsAndWarnings.ExecutionCompleted += Job_ExecutionCompleted;
+        //    sendNightErrorsAndWarnings.ExecutionCompleted += Job_ExecutionCompleted;
 
             _scheduler.Jobs.Add(sendYesterdaysStatistics);
             _scheduler.Jobs.Add(resetLimits);
-            _scheduler.Jobs.Add(sendDayErrorsAndWarnings);
-            _scheduler.Jobs.Add(sendNightErrorsAndWarnings);
+        //    _scheduler.Jobs.Add(sendDayErrorsAndWarnings);
+        //    _scheduler.Jobs.Add(sendNightErrorsAndWarnings);
         }
     }
 }

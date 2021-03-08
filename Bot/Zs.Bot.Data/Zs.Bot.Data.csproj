@@ -5,11 +5,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="SQL\Priveleges.sql" />
     <None Remove="SQL\SequencesUpdate.sql" />
     <None Remove="SQL\StoredFunctions.sql" />
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="SQL\Priveleges.sql" />
     <EmbeddedResource Include="SQL\SequencesUpdate.sql" />
     <EmbeddedResource Include="SQL\StoredFunctions.sql" />
   </ItemGroup>

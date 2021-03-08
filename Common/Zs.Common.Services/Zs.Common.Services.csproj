@@ -11,7 +11,14 @@
     </Description>
     <RepositoryUrl>https://github.com/zuev56/Zs.Bot/tree/master/Common/Zs.Common.Services</RepositoryUrl>
   </PropertyGroup>
-
+  
+  <!--<ItemGroup>
+    <PackageReference Include="Serilog.Extensions.Logging" Version="3.0.1" />
+    <PackageReference Include="Serilog.Settings.Configuration" Version="3.1.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="3.1.1" />
+    <PackageReference Include="Serilog.Sinks.Seq" Version="5.0.0" />
+  </ItemGroup>-->
+  
   <ItemGroup>
     <ProjectReference Include="..\Zs.Common\Zs.Common.csproj" />
   </ItemGroup>

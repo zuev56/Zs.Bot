@@ -34,7 +34,7 @@ namespace Zs.Bot.Data.Repositories
 
             using var context = ContextFactory.GetContext();
 
-            TEntity dbItem = await context.Set<TEntity>().FirstOrDefaultAsync(i => i.RawDataHash == i.RawDataHash);
+            TEntity dbItem = await context.Set<TEntity>().AsNoTracking().FirstOrDefaultAsync(i => i.RawDataHash == i.RawDataHash);
 
             return dbItem != default && !dbItem.Id.Equals(default(TKey))
                 ? dbItem.Id

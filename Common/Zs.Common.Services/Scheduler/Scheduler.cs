@@ -1,8 +1,8 @@
-﻿using Microsoft.Extensions.Logging;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Zs.Common.Services.Abstractions;
 
 namespace Zs.Common.Services.Scheduler
@@ -11,8 +11,6 @@ namespace Zs.Common.Services.Scheduler
     {
         private readonly ILogger<Scheduler> _logger;
         private Timer _timer;
-        [Obsolete]
-        private readonly bool _detailedLogging;
 
         public List<IJob> Jobs { get; } = new List<IJob>();
 
@@ -55,8 +53,7 @@ namespace Zs.Common.Services.Scheduler
             {
                 foreach (var job in Jobs)
                 {
-                    if (!job.IsRunning
-                        && (job.NextRunDate == null || job.NextRunDate < DateTime.Now))
+                    if (!job.IsRunning && (job.NextRunDate == null || job.NextRunDate < DateTime.Now))
                     {
                         Task.Run(() => job.Execute())
                             .ContinueWith((task) =>

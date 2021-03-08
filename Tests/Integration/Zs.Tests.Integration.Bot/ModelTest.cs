@@ -24,7 +24,6 @@ namespace Zs.Tests.Integration.Bot
                     Assert.IsNotNull(ctx.Messengers.FirstOrDefault());
                     Assert.IsNotNull(ctx.MessageTypes.FirstOrDefault());
                     Assert.IsNotNull(ctx.Messages.FirstOrDefault());
-                    Assert.IsNotNull(ctx.Logs.FirstOrDefault());
                     Assert.IsNotNull(ctx.Commands.FirstOrDefault());
                 }
             }
@@ -48,7 +47,6 @@ namespace Zs.Tests.Integration.Bot
                 var messenger   = ctx.Messengers.FirstOrDefault();
                 var messageType = ctx.MessageTypes.FirstOrDefault();
                 var message     = ctx.Messages.FirstOrDefault();
-                var log         = ctx.Logs.FirstOrDefault();
                 var command     = ctx.Commands.FirstOrDefault();
 
                 var chatTypeCode    = chatType.Id;
@@ -58,7 +56,6 @@ namespace Zs.Tests.Integration.Bot
                 var messengerCode   = messenger.Id;
                 var messageTypeCode = messageType.Id;
                 var messageId       = message.Id;
-                var logId           = log.Id;
                 var commandName     = command.Id;
 
                 var newUpdateDate      = DateTime.Now;
@@ -69,7 +66,6 @@ namespace Zs.Tests.Integration.Bot
                 messenger.UpdateDate   = newUpdateDate;
                 messageType.UpdateDate = newUpdateDate;
                 message.UpdateDate     = newUpdateDate;
-                log.Message            = $"{newUpdateDate}";
                 command.UpdateDate     = newUpdateDate;
 
                 ctx.SaveChanges();
@@ -81,7 +77,6 @@ namespace Zs.Tests.Integration.Bot
                 Assert.IsTrue(newUpdateDate == ctx.Messengers.First(m => m.Id == messengerCode).UpdateDate);
                 Assert.IsTrue(newUpdateDate == ctx.MessageTypes.First(t => t.Id == messageTypeCode).UpdateDate);
                 Assert.IsTrue(newUpdateDate == ctx.Messages.First(m => m.Id == messageId).UpdateDate);
-                Assert.IsTrue($"{newUpdateDate}" == ctx.Logs.First(l => l.Id == logId).Message);
                 Assert.IsTrue(newUpdateDate == ctx.Commands.First(c => c.Id == commandName).UpdateDate);
             }
             catch (Exception ex)
@@ -104,7 +99,6 @@ namespace Zs.Tests.Integration.Bot
                 var user            = new User            { Id = -2, Name = "UnitTest1", UserRoleId = "UNITTEST1", IsBot = false, RawData = testJsonValue, RawDataHash = testJsonValue.GetMD5Hash() };
                 var messageType     = new MessageType     { Id = "U1", Name = "UnitTest1" };
                 var message         = new Message         { Id = -2, MessengerId = "U1", MessageTypeId = "U1", ChatId = -2, UserId = -2, RawData = testJsonValue, RawDataHash = testJsonValue.GetMD5Hash() };
-                var log             = new Log             { Id = -2, Type = "WARNING", Message = "UnitTest1" };
                 var command         = new Command         { Id = "/unittest1", Script = "UnitTest1", Group = "UnitTest1" };
 
                 using (var ctx = _contextFactory.GetContext())
@@ -142,9 +136,6 @@ namespace Zs.Tests.Integration.Bot
                         ctx.SaveChanges();
                     }
 
-                    if (!ctx.Logs.Any(l => l.Id == log.Id))
-                        ctx.Logs.Add(log);
-
                     if (!ctx.Commands.Any(c => c.Id == command.Id))
                         ctx.Commands.Add(command);
 
@@ -172,7 +163,6 @@ namespace Zs.Tests.Integration.Bot
                 var user            = new User            { Id = -1, Name = "UnitTest0", UserRoleId = "UNITTEST0", IsBot = false, RawData = testJsonValue, RawDataHash = testJsonValue.GetMD5Hash() };
                 var messageType     = new MessageType     { Id = "U0", Name = "UnitTest0" };
                 var message         = new Message         { Id = -1, MessengerId = "U0", MessageTypeId = "U0", ChatId = -1, UserId = -1, RawData = testJsonValue, RawDataHash = testJsonValue.GetMD5Hash() };
-                var log             = new Log             { Id = -1, Type = "WARNING", Message = "UnitTest0" };
                 var command         = new Command         { Id = "/unittest0", Script = "UnitTest0", Group = "UnitTest0" };
 
                 using (var ctx = _contextFactory.GetContext())
@@ -210,9 +200,6 @@ namespace Zs.Tests.Integration.Bot
                         ctx.SaveChanges();
                     }
 
-                    if (!ctx.Logs.Any(l => l.Id == log.Id))
-                        ctx.Logs.Add(log);
-
                     if (!ctx.Commands.Any(c => c.Id == command.Id))
                         ctx.Commands.Add(command);
 
@@ -223,7 +210,6 @@ namespace Zs.Tests.Integration.Bot
                 // Удаление из БД
                 using (var ctx = _contextFactory.GetContext())
                 {
-                    ctx.Logs.Remove(log);
                     ctx.Commands.Remove(command);
                     ctx.SaveChanges();
                     ctx.Messages.Remove(message);
