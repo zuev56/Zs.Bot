@@ -24,6 +24,7 @@ using Zs.Common.Abstractions;
 using Zs.Common.Extensions;
 using Zs.Common.Services.Abstractions;
 using Zs.Common.Services.Connection;
+using Zs.Common.Services.Logging.Seq;
 using Zs.Common.Services.Scheduler;
 using ChatAdminContextFactory = Zs.App.ChatAdmin.Data.ContextFactory;
 
@@ -50,6 +51,10 @@ namespace Zs.App.ChatAdmin
 
                     configurationBuilder.AddJsonFile(arg, optional: true, reloadOnChange: true);
                 }
+
+                var tmpConfig = configurationBuilder.Build();
+                if (tmpConfig["SecretsPath"] != null)
+                    configurationBuilder.AddJsonFile(tmpConfig["SecretsPath"]);
 
                 await ServiceLoader(configurationBuilder.Build());
             }
@@ -108,6 +113,9 @@ namespace Zs.App.ChatAdmin
                             return ca;
                         });
 
+                        services.AddScoped<ISeqService, SeqService>(sp =>
+                            new SeqService(hostContext.Configuration["Seq:ServerUrl"], hostContext.Configuration.GetSecretValue("Seq:ApiToken")));
+
                         services.AddScoped<IMessenger, TelegramMessenger>(sp => 
                             new TelegramMessenger(
                                 hostContext.Configuration.GetSecretValue("BotToken"),
@@ -142,7 +150,6 @@ namespace Zs.App.ChatAdmin
                             );
 
                         services.AddScoped<IRepository<Ban, int>, CommonRepository<ChatAdminContext, Ban, int>>();
-                        //services.AddScoped<IRepository<Bot.Data.Models.Log, int>, CommonRepository<BotContext, Bot.Data.Models.Log, int>>();
                         services.AddScoped<IRepository<Command, string>, CommonRepository<BotContext, Command, string>>();
                         services.AddScoped<IRepository<UserRole, string>, CommonRepository<BotContext, UserRole, string>>();
                         services.AddScoped<IItemsWithRawDataRepository<Chat, int>, ItemsWithRawDataRepository<BotContext, Chat, int>>();

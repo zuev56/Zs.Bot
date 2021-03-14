@@ -22,6 +22,7 @@ namespace Zs.App.ChatAdmin
         private readonly IMessenger _messenger;
         private readonly IScheduler _scheduler;
         private readonly IMessageProcessor _messageProcessor;
+        private readonly ISeqService _seqService;
         private readonly IConnectionAnalyser _connectionAnalyser;
 
 
@@ -33,6 +34,7 @@ namespace Zs.App.ChatAdmin
             IMessenger messenger,
             IMessageProcessor messageProcessor,
             IScheduler scheduler,
+            ISeqService seqService,
             ILogger<ChatAdmin> logger)
         {
             try
@@ -50,6 +52,8 @@ namespace Zs.App.ChatAdmin
                 _messageProcessor.LimitsDefined += MessageProcessor_LimitsDefined;
 
                 _scheduler = scheduler ?? throw new ArgumentNullException(nameof(scheduler));
+                _seqService = seqService;
+                
                 CreateJobs();
             }
             catch (Exception ex)
@@ -105,7 +109,7 @@ namespace Zs.App.ChatAdmin
             await _messageProcessor.ProcessGroupMessage(e.Message);
         }
 
-        private async void Job_ExecutionCompleted(IJob job, IServiceResult<string> result)
+        private async void Job_ExecutionCompleted(IJob<string> job, IServiceResult<string> result)
         {
             if (result.IsSuccess && result.Result != null
                     && DateTime.Now.Hour > _configuration.GetSection("Notifier:Time:FromHour").Get<int>()
@@ -125,7 +129,9 @@ namespace Zs.App.ChatAdmin
                 _configuration.GetSecretValue("ConnectionStrings:Default"),
                 startDate: DateTime.Now.Date + TimeSpan.FromHours(24+10),
                 description: "sendYesterdaysStatistics"
-            );
+            ); 
+            sendYesterdaysStatistics.ExecutionCompleted += Job_ExecutionCompleted;
+            _scheduler.Jobs.Add(sendYesterdaysStatistics);
 
             var resetLimits = new ProgramJob(
                 TimeSpan.FromDays(1),
@@ -133,40 +139,40 @@ namespace Zs.App.ChatAdmin
                 startDate: DateTime.Now.Date + TimeSpan.FromDays(1),
                 description: "resetLimits"
             );
-
-        // Больше нет bot.logs
-        //    var sendDayErrorsAndWarnings = new SqlJob(
-        //        TimeSpan.FromHours(1),
-        //        QueryResultType.String,
-        //         @" select string_agg('**' || log_type || '**  ' || to_char(insert_date, 'HH24:MI:SS') || E'\n' || log_initiator || ':  ' || log_message, E'\n\n' order by insert_date desc)"
-        //        + "\n from bot.logs"
-        //        + "\nwhere log_type in ('Warning', 'Error')"
-        //        + "\n  and insert_date > now() - interval '1 hour'",
-        //        _configuration.GetSecretValue("ConnectionStrings:Default"),
-        //        startDate: Job.NextHour(),
-        //        description: "sendDayErrorsAndWarnings"
-        //    );
-        //
-        //    var sendNightErrorsAndWarnings = new SqlJob(
-        //        TimeSpan.FromDays(1),
-        //        QueryResultType.String,
-        //         @" select string_agg('**' || log_type || '**  ' || to_char(insert_date, 'HH24:MI:SS') || E'\n' || log_initiator || ':  ' || log_message, E'\n\n' order by insert_date desc)"
-        //        + "\n from bot.logs"
-        //        + "\nwhere log_type in ('Warning', 'Error')"
-        //        + "\n  and insert_date > now() - interval '12 hours'",
-        //        _configuration.GetSecretValue("ConnectionStrings:Default"),
-        //        startDate: DateTime.Today + TimeSpan.FromHours(24+10),
-        //        description: "sendNightErrorsAndWarnings"
-        //    );
-
-            sendYesterdaysStatistics.ExecutionCompleted += Job_ExecutionCompleted;
-        //    sendDayErrorsAndWarnings.ExecutionCompleted += Job_ExecutionCompleted;
-        //    sendNightErrorsAndWarnings.ExecutionCompleted += Job_ExecutionCompleted;
-
-            _scheduler.Jobs.Add(sendYesterdaysStatistics);
             _scheduler.Jobs.Add(resetLimits);
-        //    _scheduler.Jobs.Add(sendDayErrorsAndWarnings);
-        //    _scheduler.Jobs.Add(sendNightErrorsAndWarnings);
+
+
+            if (_seqService != null)
+            {
+                var dayErrorsAndWarningsInformer = new ProgramJob<string>(
+                TimeSpan.FromHours(1),
+                () =>
+                {
+                    var events = _seqService.GetLastEvents(DateTime.Now - TimeSpan.FromHours(1), 10, _configuration.GetSection("Seq:ObservedSignals").Get<int[]>());
+                    events.Wait();
+                    return events.Result?.Count > 0 ? string.Join(Environment.NewLine + Environment.NewLine, events.Result) : null;
+                },
+                startDate: Job.NextHour(),
+                description: "dayErrorsAndWarningsInformer"
+                );
+                dayErrorsAndWarningsInformer.ExecutionCompleted += Job_ExecutionCompleted;
+                _scheduler.Jobs.Add(dayErrorsAndWarningsInformer);
+
+                var nightErrorsAndWarningsInformer = new ProgramJob<string>(
+                    TimeSpan.FromDays(1),
+                    () =>
+                    {
+                        var events = _seqService.GetLastEvents(DateTime.Now - TimeSpan.FromHours(12), 10, _configuration.GetSection("Seq:ObservedSignals").Get<int[]>());
+                        events.Wait();
+                        return events.Result?.Count > 0 ? string.Join(Environment.NewLine + Environment.NewLine, events.Result) : null;
+                    },
+                    startDate: DateTime.Today + TimeSpan.FromHours(24 + 10),
+                    description: "nightErrorsAndWarningsInformer"
+                    );
+                nightErrorsAndWarningsInformer.ExecutionCompleted += Job_ExecutionCompleted;
+                _scheduler.Jobs.Add(nightErrorsAndWarningsInformer);
+            }
+
         }
     }
 }

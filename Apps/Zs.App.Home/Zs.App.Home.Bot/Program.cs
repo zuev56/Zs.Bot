@@ -24,6 +24,7 @@ using Zs.Common.Abstractions;
 using Zs.Common.Extensions;
 using Zs.Common.Services.Abstractions;
 using Zs.Common.Services.Connection;
+using Zs.Common.Services.Logging.Seq;
 using Zs.Common.Services.Scheduler;
 using BotContextFactory = Zs.Bot.Data.Factories.BotContextFactory;
 
@@ -50,6 +51,10 @@ namespace Zs.App.Home.Bot
 
                     configurationBuilder.AddJsonFile(arg, optional: true, reloadOnChange: true);
                 }
+
+                var tmpConfig = configurationBuilder.Build();
+                if (tmpConfig["SecretsPath"] != null)
+                    configurationBuilder.AddJsonFile(tmpConfig["SecretsPath"]);
 
                 await ServiceLoader(configurationBuilder.Build());
             }
@@ -106,6 +111,9 @@ namespace Zs.App.Home.Bot
                                     hostContext.Configuration.GetSecretValue("Proxy:Password"));
                             return ca;
                         });
+
+                        services.AddScoped<ISeqService, SeqService>(sp => 
+                            new SeqService(hostContext.Configuration["Seq:ServerUrl"], hostContext.Configuration.GetSecretValue("Seq:ApiToken")));
 
                         services.AddScoped<IMessageDataSaver, MessageDataDBSaver>();
 

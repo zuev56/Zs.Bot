@@ -2,7 +2,6 @@
   "profiles": {
     "Zs.App.Home.Web": {
       "commandName": "Project",
-      "commandLineArgs": "S:\\Repos\\Zs.Bot\\secrets.json",
       "launchBrowser": true,
       "launchUrl": "admin/serverinfo",
       "environmentVariables": {

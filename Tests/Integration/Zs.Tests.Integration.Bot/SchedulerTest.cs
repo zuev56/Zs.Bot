@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Zs.Common.Enums;
+using Zs.Common.Services.Abstractions;
 using Zs.Common.Services.Scheduler;
 
 namespace Zs.Tests.Integration.Bot
@@ -39,7 +40,7 @@ namespace Zs.Tests.Integration.Bot
             }
         }
 
-        private IEnumerable<Job> GetJobs()
+        private IEnumerable<IJobBase> GetJobs()
         {
             var job0 = new ProgramJob(TimeSpan.FromSeconds(1), () => HeavyMethod(2));
             var job1 = new ProgramJob(TimeSpan.FromSeconds(2), () => HeavyMethod(4));
@@ -61,7 +62,7 @@ namespace Zs.Tests.Integration.Bot
                 "SELECT Count(*) FROM bot.users", 
                 _connectionString);
 
-            return new List<Job> { job0, job1, job2, job3, job4, job5 };
+            return new List<IJobBase> { job0, job1, job2, job3, job4, job5 };
         }
 
         private void HeavyMethod(byte heavyLevel)

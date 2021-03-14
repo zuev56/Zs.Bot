@@ -4,22 +4,17 @@ using Zs.Common.Abstractions;
 
 namespace Zs.Common.Services.Abstractions
 {
-    public interface IJob
+    public interface IJob : IJobBase
     {
-        long Counter { get; }
-        string Description { get; }
-        bool IsRunning { get; }
-        ///// <summary> Определяет возможность выполнения джоба в то время, пока ещё выполняется его предыдущий вызов </summary>
-        //bool AllowMultipleRunning { get; }
-        /// <summary> Количество холостых выполнений, когда логика джоба не будет выполняться. Для откладывания выполнения джоба </summary>
-        int IdleStepsCount { get; set; }
-        IServiceResult<string> LastResult { get; }
-        DateTime? LastRunDate { get; }
-        DateTime? NextRunDate { get; }
-        TimeSpan Period { get; }
+        IServiceResult LastResult { get; }
 
-        event Action<IJob, IServiceResult<string>> ExecutionCompleted;
+        event Action<IJob, IServiceResult> ExecutionCompleted;
+    }
 
-        Task Execute();
+    public interface IJob<TResult> : IJobBase
+    {
+        IServiceResult<TResult> LastResult { get; }
+
+        event Action<IJob<TResult>, IServiceResult<TResult>> ExecutionCompleted;
     }
 }

@@ -12,7 +12,7 @@ namespace Zs.Common.Services.Scheduler
         private readonly ILogger<Scheduler> _logger;
         private Timer _timer;
 
-        public List<IJob> Jobs { get; } = new List<IJob>();
+        public List<IJobBase> Jobs { get; } = new List<IJobBase>();
 
         public Scheduler(ILogger<Scheduler> logger = null)
         {
