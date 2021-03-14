@@ -12,7 +12,7 @@ namespace Zs.Common.Services.Scheduler
     /// <summary>
     /// <see cref="Job"/> based on SQL script
     /// </summary>
-    public sealed class SqlJob : Job
+    public sealed class SqlJob : Job<string>
     {
         private readonly string _connectionString;
         private readonly string _sqlQuery;

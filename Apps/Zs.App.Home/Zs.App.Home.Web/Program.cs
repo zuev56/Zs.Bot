@@ -50,16 +50,19 @@ namespace Zs.App.Home.Web
         {           
             return Host.CreateDefaultBuilder(args)
                 .ConfigureLogging(logging => logging.AddSerilog())
-                .ConfigureAppConfiguration((hostingContext, config) =>
+                .ConfigureAppConfiguration((hostingContext, configurationBuilder) =>
                 {
                     foreach (var arg in args)
                     {
                         if (!File.Exists(arg))
                             throw new FileNotFoundException($"Wrong configuration path:\n{arg}");
 
-                        config.AddJsonFile(arg, optional: true, reloadOnChange: true);
+                        configurationBuilder.AddJsonFile(arg, optional: true, reloadOnChange: true);
                     }
 
+                    var tmpConfig = configurationBuilder.Build();
+                    if (tmpConfig["SecretsPath"] != null)
+                        configurationBuilder.AddJsonFile(tmpConfig["SecretsPath"]);
                 })
                 .ConfigureWebHostDefaults(webBuilder =>
                 {

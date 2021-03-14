@@ -1,7 +1,9 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.IO;
 using System.Reflection;
 using Zs.Common.Extensions;
+using Zs.Common.Services.Logging.Seq;
 
 namespace Zs.Tests.Integration.Common
 {
@@ -10,11 +12,19 @@ namespace Zs.Tests.Integration.Common
     public class ToolsTest
     {
         private string _unPrettyJson;
+        private readonly IConfiguration _configuration;
 
         public ToolsTest()
         {
-
             _unPrettyJson = File.ReadAllText(@"S:\UnprettyJson.json");
+            var configurationBuilder = new ConfigurationBuilder().AddJsonFile(@"S:\Repos\Zs.Bot\Apps\Zs.App.Home\Zs.App.Home.Bot\appsettings.json");
+            
+            var tmpConfig = configurationBuilder.Build();
+            if (tmpConfig["SecretsPath"] != null)
+                configurationBuilder.AddJsonFile(tmpConfig["SecretsPath"]);
+
+            _configuration = configurationBuilder.Build();
+
         }
 
         [TestMethod]
@@ -87,5 +97,14 @@ namespace Zs.Tests.Integration.Common
             //  }
         }
 
+        [TestMethod]
+        public void SeqServiceTest()
+        {
+            SeqService seq = new SeqService("http://localhost:5341/", _configuration.GetSecretValue("Seq:ApiToken"));
+
+            var t = seq.GetLastEvents(10, 39, 41);
+
+        }
+        
     }
 }

@@ -14,7 +14,7 @@ namespace Zs.Common.Services.WebAPI
             string requestUri,
             string mediaType = null,
             string userAgent = null,
-            bool throwOnError = true)
+            bool throwExceptionOnError = true)
         {
             try
             {
@@ -23,7 +23,7 @@ namespace Zs.Common.Services.WebAPI
             }
             catch
             {
-                if (throwOnError)
+                if (throwExceptionOnError)
                     throw;
 
                 return default(TResult);
@@ -34,7 +34,7 @@ namespace Zs.Common.Services.WebAPI
             string requestUri,
             string mediaType = null,
             string userAgent = null,
-            bool throwOnError = true)
+            bool throwExceptionOnError = true)
         {
             try
             {
@@ -43,7 +43,7 @@ namespace Zs.Common.Services.WebAPI
             }
             catch
             {
-                if (throwOnError)
+                if (throwExceptionOnError)
                     throw;
 
                 return null;

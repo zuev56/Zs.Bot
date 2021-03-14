@@ -1,6 +1,6 @@
 {
   "profiles": {
-    "Zs.Service.Home.Bot": {
+    "Zs.Tests.Integration.Common": {
       "commandName": "Project"
     }
   }

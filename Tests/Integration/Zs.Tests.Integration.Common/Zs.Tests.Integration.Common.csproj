@@ -25,6 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\Common\Zs.Common.Services\Zs.Common.Services.csproj" />
     <ProjectReference Include="..\..\..\Common\Zs.Common\Zs.Common.csproj" />
   </ItemGroup>
 

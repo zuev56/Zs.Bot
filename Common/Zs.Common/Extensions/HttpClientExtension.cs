@@ -80,7 +80,8 @@ namespace Zs.Common.Extensions
                 return url;
 
             var fullUrlBuilder = new StringBuilder();
-            fullUrlBuilder.AppendFormat("{0}?", url);
+            fullUrlBuilder.AppendFormat(!url.Contains('?') ? "{0}?" : "{0}&", url);
+
             foreach (var p in queryParams)
             {
                 fullUrlBuilder.AppendFormat("{0}={1}&", p.Key, p.Value);

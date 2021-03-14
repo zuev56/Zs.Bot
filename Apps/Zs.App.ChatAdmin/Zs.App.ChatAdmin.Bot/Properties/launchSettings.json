@@ -1,8 +1,7 @@
 {
   "profiles": {
     "Zs.Service.ChatAdmin": {
-      "commandName": "Project",
-      "commandLineArgs": "S:\\Repos\\Zs.Bot\\secrets.json"
+      "commandName": "Project"
     }
   }
 }
